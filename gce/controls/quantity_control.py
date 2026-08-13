@@ -16,7 +16,7 @@ class MaxOrderQuantity(BaseControl):
         """
         super().__init__("MaxOrderQuantity", limit)
     
-    def validate(self, order: Any, context: Dict[str, Any]) -> Tuple[bool, str, Any, Any]:
+    def validate(self, order: Any, context: Dict[str, Any]) -> Tuple[bool, str, int, int]:
         """
         Validate order quantity against limit.
         
@@ -29,13 +29,12 @@ class MaxOrderQuantity(BaseControl):
             context: Context dict with caches
             
         Returns:
-            (passed: bool, message: str, limit: int, order_qty: int)
+            (passed: bool, message: str, value: int, limit: int)
         """
         order_qty = order.quantity
         limit = self.limit
         
         if order_qty <= limit:
-            return (True, f"Order quantity OK: {order_qty} <= {limit}", limit, order_qty)
+            return (True, f"Order quantity OK: ORD={order_qty} <= LMT={limit}", order_qty, limit)
         else:
-            msg = f"Order size is too big, LMT={limit}, ORD={order_qty}"
-            return (False, msg, limit, order_qty)
+            return (False, f"Order size is too big, ORD={order_qty} > LMT={limit}", order_qty, limit)

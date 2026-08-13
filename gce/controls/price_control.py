@@ -16,7 +16,7 @@ class MaxOrderPrice(BaseControl):
         """
         super().__init__("MaxOrderPrice", limit)
     
-    def validate(self, order: Any, context: Dict[str, Any]) -> Tuple[bool, str, Any, Any]:
+    def validate(self, order: Any, context: Dict[str, Any]) -> Tuple[bool, str, float, float]:
         """
         Validate order price against limit.
         
@@ -29,13 +29,12 @@ class MaxOrderPrice(BaseControl):
             context: Context dict with caches
             
         Returns:
-            (passed: bool, message: str, limit: float, order_price: float)
+            (passed: bool, message: str, order_price: float, limit: float)
         """
         order_price = order.price or 0.0
         limit = self.limit
         
         if order_price <= limit:
-            return (True, f"Order price OK: {order_price} <= {limit}", limit, order_price)
+            return (True, f"Order price OK: ORD={order_price} <= LMT={limit}", order_price, limit)
         else:
-            msg = f"Order price is too big, LMT={limit}, ORD={order_price}"
-            return (False, msg, limit, order_price)
+            return (False, f"Order price is too big, ORD={order_price} > LMT={limit}", order_price, limit)
