@@ -298,7 +298,7 @@ class GCE:
             self.prices = PriceCache()
         
         try:
-            self.orders = OrderCache(order_csv)
+            self.orders = OrderCache(csv_path=order_csv, instrument_cache=self.instruments)
             self.logger.info(f"Loaded {self.orders.count()} orders")
         except FileNotFoundError as e:
             self.logger.error(f"Failed to load orders: {e}")
@@ -420,6 +420,16 @@ class GCE:
         self.orders.save_to_csv(order_csv)
         self.positions.save_to_csv(position_csv)
         self.logger.info(f"State saved: orders={order_csv}, positions={position_csv}")
+
+    def get_risk_report(self):
+        """Generate comprehensive risk report snapshot."""
+        from gce.analytics import RiskAnalytics
+        return RiskAnalytics.calculate_risk_report(
+            order_cache=self.orders,
+            position_cache=self.positions,
+            price_cache=self.prices,
+            logger_rejections=self.logger.get_rejections()
+        )
 
     def shutdown(self):
         """Shutdown thread pool executor and logger."""

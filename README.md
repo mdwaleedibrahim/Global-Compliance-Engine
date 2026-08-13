@@ -542,7 +542,7 @@ gce.register_control("MaxNotionalValue", MaxNotionalValue(limit=1000000))
 
 - [ ] Advanced control framework (exposure limits, portfolio limits, etc.)
 - [ ] Database backend (replace CSV persistence)
-- [ ] Risk analytics and reporting
+- [x] Risk analytics and reporting
 - [x] Performance optimization and parallel control execution
 - [x] Unit and integration tests
 - [ ] API server for order submission

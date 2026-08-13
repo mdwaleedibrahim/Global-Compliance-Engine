@@ -8,5 +8,9 @@ __author__ = "Trading Systems"
 
 from gce.engine import GCE, GCEEngine
 from gce.distributed import ValidatorNode, DistributedValidationRouter, LoadBalancingStrategy
+from gce.analytics import RiskAnalytics, RiskReporter, RiskReport
 
-__all__ = ["GCE", "GCEEngine", "ValidatorNode", "DistributedValidationRouter", "LoadBalancingStrategy"]
+__all__ = [
+    "GCE", "GCEEngine", "ValidatorNode", "DistributedValidationRouter", 
+    "LoadBalancingStrategy", "RiskAnalytics", "RiskReporter", "RiskReport"
+]

@@ -30,27 +30,36 @@ class OrderType(Enum):
 
 
 class Order:
-    """Represents a trading order"""
+    """Represents a trading order with complete schema matching Requirements/OrderCache.csv."""
     
-    def __init__(self, order_id: str, ric: str, symbol: str, quantity: int, 
+    def __init__(self, order_id: str, ric: str = "", symbol: str = "", quantity: int = 0, 
                  price: float = 0.0, side: str = "B", order_type: str = "LMT",
                  trader: str = "", account: str = "", **kwargs):
         self.order_id = order_id
-        self.ric = ric
-        self.symbol = symbol
-        self.quantity = quantity
-        self.price = price
+        self.symbol = symbol or ric
+        self.ric = ric or symbol
+        self.quantity = int(quantity)
+        self.price = float(price or 0.0)
         self.side = side
         self.order_type = order_type
         self.trader = trader
         self.account = account
         self.status = OrderStatus.LIVE
-        self.timestamp = kwargs.get('timestamp', datetime.now().isoformat())
-        self.filled = int(kwargs.get('filled', 0))
-        self.open_qty = quantity - self.filled
-        self.client = kwargs.get('client', '')
-        self.desk = kwargs.get('desk', '')
-        self.currency = kwargs.get('currency', 'HKD')
+        self.timestamp = str(kwargs.get('timestamp', kwargs.get('DateTime', datetime.now().isoformat())))
+        self.filled = int(kwargs.get('filled', kwargs.get('Filled', 0)))
+        self.open_qty = int(kwargs.get('open_qty', kwargs.get('Open', self.quantity - self.filled)))
+        self.client = kwargs.get('client', kwargs.get('Client', ''))
+        self.desk = kwargs.get('desk', kwargs.get('Desk', ''))
+        self.currency = kwargs.get('currency', kwargs.get('Currency', 'HKD'))
+        
+        # Extended schema columns matching Requirements/OrderCache.csv
+        self.product = kwargs.get('product', kwargs.get('Product', 'Equity'))
+        self.application = kwargs.get('application', kwargs.get('Application', ''))
+        self.flow = kwargs.get('flow', kwargs.get('Flow', 'DMA'))
+        self.exchange = kwargs.get('exchange', kwargs.get('exchange', 'XHKG'))
+        self.underlying = kwargs.get('underlying', kwargs.get('underlying', self.symbol.split('.')[0] if self.symbol else ''))
+        self.algo_strategy = kwargs.get('algo_strategy', kwargs.get('Algo Strategy', ''))
+        self.tif = kwargs.get('tif', kwargs.get('Tif', 'DAY'))
         self.rejection_reason = ""
     
     def __repr__(self):
@@ -58,20 +67,21 @@ class Order:
 
 
 class OrderCache:
-    """Cache for order data"""
+    """Cache for order data with complete OrderCache.csv schema support."""
     
-    def __init__(self, csv_path: Optional[str] = None):
+    def __init__(self, csv_path: Optional[str] = None, instrument_cache: Optional[Any] = None):
         self.orders: Dict[str, Order] = {}
         
         if csv_path:
-            self.load_from_csv(csv_path)
+            self.load_from_csv(csv_path, instrument_cache=instrument_cache)
     
-    def load_from_csv(self, csv_path: str) -> int:
+    def load_from_csv(self, csv_path: str, instrument_cache: Optional[Any] = None) -> int:
         """
         Load orders from CSV file (OrderCache.csv)
         
         Args:
             csv_path: Path to CSV file
+            instrument_cache: Optional InstrumentCache to enrich Product field
             
         Returns:
             Number of orders loaded
@@ -85,21 +95,42 @@ class OrderCache:
             reader = csv.DictReader(f)
             for row in reader:
                 try:
+                    order_id = row.get('order id') or row.get('\ufefforder id', '')
+                    if not order_id:
+                        continue
+
+                    symbol = row.get('symbol', '')
+                    product = row.get('Product', '')
+
+                    # Fetch product from Instrument Cache if available and missing
+                    if not product and instrument_cache and hasattr(instrument_cache, 'get_instrument'):
+                        inst = instrument_cache.get_instrument(symbol)
+                        if inst:
+                            product = getattr(inst, 'category', '') or 'Equity'
+
                     order = Order(
-                        order_id=row['order id'],
-                        ric=row.get('symbol', ''),
-                        symbol=row.get('symbol', ''),
-                        quantity=int(row.get('Quantity', 0)),
+                        order_id=order_id,
+                        ric=symbol,
+                        symbol=symbol,
+                        quantity=int(row.get('Quantity', 0) or 0),
                         price=float(row.get('Price', 0) or 0),
                         side=row.get('Side', 'B'),
                         order_type=row.get('Order Type', 'LMT'),
                         trader=row.get('Trader', ''),
                         account=row.get('Account', ''),
-                        filled=int(row.get('Filled', 0)),
+                        filled=int(row.get('Filled', 0) or 0),
+                        open_qty=int(row.get('Open', 0) or 0),
                         client=row.get('Client', ''),
                         desk=row.get('Desk', ''),
                         currency=row.get('Currency', 'HKD'),
-                        timestamp=row.get('DateTime', '')
+                        timestamp=row.get('DateTime', ''),
+                        product=product or 'Equity',
+                        application=row.get('Application', ''),
+                        flow=row.get('Flow', 'DMA'),
+                        exchange=row.get('exchange', 'XHKG'),
+                        underlying=row.get('underlying', symbol.split('.')[0] if symbol else ''),
+                        algo_strategy=row.get('Algo Strategy', ''),
+                        tif=row.get('Tif', 'DAY')
                     )
                     
                     # Set status
@@ -107,7 +138,10 @@ class OrderCache:
                     try:
                         order.status = OrderStatus[status_str.upper()]
                     except KeyError:
-                        order.status = OrderStatus.LIVE
+                        try:
+                            order.status = OrderStatus(status_str)
+                        except ValueError:
+                            order.status = OrderStatus.LIVE
                     
                     self.orders[order.order_id] = order
                     count += 1
@@ -179,7 +213,7 @@ class OrderCache:
     
     def save_to_csv(self, csv_path: str) -> int:
         """
-        Save all orders to CSV file
+        Save all orders to CSV file matching complete 22-column OrderCache.csv schema.
         
         Args:
             csv_path: Path to output CSV file
@@ -191,9 +225,12 @@ class OrderCache:
         path.parent.mkdir(parents=True, exist_ok=True)
         
         with open(path, 'w', newline='', encoding='utf-8') as f:
-            fieldnames = ['order id', 'DateTime', 'status', 'symbol', 'Trader', 
-                         'Account', 'Desk', 'Client', 'Side', 'Order Type', 
-                         'Quantity', 'Price', 'Filled', 'Open', 'Currency']
+            fieldnames = [
+                'order id', 'DateTime', 'status', 'Product', 'Application', 'Flow',
+                'Trader', 'Desk', 'Account', 'Client', 'symbol', 'exchange',
+                'underlying', 'Algo Strategy', 'Currency', 'Side', 'Order Type',
+                'Quantity', 'Price', 'Tif', 'Filled', 'Open'
+            ]
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             
@@ -202,18 +239,25 @@ class OrderCache:
                     'order id': order.order_id,
                     'DateTime': order.timestamp,
                     'status': order.status.value,
-                    'symbol': order.symbol,
+                    'Product': getattr(order, 'product', 'Equity'),
+                    'Application': getattr(order, 'application', ''),
+                    'Flow': getattr(order, 'flow', 'DMA'),
                     'Trader': order.trader,
-                    'Account': order.account,
                     'Desk': order.desk,
+                    'Account': order.account,
                     'Client': order.client,
+                    'symbol': order.symbol,
+                    'exchange': getattr(order, 'exchange', 'XHKG'),
+                    'underlying': getattr(order, 'underlying', order.symbol.split('.')[0] if order.symbol else ''),
+                    'Algo Strategy': getattr(order, 'algo_strategy', ''),
+                    'Currency': order.currency,
                     'Side': order.side,
                     'Order Type': order.order_type,
                     'Quantity': order.quantity,
-                    'Price': order.price,
+                    'Price': order.price if order.price else '',
+                    'Tif': getattr(order, 'tif', 'DAY'),
                     'Filled': order.filled,
-                    'Open': order.open_qty,
-                    'Currency': order.currency
+                    'Open': order.open_qty
                 })
         
         return len(self.orders)
