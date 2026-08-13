@@ -1,0 +1,175 @@
+PHASE 3: CONTROL ENGINE IMPLEMENTATION
+======================================
+
+Implementation Date: 2026-08-13
+Status: COMPLETE
+
+COMPONENTS IMPLEMENTED
+======================
+
+1. BASE CONTROL FRAMEWORK (gce/controls/base_control.py)
+   ✓ BaseControl abstract class
+   ✓ ControlResult enum (PASS, FAIL, WARN)
+   ✓ ControlExecution class with execution tracking
+   ✓ Validation interface with context-based approach
+   ✓ Execution timing and result storage
+
+2. CONTROL REGISTRY (gce/engine.py - ControlRegistry class)
+   ✓ Register/unregister controls dynamically
+   ✓ Get control by name
+   ✓ List all controls
+   ✓ Set execution order
+   ✓ Support for multiple controls
+
+3. CONTROL EXECUTION PIPELINE (gce/engine.py - ControlExecutionPipeline class)
+   ✓ Execute all controls sequentially
+   ✓ Execute specific controls only
+   ✓ Stop-on-fail support
+   ✓ Result tracking and history
+   ✓ Pretty-print execution results
+   ✓ Performance metrics per control
+
+4. GCE ENGINE (gce/engine.py - GCEEngine class)
+   ✓ Main orchestrator with registry and pipeline
+   ✓ Order validation against all controls
+   ✓ Context management (caches)
+   ✓ Control summary generation
+   ✓ Status tracking and reporting
+
+5. MAX ORDER QUANTITY CONTROL (gce/controls/quantity_control.py)
+   ✓ Validates: ORD <= LMT
+   ✓ Rejects orders exceeding quantity limit
+   ✓ Provides detailed pass/fail messages
+   ✓ Context-based validation
+
+6. MAX ORDER PRICE CONTROL (gce/controls/price_control.py)
+   ✓ Validates: ORD <= LMT
+   ✓ Rejects orders exceeding price limit
+   ✓ Provides detailed pass/fail messages
+   ✓ Context-based validation
+
+KEY FEATURES
+============
+
+Control Framework:
+- Abstract base class for extending controls
+- Automatic timing and performance tracking
+- Exception handling and error messages
+- Standardized validation interface
+- Result objects with detailed information
+
+Execution Pipeline:
+- Sequential control execution
+- Configurable execution order
+- Stop-on-fail option for early rejection
+- Performance aggregation
+- Result history tracking
+
+Engine Capabilities:
+- Dynamic control registration
+- Context passing to controls
+- Order status management
+- Summary reporting
+- Backward compatibility with legacy GCE class
+
+USAGE EXAMPLE
+=============
+
+from gce.engine import GCEEngine
+from gce.controls.quantity_control import MaxOrderQuantity
+from gce.controls.price_control import MaxOrderPrice
+from gce.cache.order_cache import Order
+
+# Initialize engine
+engine = GCEEngine()
+
+# Register controls
+engine.register_control("qty_limit", MaxOrderQuantity(limit=1000))
+engine.register_control("price_limit", MaxOrderPrice(limit=1000))
+
+# Set context (caches)
+context = {
+    "instruments": instrument_cache,
+    "prices": price_cache,
+    "orders": order_cache,
+    "positions": position_cache
+}
+engine.set_context(context)
+
+# Create and validate order
+order = Order(
+    order_id="ORD001",
+    symbol="0700.HK",
+    quantity=100,
+    price=440.0,
+    side="B",
+    trader="Waleed",
+    account="APAC_EQTY_CASH"
+)
+
+# Validate
+passed, results = engine.validate_order(order, is_new=True)
+
+# Get summary
+summary = engine.get_control_summary(results)
+print(f"Status: {summary['status']}")
+print(f"Pass Rate: {summary['pass_rate']}")
+print(f"Failures: {summary['failures']}")
+
+TESTING INTEGRATION
+===================
+
+Controls can be tested independently:
+  passed, msg, limit, order_val = control.validate(order, context)
+
+Or through the pipeline:
+  passed, results = engine.pipeline.execute_all(order, context)
+
+Or through the engine:
+  passed, results = engine.validate_order(order)
+
+PERFORMANCE CONSIDERATIONS
+===========================
+
+- Each control execution is timed independently
+- Total pipeline time is sum of all control times
+- Pipeline can execute controls in order specified
+- Stop-on-fail reduces pipeline execution time for rejections
+- Context dict is passed to all controls (zero-copy reference)
+
+NEXT PHASE (Phase 4)
+====================
+
+- Implement structured logging system
+- Create rejection message formatter
+- Add control execution logging
+- Setup log file rotation
+- Integrate with control execution pipeline
+
+FILES MODIFIED/CREATED
+======================
+
+Created:
+- gce/order_state_machine.py (state transition validation)
+- gce/position_updater.py (position update from orders)
+- gce/reconciler.py (position reconciliation)
+
+Modified:
+- gce/controls/base_control.py (enhanced framework)
+- gce/controls/quantity_control.py (context-based validation)
+- gce/controls/price_control.py (context-based validation)
+- gce/engine.py (added ControlRegistry, ControlExecutionPipeline, GCEEngine)
+
+BACKWARD COMPATIBILITY
+=======================
+
+Legacy GCE class is preserved at end of engine.py for:
+- Existing code that depends on old API
+- CSV-based caching
+- File-based logging
+- Original control registration
+
+New code should use:
+- GCEEngine (modern control framework)
+- ControlRegistry (dynamic control management)
+- ControlExecutionPipeline (advanced execution features)

@@ -1,0 +1,3 @@
+﻿order id,DateTime,status,Product,Application,Flow,Trader,Desk,Account,Client,symbol,exchange,underlying,Algo Strategy,Currency,Side,Order Type,Quantity,Price,Tif,Filled,Open
+Test-20260813_001,20260813_141310.123456,Live,Equity,,DMA,Waleed,Equity_apac,APAC_EQTY_CASH,TestClient,0700.HK,XHKG,700,,HKD,B,LMT,100,440,DAY,0,100
+Test-20260813_002,20260813_141315.123456,Fill,Equity,,DMA,Waleed,Equity_apac,APAC_EQTY_CASH,TestClient,0700.HK,XHKG,700,,HKD,S,MKT,10,,DAY,4,6
