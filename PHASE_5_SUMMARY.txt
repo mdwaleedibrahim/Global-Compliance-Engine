@@ -219,7 +219,6 @@ NEXT STEPS / ENHANCEMENTS
 
 Potential Future Enhancements:
   1. Additional control types (notional, sector exposure, etc.)
-  2. Real-time price feed integration (yfinance, Bloomberg)
   3. Advanced reconciliation (multi-currency, derivatives)
   4. API layer for external system integration
   5. Database persistence (PostgreSQL, MongoDB)

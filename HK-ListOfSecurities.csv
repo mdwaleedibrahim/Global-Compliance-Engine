@@ -1,8 +1,4 @@
-﻿RIC,Stock Code,Name of Securities,Category,Sub-Category,Board Lot,ISIN,Expiry Date,Subject to Stamp Duty,Shortsell Eligible,CAS Eligible,VCM Eligible,Admitted to CCASS,Debt Securities Board Lot (Nominal),Debt Securities Investor Type,POS Eligible,"Spread Table
-1 = Part A
-3 = Part B
-5 = Part D
-4 & 6 = Part E",Trading Currency,RMB Counter
+﻿RIC,Stock Code,Name of Securities,Category,Sub-Category,Board Lot,ISIN,Expiry Date,Subject to Stamp Duty,Shortsell Eligible,CAS Eligible,VCM Eligible,Admitted to CCASS,Debt Securities Board Lot (Nominal),Debt Securities Investor Type,POS Eligible,Spread Table,Trading Currency,RMB Counter
 00001.HK,00001,CKH HOLDINGS,Equity,Equity Securities (Main Board),500,KYG217651051,,Y,Y,Y,Y,Y,,,Y,1,HKD,
 00002.HK,00002,CLP HOLDINGS,Equity,Equity Securities (Main Board),500,HK0002007356,,Y,Y,Y,Y,Y,,,Y,1,HKD,
 00003.HK,00003,HK & CHINA GAS,Equity,Equity Securities (Main Board),"1,000",HK0003000038,,Y,Y,Y,Y,Y,,,Y,1,HKD,

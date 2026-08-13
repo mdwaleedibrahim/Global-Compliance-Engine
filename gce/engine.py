@@ -264,10 +264,11 @@ class GCE:
             self.instruments = InstrumentCache()
         
         try:
-            self.prices = PriceCache(price_csv)
-            self.logger.info(f"Loaded {self.prices.count()} prices")
-        except FileNotFoundError as e:
-            self.logger.error(f"Failed to load prices: {e}")
+            symbols = list(self.instruments.instruments.keys()) if self.instruments.count() > 0 else None
+            self.prices = PriceCache(csv_path=price_csv, fetch_yfinance=True, symbols=symbols, auto_save=True)
+            self.logger.info(f"Loaded/fetched {self.prices.count()} prices in cache")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize price cache: {e}")
             self.prices = PriceCache()
         
         try:
