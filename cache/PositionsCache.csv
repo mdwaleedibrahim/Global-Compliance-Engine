@@ -1,0 +1,2 @@
+symbol,Trader,Account,Client,Desk,bvol,bval,bval_usd,bfill,bfillval,bfillval_usd,bopen,bopenval,bopenval_usd,Bexposure,svol,sval,sval_usd,sfill,sfillval,sfillval_usd,sopen,sopenval,sopenval_usd,Sexposure,xr,Currency,Timestamp
+0700.HK,Waleed,APAC_EQTY_CASH,Client_B,Equity_apac,50,22000.0,22000.0,0,0.0,0.0,50,22000.0,22000.0,0.0,0,0.0,0.0,0,0.0,0.0,0,0.0,0.0,0.0,1.0,HKD,2026-08-14T00:13:49.157728

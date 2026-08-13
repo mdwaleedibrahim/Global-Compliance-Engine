@@ -11,6 +11,7 @@ class OrderStatus(Enum):
     """Order status enumeration"""
     LIVE = "Live"
     FILL = "Fill"
+    PARTIAL_FILL = "Partial Fill"
     REJECTED = "Rejected"
     CANCELLED = "Cancelled"
     CLOSED = "Closed"
@@ -119,6 +120,11 @@ class OrderCache:
     def add_order(self, order: Order) -> None:
         """Add or update an order"""
         self.orders[order.order_id] = order
+        
+    def create_order(self, order: Order) -> bool:
+        """Create order in cache (alias for add_order returning success bool)."""
+        self.add_order(order)
+        return True
     
     def get_order(self, order_id: str) -> Optional[Order]:
         """Get order by ID"""
@@ -160,8 +166,16 @@ class OrderCache:
             order.open_qty = order.quantity - filled
         if rejection_reason:
             order.rejection_reason = rejection_reason
-        
         return order
+
+    def update_filled_quantity(self, order_id: str, filled: int) -> bool:
+        """Update filled quantity of an order."""
+        order = self.orders.get(order_id)
+        if not order:
+            return False
+        status = OrderStatus.FILL if filled >= order.quantity else OrderStatus.PARTIAL_FILL
+        res = self.update_order_status(order_id, status=status, filled=filled)
+        return res is not None
     
     def save_to_csv(self, csv_path: str) -> int:
         """

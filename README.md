@@ -544,7 +544,7 @@ gce.register_control("MaxNotionalValue", MaxNotionalValue(limit=1000000))
 - [ ] Database backend (replace CSV persistence)
 - [ ] Risk analytics and reporting
 - [x] Performance optimization and parallel control execution
-- [ ] Unit and integration tests
+- [x] Unit and integration tests
 - [ ] API server for order submission
 
 ## Installation

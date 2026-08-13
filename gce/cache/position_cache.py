@@ -148,12 +148,19 @@ class PositionCache:
         
         return count
     
-    def add_position(self, position: Position) -> None:
+    def add_position(self, symbol_or_position: Any, position: Optional[Position] = None) -> None:
         """Add or update a position"""
-        self.positions[position.symbol] = position
-    
-    def get_position(self, symbol: str) -> Optional[Position]:
-        """Get position by symbol"""
+        if position is not None:
+            self.positions[symbol_or_position] = position
+        elif hasattr(symbol_or_position, 'symbol'):
+            self.positions[symbol_or_position.symbol] = symbol_or_position
+
+    def get_position(self, symbol: str, trader: Optional[str] = None) -> Optional[Position]:
+        """Get position by symbol and optional trader filter"""
+        if trader:
+            for p in self.positions.values():
+                if p.symbol == symbol and getattr(p, 'trader', None) == trader:
+                    return p
         return self.positions.get(symbol)
     
     def get_or_create_position(self, symbol: str, ric: str = "", trader: str = "", 
