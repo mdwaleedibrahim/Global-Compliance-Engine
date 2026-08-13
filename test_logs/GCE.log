@@ -1,0 +1,11 @@
+2026-08-13 23:38:55,326 [GCE] [INFO] Loaded 0 instruments
+2026-08-13 23:38:55,360 [GCE] [ERROR] Failed to load prices: CSV file not found: PriceCache.csv
+2026-08-13 23:38:55,360 [GCE] [ERROR] Failed to load orders: CSV file not found: OrderCache.csv
+2026-08-13 23:38:55,361 [GCE] [ERROR] Failed to load positions: CSV file not found: PositionsCache.csv
+2026-08-13 23:38:55,361 [GCE] [INFO] LMT_CHECK_START
+2026-08-13 23:38:55,361 [GCE] [INFO] LMT_CHECK_NEW
+2026-08-13 23:38:55,361 [GCE] [INFO] [PASS] QtyControl: Control passed | LMT=1000, ORD=500
+2026-08-13 23:38:55,361 [GCE] [WARNING] [FAIL] PriceControl: Price Exceeds Limit | LMT=100.0, ORD=200.0
+2026-08-13 23:38:55,361 [GCE] [INFO] 2 controls validated, 1 passed, 1 failed
+2026-08-13 23:38:55,362 [GCE] [INFO] PriceControl: Price Exceeds Limit (LMT=100.0, ORD=200.0)
+2026-08-13 23:38:55,363 [GCE] [INFO] LMT_CHECK_OVER in 0.02ms

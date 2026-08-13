@@ -7,6 +7,8 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from logging.handlers import RotatingFileHandler
 import time
+import queue
+import threading
 
 
 class GCEFormatter(logging.Formatter):
@@ -84,11 +86,12 @@ class RejectionFormatter:
 
 
 class GCELogger:
-    """Structured logger for GCE with comprehensive logging capabilities."""
+    """Structured logger for GCE with parallel off-critical-path async logging."""
     
     def __init__(self, name: str = "GCE", log_dir: str = "logs", 
                  console: bool = True, file: bool = True,
-                 max_bytes: int = 10_485_760, backup_count: int = 5):
+                 max_bytes: int = 10_485_760, backup_count: int = 5,
+                 async_logging: bool = True):
         """
         Initialize GCE Logger.
         
@@ -99,6 +102,7 @@ class GCELogger:
             file: Enable file logging
             max_bytes: Max file size before rotation (default 10MB)
             backup_count: Number of backup files to keep
+            async_logging: Enable parallel background thread logging off critical path
         """
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.DEBUG)
@@ -107,6 +111,7 @@ class GCELogger:
         self.rejection_formatter = RejectionFormatter()
         self.rejections: List[str] = []
         self.start_time: Optional[datetime] = None
+        self.async_logging = async_logging
         
         formatter = GCEFormatter(GCEFormatter.LOG_FORMAT)
         
@@ -131,20 +136,72 @@ class GCELogger:
             file_handler.setLevel(logging.DEBUG)
             file_handler.setFormatter(formatter)
             self.logger.addHandler(file_handler)
+            
+        # Parallel queue and background worker thread
+        if self.async_logging:
+            self.log_queue: queue.Queue = queue.Queue()
+            self._stop_event = threading.Event()
+            self.worker_thread = threading.Thread(
+                target=self._log_worker,
+                name="GCELoggerWorker",
+                daemon=True
+            )
+            self.worker_thread.start()
+
+    def _log_worker(self):
+        """Background worker thread to format and write logs off critical path."""
+        while not self._stop_event.is_set() or not self.log_queue.empty():
+            try:
+                item = self.log_queue.get(timeout=0.1)
+            except queue.Empty:
+                continue
+            
+            if item is None:
+                self.log_queue.task_done()
+                break
+                
+            level, msg = item
+            try:
+                if level == "INFO":
+                    self.logger.info(msg)
+                elif level == "WARNING":
+                    self.logger.warning(msg)
+                elif level == "ERROR":
+                    self.logger.error(msg)
+                elif level == "DEBUG":
+                    self.logger.debug(msg)
+            except Exception as e:
+                sys.stderr.write(f"Logger worker error: {e}\n")
+            finally:
+                self.log_queue.task_done()
+
+    def _enqueue_log(self, level: str, msg: str):
+        """Enqueue log message for parallel background processing."""
+        if self.async_logging:
+            self.log_queue.put((level, msg))
+        else:
+            if level == "INFO":
+                self.logger.info(msg)
+            elif level == "WARNING":
+                self.logger.warning(msg)
+            elif level == "ERROR":
+                self.logger.error(msg)
+            elif level == "DEBUG":
+                self.logger.debug(msg)
     
     def lmt_check_start(self):
         """Log limit check start."""
         self.start_time = datetime.now()
         self.rejections = []
-        self.logger.info("LMT_CHECK_START")
+        self._enqueue_log("INFO", "LMT_CHECK_START")
     
     def lmt_check_new(self):
         """Log new order limit check."""
-        self.logger.info("LMT_CHECK_NEW")
+        self._enqueue_log("INFO", "LMT_CHECK_NEW")
     
     def lmt_check_amend(self):
         """Log amend order limit check."""
-        self.logger.info("LMT_CHECK_AMEND")
+        self._enqueue_log("INFO", "LMT_CHECK_AMEND")
     
     def control_passed(self, control_name: str, limit_value: Any, 
                       order_value: Any):
@@ -153,7 +210,7 @@ class GCELogger:
             control_name, True, limit_value, order_value,
             "Control passed"
         )
-        self.logger.info(msg)
+        self._enqueue_log("INFO", msg)
     
     def control_failed(self, control_name: str, limit_value: Any, 
                       order_value: Any, reason: str):
@@ -161,7 +218,7 @@ class GCELogger:
         msg = self.rejection_formatter.format_control_result(
             control_name, False, limit_value, order_value, reason
         )
-        self.logger.warning(msg)
+        self._enqueue_log("WARNING", msg)
         
         # Track rejection for summary
         rejection = self.rejection_formatter.format_rejection(
@@ -171,33 +228,33 @@ class GCELogger:
     
     def lmt_check_summary(self, total: int, passed: int, failed: int):
         """Log limit check summary."""
-        self.logger.info(f"{total} controls validated, {passed} passed, {failed} failed")
+        self._enqueue_log("INFO", f"{total} controls validated, {passed} passed, {failed} failed")
     
     def lmt_check_over(self, elapsed_time: float):
         """Log limit check completion with elapsed time."""
-        self.logger.info(f"LMT_CHECK_OVER in {elapsed_time*1000:.2f}ms")
+        self._enqueue_log("INFO", f"LMT_CHECK_OVER in {elapsed_time*1000:.2f}ms")
     
     def log_rejections(self):
         """Log all rejections as comma-separated summary."""
         if self.rejections:
             summary = self.rejection_formatter.format_rejection_summary(self.rejections)
-            self.logger.info(summary)
+            self._enqueue_log("INFO", summary)
     
     def info(self, msg: str):
         """Log info message."""
-        self.logger.info(msg)
+        self._enqueue_log("INFO", msg)
     
     def debug(self, msg: str):
         """Log debug message."""
-        self.logger.debug(msg)
+        self._enqueue_log("DEBUG", msg)
     
     def warning(self, msg: str):
         """Log warning message."""
-        self.logger.warning(msg)
+        self._enqueue_log("WARNING", msg)
     
     def error(self, msg: str):
         """Log error message."""
-        self.logger.error(msg)
+        self._enqueue_log("ERROR", msg)
     
     def get_rejections(self) -> List[str]:
         """Get list of all rejections from current session."""
@@ -206,3 +263,17 @@ class GCELogger:
     def clear_rejections(self):
         """Clear rejection tracking."""
         self.rejections = []
+
+    def flush(self):
+        """Block until all queued log messages are processed."""
+        if self.async_logging:
+            self.log_queue.join()
+
+    def shutdown(self):
+        """Flush remaining logs and shut down the parallel worker thread."""
+        if self.async_logging and hasattr(self, 'worker_thread') and self.worker_thread.is_alive():
+            self.flush()
+            self._stop_event.set()
+            self.log_queue.put(None)
+            self.worker_thread.join(timeout=2.0)
+

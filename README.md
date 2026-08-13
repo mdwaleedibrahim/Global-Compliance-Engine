@@ -570,3 +570,13 @@ python example_usage.py
 ## License
 
 Internal Use Only - Trading Systems
+
+## Quick Start
+# Run all integration tests
+python -m pytest tests/integration_tests.py -v
+
+# Run example demonstrations
+python example_usage.py
+
+# Generate test orders
+python -c "from utils.order_generator import MockOrderGenerator; gen = MockOrderGenerator(); orders = gen.generate_orders(1000); print(f'Generated {len(orders)} orders')"

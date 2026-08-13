@@ -72,8 +72,8 @@ class PositionUpdater:
                 
                 # Calculate USD values
                 xr = position.xr or 1.0
-                position.buy_value_usd = position.buy_value / xr
-                position.buy_open_value_usd = position.buy_open_value / xr
+                position.buy_value_usd = position.buy_value * xr
+                position.buy_open_value_usd = position.buy_open_value * xr
                 
                 msg = f"BUY: Added {qty} @ {price}, net_qty={position.net_quantity()}"
                 
@@ -86,8 +86,8 @@ class PositionUpdater:
                 
                 # Calculate USD values
                 xr = position.xr or 1.0
-                position.sell_value_usd = position.sell_value / xr
-                position.sell_open_value_usd = position.sell_open_value / xr
+                position.sell_value_usd = position.sell_value * xr
+                position.sell_open_value_usd = position.sell_open_value * xr
                 
                 msg = f"SELL: Added {qty} @ {price}, net_qty={position.net_quantity()}"
             else:

@@ -299,7 +299,10 @@ class GCE:
     
     def validate_order(self, order: Order, is_new: bool = True) -> Tuple[bool, List[str]]:
         """
-        Validate order against all registered controls
+        Validate order against all registered controls.
+        
+        Limit checking is performed synchronously on the critical path.
+        Once limit checking completes, logging events are dispatched to the parallel logger path.
         
         Args:
             order: Order to validate
@@ -311,17 +314,11 @@ class GCE:
         start_time = time.time()
         self.rejection_messages = []
         
-        self.logger.lmt_check_start()
-        
-        if is_new:
-            self.logger.lmt_check_new()
-        else:
-            self.logger.lmt_check_amend()
-        
+        # --- CRITICAL PATH: Limit checking execution ---
+        control_results = []
         passed_count = 0
         failed_count = 0
         
-        # Run all controls
         for control_name, control_func in self.controls.items():
             try:
                 result = control_func(order, self.instruments, self.prices, self.positions)
@@ -329,36 +326,25 @@ class GCE:
                 if isinstance(result, tuple) and len(result) == 4:
                     passed, msg, limit, value = result
                 else:
-                    # Backward compatibility
                     passed, msg = result
                     limit = value = None
                 
+                control_results.append((control_name, passed, msg, limit, value, None))
                 if passed:
-                    if limit is not None and value is not None:
-                        self.logger.control_passed(control_name, limit, value)
                     passed_count += 1
                 else:
-                    self.logger.control_failed(control_name, msg)
                     self.rejection_messages.append(msg)
                     failed_count += 1
             except Exception as e:
-                self.logger.error(f"Error in control {control_name}: {e}")
+                err_msg = f"Control error: {e}"
+                control_results.append((control_name, False, err_msg, None, None, e))
                 failed_count += 1
-                self.rejection_messages.append(f"Control error: {e}")
-        
-        total_controls = len(self.controls)
-        self.logger.lmt_check_summary(total_controls, passed_count, failed_count)
-        
-        if self.rejection_messages:
-            rejection_msg = ", ".join(self.rejection_messages)
-            self.logger.info(rejection_msg)
+                self.rejection_messages.append(err_msg)
         
         elapsed_time = time.time() - start_time
-        self.logger.lmt_check_over(elapsed_time)
+        order_passed = (failed_count == 0)
         
-        order_passed = failed_count == 0
-        
-        # Update order status
+        # Update order state & cache on critical path
         if order_passed:
             order.status = OrderStatus.LIVE
             self.orders.add_order(order)
@@ -366,6 +352,27 @@ class GCE:
             order.status = OrderStatus.REJECTED
             order.rejection_reason = "; ".join(self.rejection_messages)
             self.orders.add_order(order)
+        
+        # --- PARALLEL LOGGING PATH: Post-checking async log dispatch ---
+        self.logger.lmt_check_start()
+        if is_new:
+            self.logger.lmt_check_new()
+        else:
+            self.logger.lmt_check_amend()
+            
+        for control_name, passed, msg, limit, value, err in control_results:
+            if err is not None:
+                self.logger.error(f"Error in control {control_name}: {err}")
+            elif passed:
+                if limit is not None and value is not None:
+                    self.logger.control_passed(control_name, limit, value)
+            else:
+                self.logger.control_failed(control_name, limit, value, msg)
+        
+        total_controls = len(self.controls)
+        self.logger.lmt_check_summary(total_controls, passed_count, failed_count)
+        self.logger.log_rejections()
+        self.logger.lmt_check_over(elapsed_time)
         
         return order_passed, self.rejection_messages
     
