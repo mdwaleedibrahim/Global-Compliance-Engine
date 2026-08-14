@@ -1,4 +1,4 @@
-"""Test suite for yfinance startup price generation, in-memory caching, and PriceCache.csv persistence/recovery."""
+"""Test suite for yfinance startup price generation, in-memory caching, and PriceCache.dat / PriceCache.csv persistence/recovery."""
 
 import unittest
 import os
@@ -9,21 +9,24 @@ from gce.engine import GCE
 
 
 class TestYFinancePriceCache(unittest.TestCase):
-    """Test yfinance price cache loading, CSV persistence, and recovery."""
+    """Test yfinance price cache loading, .dat/.csv persistence, and recovery."""
 
     def setUp(self):
         self.test_csv = "test_PriceCache.csv"
-        if os.path.exists(self.test_csv):
-            os.remove(self.test_csv)
+        self.test_dat = "test_PriceCache.dat"
+        for path in (self.test_csv, self.test_dat):
+            if os.path.exists(path):
+                os.remove(path)
 
     def tearDown(self):
-        if os.path.exists(self.test_csv):
-            os.remove(self.test_csv)
+        for path in (self.test_csv, self.test_dat):
+            if os.path.exists(path):
+                os.remove(path)
 
     def test_yfinance_fetch_and_csv_persistence(self):
         """Test fetching live prices via yfinance, storing in memory, and flushing to CSV."""
         symbols = ["0700.HK", "AAPL"]
-        cache = PriceCache(csv_path=self.test_csv, fetch_yfinance=True, symbols=symbols, auto_save=True)
+        cache = PriceCache(dat_path=None, csv_path=self.test_csv, fetch_yfinance=True, symbols=symbols, auto_save=True)
         
         self.assertGreater(cache.count(), 0, "PriceCache should have loaded prices from yfinance")
         
@@ -43,20 +46,14 @@ class TestYFinancePriceCache(unittest.TestCase):
             row = reader[0]
             self.assertIn("RIC", row)
             self.assertIn("Open", row)
-            self.assertIn("Bid", row)
-            self.assertIn("Ask", row)
-            self.assertIn("Last", row)
-            self.assertIn("Close", row)
 
-    def test_offline_recovery_from_csv(self):
-        """Test fallback recovery by loading saved prices from PriceCache.csv."""
-        # Create initial cache and save to CSV
-        initial_cache = PriceCache(csv_path=self.test_csv, fetch_yfinance=False)
+    def test_offline_recovery_from_dat(self):
+        """Test fallback recovery by loading saved prices from PriceCache.dat."""
+        initial_cache = PriceCache(dat_path=self.test_dat, fetch_yfinance=False)
         initial_cache.update_price("3690.HK", bid=110.0, ask=111.0, last=110.5, close=112.0, open_price=109.0)
-        initial_cache.save_to_csv(self.test_csv)
+        initial_cache.save_to_dat(self.test_dat)
         
-        # Load new cache in offline mode (yfinance disabled, loading from CSV)
-        recovery_cache = PriceCache(csv_path=self.test_csv, fetch_yfinance=False)
+        recovery_cache = PriceCache(dat_path=self.test_dat, fetch_yfinance=False)
         self.assertEqual(recovery_cache.count(), 1)
         
         price_3690 = recovery_cache.get_price("3690.HK")

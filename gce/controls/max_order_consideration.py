@@ -118,7 +118,14 @@ class MaxOrderConsideration(BaseControl):
         if order_curr == self.limit_currency:
             return 1.0
         
-        # Check explicit fx_rates in context (e.g. {'HKD/USD': 0.13, 'HKDUSD': 0.13})
+        # 1. Query PXFeeder if provided in context
+        pxfeeder = context.get('pxfeeder')
+        if pxfeeder and hasattr(pxfeeder, 'get_fx_rate'):
+            rate = pxfeeder.get_fx_rate(order_curr, self.limit_currency)
+            if rate > 0:
+                return rate
+
+        # 2. Check explicit fx_rates dict in context (e.g. {'HKD/USD': 0.13, 'HKDUSD': 0.13})
         fx_rates = context.get('fx_rates', {})
         pair_slash = f"{order_curr}/{self.limit_currency}"
         pair_direct = f"{order_curr}{self.limit_currency}"
@@ -126,18 +133,6 @@ class MaxOrderConsideration(BaseControl):
             return float(fx_rates[pair_slash])
         if pair_direct in fx_rates:
             return float(fx_rates[pair_direct])
-        
-        # Attempt to fetch via yfinance
-        try:
-            import yfinance as yf
-            ticker_symbol = f"{order_curr}=X"
-            ticker = yf.Ticker(ticker_symbol)
-            info = ticker.info or {}
-            rate = float(info.get('regularMarketPrice') or info.get('currentPrice') or info.get('previousClose') or 0.0)
-            if rate > 0:
-                return rate
-        except Exception:
-            pass
         
         return 1.0
     

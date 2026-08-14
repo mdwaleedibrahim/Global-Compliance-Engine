@@ -7,6 +7,7 @@ from gce.controls.base_control import BaseControl, ControlExecution, ControlResu
 from gce.cache.order_cache import Order, OrderStatus
 from gce.cache import InstrumentCache, PriceCache, OrderCache, PositionCache
 from gce.logger import GCELogger
+from gce.pxfeeder import PXFeeder
 
 
 class ControlRegistry:
@@ -290,11 +291,13 @@ class GCE:
             self.instruments = InstrumentCache()
         
         try:
-            symbols = list(self.instruments.instruments.keys()) if self.instruments.count() > 0 else None
-            self.prices = PriceCache(csv_path=price_csv, fetch_yfinance=True, symbols=symbols, auto_save=True)
-            self.logger.info(f"Loaded/fetched {self.prices.count()} prices in cache")
+            symbols = list(self.instruments.instruments.keys())[:10] if self.instruments.count() > 0 else None
+            self.pxfeeder = PXFeeder(dat_path="PriceCache.dat", symbols=symbols, fetch_on_start=True)
+            self.prices = PriceCache(dat_path="PriceCache.dat", csv_path=price_csv, fetch_yfinance=False, symbols=symbols, auto_save=True)
+            self.logger.info(f"Loaded/fetched {self.prices.count()} prices in cache via PXFeeder")
         except Exception as e:
-            self.logger.error(f"Failed to initialize price cache: {e}")
+            self.logger.error(f"Failed to initialize price cache / PXFeeder: {e}")
+            self.pxfeeder = PXFeeder(fetch_on_start=False, auto_start_bg=False)
             self.prices = PriceCache()
         
         try:
@@ -321,7 +324,19 @@ class GCE:
     def _run_single_control(self, control_name: str, control_func: callable, order: Order):
         """Helper to run single control safely."""
         try:
-            result = control_func(order, self.instruments, self.prices, self.positions)
+            # Inject pxfeeder into context if control expects it
+            context = {
+                'instruments': self.instruments,
+                'prices': self.prices,
+                'positions': self.positions,
+                'pxfeeder': self.pxfeeder,
+                'fx_rates': self.pxfeeder.get_all_fx_rates()
+            }
+            if hasattr(control_func, 'validate'):
+                result = control_func.validate(order, context)
+            else:
+                result = control_func(order, self.instruments, self.prices, self.positions)
+
             if isinstance(result, tuple) and len(result) == 4:
                 passed, msg, limit, value = result
             else:
@@ -432,7 +447,9 @@ class GCE:
         )
 
     def shutdown(self):
-        """Shutdown thread pool executor and logger."""
+        """Shutdown thread pool executor, pxfeeder background thread, and logger."""
+        if hasattr(self, 'pxfeeder') and self.pxfeeder:
+            self.pxfeeder.stop()
         self.executor.shutdown(wait=False)
         self.logger.shutdown()
 

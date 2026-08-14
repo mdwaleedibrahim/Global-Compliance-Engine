@@ -7,10 +7,11 @@ __version__ = "0.1.0"
 __author__ = "Trading Systems"
 
 from gce.engine import GCE, GCEEngine
+from gce.pxfeeder import PXFeeder
 from gce.distributed import ValidatorNode, DistributedValidationRouter, LoadBalancingStrategy
 from gce.analytics import RiskAnalytics, RiskReporter, RiskReport
 
 __all__ = [
-    "GCE", "GCEEngine", "ValidatorNode", "DistributedValidationRouter", 
+    "GCE", "GCEEngine", "PXFeeder", "ValidatorNode", "DistributedValidationRouter", 
     "LoadBalancingStrategy", "RiskAnalytics", "RiskReporter", "RiskReport"
 ]

@@ -1,6 +1,7 @@
-"""PriceCache - Manage price data for instruments"""
+"""PriceCache - Manage price data for instruments with in-memory caching and .dat file recovery."""
 
 import csv
+import pickle
 from pathlib import Path
 from typing import Dict, Optional, List, Any
 from datetime import datetime
@@ -85,47 +86,58 @@ class PriceData:
 
 
 class PriceCache:
-    """Cache for instrument price data with yfinance integration and CSV persistence."""
+    """Cache for instrument price data with yfinance integration and binary .dat file persistence."""
     
     DEFAULT_SYMBOLS = ["0700.HK", "9988.HK", "3690.HK", "AAPL", "MSFT"]
 
-    def __init__(self, csv_path: Optional[str] = None, fetch_yfinance: bool = False,
-                 symbols: Optional[List[str]] = None, auto_save: bool = True):
+    def __init__(self, dat_path: Optional[str] = "PriceCache.dat", csv_path: Optional[str] = None, 
+                 fetch_yfinance: bool = False, symbols: Optional[List[str]] = None, auto_save: bool = True):
         """
         Initialize PriceCache.
         
         Args:
-            csv_path: Optional path to PriceCache.csv
+            dat_path: Path to binary .dat file for snapshot persistence and recovery
+            csv_path: Optional path to PriceCache.csv for legacy CSV support
             fetch_yfinance: Whether to fetch live market prices via yfinance at start
             symbols: Symbols to fetch if fetch_yfinance is True
-            auto_save: Automatically flush/save cache to CSV after fetching
+            auto_save: Automatically save cache to .dat file after fetching
         """
         self.prices: Dict[str, PriceData] = {}
-        self.csv_path = csv_path or "PriceCache.csv"
+        self.dat_path = dat_path
+        self.csv_path = csv_path
 
         loaded = False
         if fetch_yfinance:
             target_symbols = symbols or self.DEFAULT_SYMBOLS
             try:
-                count = self.fetch_yfinance_prices(target_symbols, save_path=self.csv_path if auto_save else None)
+                save_target = self.csv_path if (self.csv_path and not self.dat_path) else (self.dat_path or "PriceCache.dat")
+                count = self.fetch_yfinance_prices(target_symbols, save_path=save_target if auto_save else None)
                 if count > 0:
                     loaded = True
             except Exception as e:
-                print(f"Warning: yfinance fetch failed at startup: {e}. Falling back to CSV recovery.")
+                print(f"Warning: yfinance fetch failed at startup: {e}. Falling back to .dat recovery.")
 
-        if not loaded and csv_path and Path(csv_path).exists():
-            try:
-                self.load_from_csv(csv_path)
-            except Exception as e:
-                print(f"Warning: Failed to load price cache from CSV {csv_path}: {e}")
+        if not loaded:
+            if self.dat_path and Path(self.dat_path).exists():
+                try:
+                    self.load_from_dat(self.dat_path)
+                    loaded = True
+                except Exception as e:
+                    print(f"Warning: Failed to load price cache from .dat {self.dat_path}: {e}")
+            
+            if not loaded and self.csv_path and Path(self.csv_path).exists():
+                try:
+                    self.load_from_csv(self.csv_path)
+                except Exception as e:
+                    print(f"Warning: Failed to load price cache from CSV {self.csv_path}: {e}")
 
-    def fetch_yfinance_prices(self, symbols: List[str], save_path: Optional[str] = "PriceCache.csv") -> int:
+    def fetch_yfinance_prices(self, symbols: List[str], save_path: Optional[str] = "PriceCache.dat") -> int:
         """
         Fetch prices from yfinance at startup and update in-memory cache.
         
         Args:
             symbols: List of ticker symbols / RICs to fetch
-            save_path: Optional CSV path to flush and persist prices
+            save_path: Optional path to flush and persist prices (defaults to .dat)
             
         Returns:
             Number of prices successfully fetched and cached
@@ -144,7 +156,6 @@ class PriceCache:
                 ticker = yf.Ticker(symbol)
                 info = ticker.info or {}
                 
-                # Extract prices from yfinance info dictionary
                 last = float(info.get('currentPrice') or info.get('regularMarketPrice') or info.get('previousClose') or 0.0)
                 bid = float(info.get('bid') or info.get('regularMarketBid') or last)
                 ask = float(info.get('ask') or info.get('regularMarketAsk') or last)
@@ -174,19 +185,80 @@ class PriceCache:
                 continue
 
         if count > 0 and save_path:
-            self.save_to_csv(save_path)
+            if save_path.endswith(".csv"):
+                self.save_to_csv(save_path)
+            else:
+                self.save_to_dat(save_path)
 
+        return count
+
+    def save_to_dat(self, dat_path: Optional[str] = None) -> int:
+        """
+        Save all prices to binary .dat file for persistence and recovery.
+        
+        Args:
+            dat_path: Path to output .dat file
+            
+        Returns:
+            Number of prices saved
+        """
+        target_path = dat_path or self.dat_path or "PriceCache.dat"
+        path = Path(target_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        
+        serializable_data = {}
+        for ric, p in self.prices.items():
+            serializable_data[ric] = {
+                'ric': p.ric,
+                'bid': p.bid,
+                'ask': p.ask,
+                'last': p.last,
+                'close': p.close,
+                'open_price': p.open_price,
+                'timestamp': p.timestamp
+            }
+            
+        with open(path, 'wb') as f:
+            pickle.dump(serializable_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+            
+        return len(self.prices)
+
+    def load_from_dat(self, dat_path: str) -> int:
+        """
+        Load prices from binary .dat file
+        
+        Args:
+            dat_path: Path to .dat file
+            
+        Returns:
+            Number of prices loaded
+        """
+        path = Path(dat_path)
+        if not path.exists():
+            raise FileNotFoundError(f".dat file not found: {dat_path}")
+            
+        with open(path, 'rb') as f:
+            data = pickle.load(f)
+            
+        count = 0
+        for ric, item in data.items():
+            price_data = PriceData(
+                ric=item['ric'],
+                bid=item['bid'],
+                ask=item['ask'],
+                last=item['last'],
+                close=item['close'],
+                open_price=item.get('open_price', 0.0),
+                timestamp=item.get('timestamp')
+            )
+            self.prices[ric] = price_data
+            count += 1
+            
         return count
 
     def load_from_csv(self, csv_path: str) -> int:
         """
-        Load prices from CSV file (PriceCache.csv)
-        
-        Args:
-            csv_path: Path to CSV file
-            
-        Returns:
-            Number of prices loaded
+        Load prices from legacy CSV file (PriceCache.csv)
         """
         path = Path(csv_path)
         if not path.exists():
@@ -225,17 +297,6 @@ class PriceCache:
                     close: float, open_price: float = 0.0) -> PriceData:
         """
         Update or create price data
-        
-        Args:
-            ric: RIC code
-            bid: Bid price
-            ask: Ask price
-            last: Last traded price
-            close: Close price
-            open_price: Open price
-            
-        Returns:
-            Updated PriceData object
         """
         price_data = PriceData(
             ric=ric,
@@ -251,12 +312,6 @@ class PriceCache:
     def save_to_csv(self, csv_path: str) -> int:
         """
         Save all prices to CSV file for persistence and recovery.
-        
-        Args:
-            csv_path: Path to output CSV file
-            
-        Returns:
-            Number of prices saved
         """
         path = Path(csv_path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -282,4 +337,3 @@ class PriceCache:
     def count(self) -> int:
         """Total number of prices"""
         return len(self.prices)
-
