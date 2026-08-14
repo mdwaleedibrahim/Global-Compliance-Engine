@@ -1,14 +1,19 @@
 # GCE - Global Compliance Engine
 
-A high-performance pre-trade order risk management system for Hong Kong & global securities trading. Provides real-time order validation using configurable limit controls with parallel execution, nanosecond-precision logging, automated multi-currency FX data feeding, static instrument management (`DataMgr`), and comprehensive position reconciliation.
+A high-performance pre-trade order risk management system for Hong Kong & global securities trading. Provides real-time order validation using configurable limit controls with parallel execution, nanosecond-precision logging, automated multi-currency FX data feeding, static instrument management, and SQLite RMS control limits (`DataMgr`).
 
 ## Features
 
 - **Pre-Trade Control Engine**: Validates orders against multiple configurable limit controls (quantity, price, max consideration, notional value) before execution.
-- **DataMgr Instrument Static Manager**: Reads static instrument CSV files from `"Instrument Static"` directory, caches in memory, persists to `.dat` file (`InstrumentStatic.dat`), and provides fast lookup utilities for order detail enrichment (lot size, trading currency, ISIN, shortsell eligibility, stamp duty).
+- **DataMgr & SQLite RMS Control Limits**: Manages instrument static data from `"Instrument Static"` CSV files and maintains a local SQLite database (`rms_limits.db`) for RMS control limits.
+  - Loads DB limits into an in-memory cache on startup.
+  - Supports on-demand limit reloading (`reload_limits_from_db()`).
+  - Supports bulk replacement of existing DB limits via CSV file (`replace_limits_from_csv()`).
+  - Enforces text length limits (max 64 characters) and numerical caps (`999,999,999,999`).
+  - Provides hierarchical wildcard matching for order limits.
 - **PXFeeder Market & FX Data Feeder**: Integrated `PXFeeder` module fetching live prices and FX rates for major **US, EU, and APAC currencies** (`USD`, `EUR`, `GBP`, `JPY`, `HKD`, `AUD`, `SGD`, `CNH`, `CAD`, `CHF`) via `yfinance`.
 - **Automated Hourly Background Refresh**: Periodic background worker thread refreshing market data every hour (3600s) without interrupting pre-trade order validation.
-- **Zero-Latency In-Memory Caching**: All prices, positions, orders, instruments, and FX rates are cached in memory for sub-millisecond control checks.
+- **Zero-Latency In-Memory Caching**: All prices, positions, orders, instruments, FX rates, and RMS limits are cached in memory for sub-millisecond control checks.
 - **Binary `.DAT` Snapshot Persistence**: Automatic dumping and fast recovery of market data snapshots to binary `.dat` storage files (`PriceCache.dat`, `InstrumentStatic.dat`).
 - **Cache Reader Utilities**: High-level inspection tools (`OrderCacheReader`, `PXFeederReader`, `PositionCacheReader`, `CacheReaderManager`) for querying engine state and generating summaries.
 - **Control Framework & Parallel Execution**: Multithreaded execution pipeline running risk controls concurrently with sub-millisecond latency.
@@ -31,7 +36,7 @@ GCE (Global Compliance Engine)
 │   │   ├── quantity_control.py (MaxOrderQuantity validation)
 │   │   ├── price_control.py (MaxOrderPrice validation)
 │   │   └── max_order_consideration.py (FX-converted consideration limit control)
-│   ├── datamgr.py (Instrument static data manager from "Instrument Static" folder & .dat persistence)
+│   ├── datamgr.py (Instrument static manager & SQLite RMS control limits manager)
 │   ├── pxfeeder.py (yfinance prices & US/EU/APAC FX feeder with hourly background refresh)
 │   ├── engine.py (GCE orchestrator with control registry & execution pipeline)
 │   ├── logger.py (Structured logging with nanosecond timestamps)
@@ -40,12 +45,14 @@ GCE (Global Compliance Engine)
 │   └── reconciler.py (Position variance detection)
 ├── Instrument Static/ (Directory containing instrument static data CSV files)
 │   └── HK-ListOfSecurities.csv
+├── rms_limits.db (SQLite database storing RMS control limit rules)
 ├── utils/
 │   ├── cache_reader.py (Utilities for reading OrderCache, PXFeeder, and PositionCache)
 │   ├── order_generator.py (Mock order generation for testing)
 │   └── price_updater.py (Price cache management utility)
 ├── tests/
 │   ├── test_datamgr.py (Unit tests for DataMgr static instrument manager)
+│   ├── test_datamgr_sqlite.py (Unit tests for DataMgr SQLite DB & RMS limits)
 │   ├── test_pxfeeder.py (Unit tests for PXFeeder & FX conversions)
 │   ├── test_cache_readers.py (Unit tests for cache readers)
 │   ├── test_max_order_consideration.py (Max order consideration unit tests)
@@ -61,26 +68,35 @@ GCE (Global Compliance Engine)
 
 ## Core Components & Usage
 
-### 1. DataMgr (Instrument Static Manager)
+### 1. DataMgr (Instrument Static & SQLite RMS Limits)
 
-`DataMgr` reads instrument static data from CSV files inside `"Instrument Static"`, caches them in memory, saves a binary snapshot to `InstrumentStatic.dat`, and enriches order details:
+`DataMgr` reads instrument static data from `"Instrument Static"` CSV files and manages RMS Control Limits in a local SQLite database (`rms_limits.db`):
 
 ```python
 from gce.datamgr import DataMgr
 
-# Initialize DataMgr reading from "Instrument Static" folder
-datamgr = DataMgr(static_dir="Instrument Static", dat_path="InstrumentStatic.dat")
+# Initialize DataMgr reading static folder and SQLite limits DB
+datamgr = DataMgr(
+    static_dir="Instrument Static",
+    dat_path="InstrumentStatic.dat",
+    db_path="rms_limits.db"
+)
 
-# Fast in-memory instrument lookups
+# 1. Replace limits in SQLite DB from a CSV file
+count = datamgr.replace_limits_from_csv("rms_limits.csv")
+print(f"Imported {count} limit rules into SQLite DB!")
+
+# 2. Reload limits from DB into memory on demand
+datamgr.reload_limits_from_db()
+
+# 3. Match order attributes against cached RMS limits
+matched_limits = datamgr.get_matching_limits(order)
+print("Max Order Size:", matched_limits['MaxOrderSize'])
+print("Max Order Value:", matched_limits['MaxOrderValue'])
+
+# 4. Instrument static lookup & order detail enrichment
 inst = datamgr.get_instrument("0700.HK")
-print("Board Lot:", datamgr.get_board_lot("0700.HK"))            # e.g., 100
-print("Trading Currency:", datamgr.get_trading_currency("0700.HK")) # e.g., HKD
-print("Shortsell Eligible:", datamgr.is_shortsell_eligible("0700.HK"))
-
-# Enrich order details with static instrument attributes
 enriched_details = datamgr.lookup_order_details(order)
-print("ISIN:", enriched_details['isin'])
-print("Board Lot Valid:", enriched_details['board_lot_valid'])
 ```
 
 ### 2. PXFeeder & FX Rate Feeder
@@ -101,7 +117,6 @@ feeder = PXFeeder(
 
 # Zero-latency in-memory FX conversion (US, EU, APAC currencies)
 hkd_usd = feeder.get_fx_rate("HKD", "USD")  # e.g., 0.128
-eur_usd = feeder.get_fx_rate("EUR", "USD")  # e.g., 1.08
 
 # Stop background refresh on shutdown
 feeder.stop()
@@ -109,7 +124,7 @@ feeder.stop()
 
 ### 3. GCE Engine & Control Validation
 
-The `GCE` engine orchestrates controls, market data, static instruments (`DataMgr`), and order validation:
+The `GCE` engine orchestrates controls, market data, static instruments, and SQLite RMS limits (`DataMgr`):
 
 ```python
 from gce import GCE
@@ -125,13 +140,8 @@ gce = GCE(
     position_csv="PositionsCache.csv"
 )
 
-# Access DataMgr from engine
-datamgr = gce.datamgr
-instrument_info = datamgr.get_instrument("0700.HK")
-
 # Register controls
 gce.register_control("MaxOrderQuantity", MaxOrderQuantity(limit=1000))
-gce.register_control("MaxConsiderationUSD", MaxOrderConsideration(limit=50000.0, limit_currency="USD"))
 
 # Validate order concurrently
 passed, rejections = gce.validate_order(order, is_new=True, parallel=True)
@@ -140,50 +150,40 @@ passed, rejections = gce.validate_order(order, is_new=True, parallel=True)
 gce.shutdown()
 ```
 
-### 4. Cache Reader Utilities
+---
 
-Inspect engine cache states from memory or `.dat`/`.csv` storage files using `utils/cache_reader.py`:
+## How to Start the App and Send Test Orders
 
+### Option 1: Run Demonstration Script
+```powershell
+$env:PYTHONPATH="."
+python example_usage.py
+```
+
+### Option 2: Programmatic Usage (Python API)
 ```python
-from utils import CacheReaderManager, OrderCacheReader, PXFeederReader, PositionCacheReader
+from gce import GCE
+from gce.cache.order_cache import Order
 
-# Unified manager reading GCE caches
-manager = CacheReaderManager(
-    order_cache=gce.orders,
-    pxfeeder=gce.pxfeeder,
-    position_cache=gce.positions,
-    price_dat="PriceCache.dat"
-)
+gce = GCE()
 
-# Get high-level system summary
-summary = manager.get_gce_state_summary()
+# Create test order
+order = Order(order_id="ORD001", symbol="0700.HK", quantity=100, price=380.0, side="B", currency="HKD")
+
+# Validate order
+passed, rejections = gce.validate_order(order)
+print("APPROVED" if passed else f"REJECTED: {rejections}")
 ```
 
 ---
 
-## Data Persistence & Recovery
+## Data Persistence & Storage Formats
 
-GCE supports multi-layer storage formats:
-
+- **rms_limits.db**: SQLite database storing pre-trade RMS control limits and rule attributes.
 - **InstrumentStatic.dat**: Binary snapshot of static instrument definitions loaded from `"Instrument Static"` CSV files.
 - **PriceCache.dat**: Binary snapshot storage (via `pickle`) for fast startup recovery of prices and FX rates.
-- **PriceCache.csv**: Legacy CSV format export/import for compatibility.
 - **OrderCache.csv**: Order lifecycle records and statuses (`Live`, `Fill`, `Rejected`, `Cancelled`).
 - **PositionsCache.csv**: Real-time position volumes, exposures, and USD values.
-
----
-
-## Performance Characteristics
-
-Benchmark results on 1,000+ orders validation:
-
-| Metric | Value |
-|--------|-------|
-| Average Order Validation Time | **0.04 ms – 0.06 ms** |
-| Validation Throughput | **15,000 – 22,000+ orders/sec** |
-| In-Memory Instrument / FX Lookup | `< 0.001 ms` |
-| Background Refresh Overhead | `0 ms` (Runs in background thread) |
-| Log Dispatch Overhead | `< 0.005 ms` |
 
 ---
 
@@ -192,14 +192,11 @@ Benchmark results on 1,000+ orders validation:
 Run all unit and integration test suites:
 
 ```bash
-# Run unit test suite including DataMgr and PXFeeder
-python -m unittest tests/test_datamgr.py tests/test_pxfeeder.py tests/test_cache_readers.py tests/test_max_order_consideration.py tests/test_yfinance_price_cache.py
+# Run complete unit test suite
+python -m unittest tests/test_datamgr.py tests/test_datamgr_sqlite.py tests/test_pxfeeder.py tests/test_cache_readers.py tests/test_max_order_consideration.py tests/test_yfinance_price_cache.py
 
 # Run comprehensive integration test suite
 python tests/integration_tests.py
-
-# Run usage demonstration script
-python example_usage.py
 ```
 
 ---

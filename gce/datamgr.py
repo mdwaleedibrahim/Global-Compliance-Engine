@@ -1,15 +1,41 @@
-"""DataMgr - Instrument Static Data Manager.
+"""DataMgr - Instrument Static & RMS Control Limits Data Manager.
 
 Reads instrument static data CSV files from the "Instrument Static" folder, maintains
 in-memory cache for fast lookups, dumps snapshot to a binary .dat file (InstrumentStatic.dat)
 for fast recovery, and provides order detail enrichment utilities for GCE controls.
+
+Also manages SQLite DB ("rms_limits.db") containing RMS control limits for pre-trade limit checks.
+Supports loading limits into memory on startup, on-demand reloads, and replacement via CSV import.
 """
 
 import csv
 import pickle
+import sqlite3
 import threading
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+MAX_NUMERICAL_LIMIT = 999_999_999_999
+MAX_TEXT_LENGTH = 64
+
+TEXT_KEY_COLUMNS = [
+    'Product', 'SecurityType', 'Application', 'Flow', 'Trader', 'Desk',
+    'Account', 'Client', 'symbol', 'exchange', 'underlying', 'AlgoStrategy',
+    'Currency', 'Side', 'OrderType', 'Tif',
+    'ExtendedKey1', 'ExtendedKey2', 'ExtendedKey3', 'ExtendedKey4', 'ExtendedKey5'
+]
+
+NUMERICAL_COLUMNS = [
+    'MaxOrderSize', 'MaxOrderPrice', 'MaxOrderValue', 'MaxOrderADV',
+    'ClosePriceTolerance', 'LastPriceTolerance', 'BBOTolerance', 'MarketDepthCheck',
+    'MaxDailyVolume', 'MaxDailyValue', 'MaxDailyNetValue', 'MaxDailyTurnover',
+    'MaxDailyExposure', 'MaxDailyOpenValue', 'MaxDailyActiveOrders',
+    'ExtendedValue1', 'ExtendedValue2', 'ExtendedValue3', 'ExtendedValue4', 'ExtendedValue5',
+    'Flags'
+]
+
+FLAG_COLUMNS = ['DuplicateOrders', 'BurstOrders', 'Restricted', 'SSRestricted', 'Enabled']
 
 
 class InstrumentStatic:
@@ -71,30 +97,251 @@ class InstrumentStatic:
         return f"InstrumentStatic(ric={self.ric}, name={self.name}, lot={self.board_lot}, ccy={self.currency})"
 
 
+class RMSLimitRule:
+    """Represents a single RMS Control Limit rule row from SQLite DB."""
+
+    def __init__(self, row_dict: Dict[str, Any]):
+        self.db_id = row_dict.get('DBId')
+        self.keys = {col: str(row_dict.get(col, '*'))[:MAX_TEXT_LENGTH] for col in TEXT_KEY_COLUMNS}
+        self.limits = {
+            col: min(float(row_dict.get(col, 0) or 0), MAX_NUMERICAL_LIMIT)
+            for col in NUMERICAL_COLUMNS
+        }
+        self.flags = {
+            'DuplicateOrders': str(row_dict.get('DuplicateOrders', '0'))[:MAX_TEXT_LENGTH],
+            'BurstOrders': str(row_dict.get('BurstOrders', '0'))[:MAX_TEXT_LENGTH],
+            'Restricted': str(row_dict.get('Restricted', 'N'))[:MAX_TEXT_LENGTH],
+            'SSRestricted': str(row_dict.get('SSRestricted', 'N'))[:MAX_TEXT_LENGTH],
+            'Enabled': str(row_dict.get('Enabled', 'Y'))[:MAX_TEXT_LENGTH],
+        }
+
+    def matches_order(self, order_attrs: Dict[str, Any]) -> Tuple[bool, int]:
+        """
+        Check if this rule matches the given order attributes.
+
+        Returns:
+            Tuple of (matches: bool, match_score: int) where match_score is the number
+            of exact (non-wildcard) key matches.
+        """
+        score = 0
+        for col, rule_val in self.keys.items():
+            if rule_val == '*':
+                continue
+            order_val = str(order_attrs.get(col, order_attrs.get(col.lower(), ''))).strip()
+            if not order_val:
+                # Field not specified on order; fallback match
+                continue
+            if rule_val.upper() != order_val.upper():
+                return False, 0
+            score += 1
+        return True, score
+
+    def to_dict(self) -> Dict[str, Any]:
+        res = {'DBId': self.db_id}
+        res.update(self.keys)
+        res.update(self.limits)
+        res.update(self.flags)
+        return res
+
+
 class DataMgr:
     """
-    Instrument Static Data Manager.
+    Instrument Static Data & RMS Control Limits Manager.
     
-    Reads CSV files from "Instrument Static" folder, caches in memory, persists to .dat,
-    and acts as a lookup for order details & static attributes.
+    Reads CSV files from "Instrument Static" folder, caches in memory, persists to .dat.
+    Manages local SQLite DB ("rms_limits.db") for RMS control limits with CSV import/replacement.
     """
 
-    def __init__(self, static_dir: str = "Instrument Static", dat_path: str = "InstrumentStatic.dat", auto_load: bool = True):
+    def __init__(
+        self,
+        static_dir: str = "Instrument Static",
+        dat_path: str = "InstrumentStatic.dat",
+        db_path: str = "rms_limits.db",
+        auto_load: bool = True,
+    ):
         """
         Initialize DataMgr.
 
         Args:
             static_dir: Directory path containing instrument static CSV files.
-            dat_path: Path to binary .dat snapshot file for persistence & recovery.
-            auto_load: Automatically load from .dat file or parse CSVs on init.
+            dat_path: Path to binary .dat snapshot file for instrument persistence.
+            db_path: Path to SQLite DB file storing RMS control limits.
+            auto_load: Automatically load instruments and DB limits on init.
         """
         self.static_dir = static_dir
         self.dat_path = dat_path
+        self.db_path = db_path
         self._lock = threading.RLock()
         self.instruments: Dict[str, InstrumentStatic] = {}
+        self._rms_limits: List[RMSLimitRule] = []
+
+        self.init_db()
 
         if auto_load:
             self.load()
+            self.load_limits_from_db()
+
+    # ------------------------------------------------------------------
+    # SQLite Database Management for RMS Control Limits
+    # ------------------------------------------------------------------
+
+    def init_db(self):
+        """Initialize SQLite database table schema if it does not exist."""
+        path = Path(self.db_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        cols_sql = ["DBId INTEGER PRIMARY KEY AUTOINCREMENT"]
+        for col in TEXT_KEY_COLUMNS:
+            cols_sql.append(f"{col} VARCHAR(64) DEFAULT '*'")
+        for col in NUMERICAL_COLUMNS:
+            cols_sql.append(f"{col} NUMERIC DEFAULT 0")
+        
+        cols_sql.append("DuplicateOrders VARCHAR(64) DEFAULT '0'")
+        cols_sql.append("BurstOrders VARCHAR(64) DEFAULT '0'")
+        cols_sql.append("Restricted VARCHAR(64) DEFAULT 'N'")
+        cols_sql.append("SSRestricted VARCHAR(64) DEFAULT 'N'")
+        cols_sql.append("Enabled VARCHAR(64) DEFAULT 'Y'")
+
+        sql = f"CREATE TABLE IF NOT EXISTS rms_control_limits (\n  " + ",\n  ".join(cols_sql) + "\n);"
+
+        with self._get_db_connection() as conn:
+            conn.execute(sql)
+            conn.commit()
+
+    @contextmanager
+    def _get_db_connection(self):
+        """Create and yield a SQLite database connection, ensuring it closes on exit."""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            yield conn
+        finally:
+            conn.close()
+
+    def load_limits_from_db(self) -> int:
+        """Load enabled RMS control limits from SQLite DB into memory cache."""
+        rules: List[RMSLimitRule] = []
+        with self._get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM rms_control_limits WHERE UPPER(Enabled) = 'Y'")
+            rows = cursor.fetchall()
+            for r in rows:
+                rules.append(RMSLimitRule(dict(r)))
+
+        with self._lock:
+            self._rms_limits = rules
+        return len(rules)
+
+    def reload_limits_from_db(self) -> int:
+        """Thread-safe on-demand reload of RMS control limits from SQLite DB."""
+        return self.load_limits_from_db()
+
+    def replace_limits_from_csv(self, csv_path: str) -> int:
+        """
+        Replace all existing limits in SQLite DB with records from a CSV file.
+
+        Args:
+            csv_path: Path to CSV file containing RMS control limits.
+
+        Returns:
+            Number of limit rows inserted into DB.
+        """
+        path = Path(csv_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Limits CSV file not found: {csv_path}")
+
+        new_rows: List[Dict[str, Any]] = []
+        with open(path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                parsed = {}
+                for col in TEXT_KEY_COLUMNS:
+                    parsed[col] = str(row.get(col, '*') or '*').strip()[:MAX_TEXT_LENGTH]
+                for col in NUMERICAL_COLUMNS:
+                    val_raw = row.get(col, 0)
+                    try:
+                        val = float(val_raw or 0)
+                    except (ValueError, TypeError):
+                        val = 0.0
+                    parsed[col] = min(max(0.0, val), MAX_NUMERICAL_LIMIT)
+
+                parsed['DuplicateOrders'] = str(row.get('DuplicateOrders', '0') or '0').strip()[:MAX_TEXT_LENGTH]
+                parsed['BurstOrders'] = str(row.get('BurstOrders', '0') or '0').strip()[:MAX_TEXT_LENGTH]
+                parsed['Restricted'] = str(row.get('Restricted', 'N') or 'N').strip()[:MAX_TEXT_LENGTH]
+                parsed['SSRestricted'] = str(row.get('SSRestricted', 'N') or 'N').strip()[:MAX_TEXT_LENGTH]
+                parsed['Enabled'] = str(row.get('Enabled', 'Y') or 'Y').strip()[:MAX_TEXT_LENGTH]
+                new_rows.append(parsed)
+
+        all_cols = TEXT_KEY_COLUMNS + NUMERICAL_COLUMNS + FLAG_COLUMNS
+        placeholders = ", ".join(["?"] * len(all_cols))
+        cols_str = ", ".join(all_cols)
+        insert_sql = f"INSERT INTO rms_control_limits ({cols_str}) VALUES ({placeholders})"
+
+        with self._get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM rms_control_limits")
+            for r in new_rows:
+                values = [r[col] for col in all_cols]
+                cursor.execute(insert_sql, values)
+            conn.commit()
+
+        self.reload_limits_from_db()
+        return len(new_rows)
+
+    def get_matching_limits(self, order: Any) -> Dict[str, Any]:
+        """
+        Evaluate order against in-memory RMS limit rules to find best matching limits.
+
+        Args:
+            order: Order object or order dictionary.
+
+        Returns:
+            Dict containing matched RMS control limits for the order.
+        """
+        order_attrs = {}
+        if isinstance(order, dict):
+            order_attrs = dict(order)
+        else:
+            for col in TEXT_KEY_COLUMNS:
+                if hasattr(order, col):
+                    order_attrs[col] = getattr(order, col)
+                elif hasattr(order, col.lower()):
+                    order_attrs[col] = getattr(order, col.lower())
+
+        best_rule: Optional[RMSLimitRule] = None
+        best_score = -1
+
+        with self._lock:
+            rules = list(self._rms_limits)
+
+        for rule in rules:
+            matches, score = rule.matches_order(order_attrs)
+            if matches and score > best_score:
+                best_score = score
+                best_rule = rule
+
+        if best_rule:
+            return best_rule.to_dict()
+
+        # Fallback default limits if no rule in DB matched
+        default_limits = {'DBId': None}
+        for col in TEXT_KEY_COLUMNS:
+            default_limits[col] = '*'
+        for col in NUMERICAL_COLUMNS:
+            default_limits[col] = 0.0
+        default_limits.update({'DuplicateOrders': '0', 'BurstOrders': '0', 'Restricted': 'N', 'SSRestricted': 'N', 'Enabled': 'Y'})
+        return default_limits
+
+    def get_all_limits_from_db(self) -> List[Dict[str, Any]]:
+        """Get all rows from SQLite DB table as list of dicts."""
+        with self._get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM rms_control_limits")
+            return [dict(r) for r in cursor.fetchall()]
+
+    # ------------------------------------------------------------------
+    # Instrument Static Data Management (CSV & .DAT)
+    # ------------------------------------------------------------------
 
     def load(self, force_csv_reload: bool = False) -> int:
         """
@@ -116,18 +363,14 @@ class DataMgr:
         return count
 
     def load_from_csv_folder(self, folder_path: str) -> int:
-        """
-        Scan and parse all CSV files inside folder_path (e.g. "Instrument Static").
-        """
+        """Scan and parse all CSV files inside folder_path (e.g. "Instrument Static")."""
         dir_path = Path(folder_path)
         if not dir_path.exists():
-            # Create folder if missing
             dir_path.mkdir(parents=True, exist_ok=True)
             return 0
 
         csv_files = list(dir_path.glob("*.csv"))
         if not csv_files and Path("HK-ListOfSecurities.csv").exists():
-            # Copy root file if folder empty
             import shutil
             shutil.copy("HK-ListOfSecurities.csv", dir_path / "HK-ListOfSecurities.csv")
             csv_files = [dir_path / "HK-ListOfSecurities.csv"]
@@ -196,10 +439,6 @@ class DataMgr:
 
         return count
 
-    # ------------------------------------------------------------------
-    # Persistence: Binary .DAT Storage
-    # ------------------------------------------------------------------
-
     def save_to_dat(self, dat_path: Optional[str] = None) -> int:
         """Serialize in-memory instruments dictionary to binary .dat file."""
         target_path = dat_path or self.dat_path or "InstrumentStatic.dat"
@@ -264,19 +503,20 @@ class DataMgr:
 
     def lookup_order_details(self, order: Any) -> Dict[str, Any]:
         """
-        Lookup and enrich order details using instrument static data cache.
+        Lookup and enrich order details using instrument static data and RMS limits cache.
 
         Args:
             order: Order object or order dictionary.
 
         Returns:
-            Dictionary of enriched order details including static attributes.
+            Dictionary of enriched order details including static attributes and matched RMS limits.
         """
         symbol = getattr(order, 'symbol', getattr(order, 'ric', ''))
         if isinstance(order, dict):
             symbol = order.get('symbol', order.get('ric', ''))
 
         inst = self.get_instrument(symbol)
+        matched_limits = self.get_matching_limits(order)
 
         order_id = getattr(order, 'order_id', order.get('order_id', '') if isinstance(order, dict) else '')
         qty = int(getattr(order, 'quantity', order.get('quantity', 0) if isinstance(order, dict) else 0))
@@ -292,6 +532,7 @@ class DataMgr:
             'side': side,
             'order_currency': curr,
             'instrument_found': inst is not None,
+            'rms_limits': matched_limits,
         }
 
         if inst:
