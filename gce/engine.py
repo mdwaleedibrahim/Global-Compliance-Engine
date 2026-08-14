@@ -8,6 +8,7 @@ from gce.cache.order_cache import Order, OrderStatus
 from gce.cache import InstrumentCache, PriceCache, OrderCache, PositionCache
 from gce.logger import GCELogger
 from gce.pxfeeder import PXFeeder
+from gce.datamgr import DataMgr
 
 
 class ControlRegistry:
@@ -284,6 +285,13 @@ class GCE:
         
         # Load caches
         try:
+            self.datamgr = DataMgr(static_dir="Instrument Static", dat_path="InstrumentStatic.dat")
+            self.logger.info(f"Loaded {self.datamgr.count()} static instruments in DataMgr")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize DataMgr: {e}")
+            self.datamgr = DataMgr(auto_load=False)
+
+        try:
             self.instruments = InstrumentCache(instrument_csv)
             self.logger.info(f"Loaded {self.instruments.count()} instruments")
         except FileNotFoundError as e:
@@ -324,12 +332,13 @@ class GCE:
     def _run_single_control(self, control_name: str, control_func: callable, order: Order):
         """Helper to run single control safely."""
         try:
-            # Inject pxfeeder into context if control expects it
+            # Inject pxfeeder and datamgr into context if control expects it
             context = {
                 'instruments': self.instruments,
                 'prices': self.prices,
                 'positions': self.positions,
                 'pxfeeder': self.pxfeeder,
+                'datamgr': self.datamgr,
                 'fx_rates': self.pxfeeder.get_all_fx_rates()
             }
             if hasattr(control_func, 'validate'):
