@@ -1,26 +1,94 @@
 # GCE - Global Compliance Engine
 
-A high-performance pre-trade order risk management system for Hong Kong & global securities trading. Provides real-time order validation using configurable limit controls with parallel execution, nanosecond-precision logging, automated multi-currency FX data feeding, static instrument management, and SQLite RMS control limits (`DataMgr`).
+A high-performance pre-trade order risk management system for Hong Kong & global securities trading. Provides real-time order validation using configurable limit controls with parallel execution, nanosecond-precision logging, automated multi-currency FX data feeding, static instrument management, exchange session timing tracking, and SQLite RMS control limits (`DataMgr`).
 
-## Features
+---
 
-- **Pre-Trade Control Engine**: Validates orders against multiple configurable limit controls (quantity, price, max consideration, notional value) before execution.
+## Key Features
+
+- **Pre-Trade Control Engine**: Validates orders against multiple configurable limit controls (`MaxOrderQuantity`, `MaxOrderPrice`, `MaxOrderConsideration`, `ClosePriceTolerance`, `LastPriceTolerance`, `BBOPriceTolerance`) before execution.
 - **DataMgr & SQLite RMS Control Limits**: Manages instrument static data from `"Instrument Static"` CSV files and maintains a local SQLite database (`rms_limits.db`) for RMS control limits.
   - Loads DB limits into an in-memory cache on startup.
   - Supports on-demand limit reloading (`reload_limits_from_db()`).
   - Supports bulk replacement of existing DB limits via CSV file (`replace_limits_from_csv()`).
   - Enforces text length limits (max 64 characters) and numerical caps (`999,999,999,999`).
-  - Provides hierarchical wildcard matching for order limits.
+  - Provides hierarchical wildcard matching for order limits (`Product`, `Trader`, `Account`, `symbol`, etc.).
+- **Control Disable Status (`0 = Disabled`)**:
+  - Setting any core/extended numerical limit or rate limit control to `0` or `'0'` disables that specific control check.
+- **Sliding Window Rate Limit Specification (`x,y`)**:
+  - Supports `"x,y"` format for `DuplicateOrders` and `BurstOrders` (e.g., `"10,60"` = maximum 10 orders allowed within a sliding 60-second window).
+- **Exchange Session Timing Management (`config/Datamgr.ini`)**:
+  - Parses session start and end times for exchanges (e.g. `XHKG`, `XSES`).
+  - Evaluates current exchange state as active trading time (`Xsession1`, `Xsession2`, `Xsession3`) vs. break time (`BREAK`).
+  - Detects session switches automatically and logs state changes in structured logs.
+- **Price Tolerance Controls & `limitchecker.ini` Configuration**:
+  - **`ClosePriceTolerance`**: Validates order price deviation % from Close price.
+  - **`LastPriceTolerance`**: Validates order price deviation % from Last price, with session price overrides (`lpt_xsession1`, `lpt_xsession2`, `lpt_xsession3`).
+  - **`BBOPriceTolerance`**: Validates order price deviation % from Ask (buy) or Bid (sell).
+  - Exception handling configuration via [`config/limitchecker.ini`](config/limitchecker.ini) (`invalid_close_price_action`, `invalid_last_price_action`, `invalid_bbo_price_action`).
 - **PXFeeder Market & FX Data Feeder**: Integrated `PXFeeder` module fetching live prices and FX rates for major **US, EU, and APAC currencies** (`USD`, `EUR`, `GBP`, `JPY`, `HKD`, `AUD`, `SGD`, `CNH`, `CAD`, `CHF`) via `yfinance`.
-- **Automated Hourly Background Refresh**: Periodic background worker thread refreshing market data every hour (3600s) without interrupting pre-trade order validation.
-- **Zero-Latency In-Memory Caching**: All prices, positions, orders, instruments, FX rates, and RMS limits are cached in memory for sub-millisecond control checks.
-- **Binary `.DAT` Snapshot Persistence**: Automatic dumping and fast recovery of market data snapshots to binary `.dat` storage files (`PriceCache.dat`, `InstrumentStatic.dat`).
-- **Cache Reader Utilities**: High-level inspection tools (`OrderCacheReader`, `PXFeederReader`, `PositionCacheReader`, `CacheReaderManager`) for querying engine state and generating summaries.
-- **Control Framework & Parallel Execution**: Multithreaded execution pipeline running risk controls concurrently with sub-millisecond latency.
+- **Zero-Latency In-Memory Caching & Binary `.DAT` Snapshot Persistence**: All market data, positions, orders, instruments, FX rates, and RMS limits are cached in memory with binary snapshot recovery (`PriceCache.dat`, `InstrumentStatic.dat`).
 - **Structured Logging**: Nanosecond-precision timestamps with rejection tracking.
 - **Performance**: Average validation time < 0.1ms, **20,000+ orders/sec** throughput.
 
-## Architecture
+---
+
+## SQLite Database Schema (`rms_control_limits`)
+
+The local SQLite table `rms_control_limits` is defined in the following exact column order:
+
+| Column Name | SQLite Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `DBId` | `INTEGER PRIMARY KEY AUTOINCREMENT` | Autogenerated | Primary key |
+| `Product`, `SecurityType`, `Application`, `Flow`, `Trader`, `Desk`, `Account`, `Client`, `symbol`, `exchange`, `underlying`, `AlgoStrategy`, `Currency`, `Side`, `OrderType`, `Tif`, `ExtendedKey1`..`5` | `VARCHAR(64)` | `'*'` | Text key columns for rule matching |
+| `MaxOrderSize`, `MaxOrderPrice`, `MaxOrderValue`, `MaxOrderADV`, `ClosePriceTolerance`, `LastPriceTolerance`, `BBOPriceTolerance`, `MarketDepthCheck`, `MaxDailyVolume`, `MaxDailyValue`, `MaxDailyNetValue`, `MaxDailyTurnover`, `MaxDailyExposure`, `MaxDailyOpenValue`, `MaxDailyActiveOrders` | `NUMERIC` | `0` | Core numerical limits (`0` = disabled) |
+| `DuplicateOrders`, `BurstOrders` | `VARCHAR(64)` | `'0'` | Rate limit controls (`'x,y'` format or `'0'`) |
+| `ExtendedValue1`..`5`, `Flags` | `NUMERIC` | `0` | Extended numerical fields |
+| `Restricted`, `SSRestricted` | `VARCHAR(64)` | `'N'` | Security restriction flags |
+| `Enabled` | `VARCHAR(64)` | `'Y'` | Rule enablement status |
+
+---
+
+## Exchange Session Timings (`Datamgr.ini`)
+
+Configured in [`config/Datamgr.ini`](config/Datamgr.ini):
+
+```ini
+;;Session timings
+Xsession1_start=XHKG:09:30, XSES:09:00
+Xsession1_end=XHKG:13:00, XSES:12:00
+Xsession2_start=XHKG:14:00, XSES:13:00
+Xsession2_end=XHKG:16:00, XSES:17:00
+Xsession3_start=XHKG:16:00, XSES:17:06
+Xsession3_end=XHKG:16:10, XSES:17:16
+```
+
+- **Trading Time**: Time between `start` and `end` for a session (`Xsession1`, `Xsession2`, `Xsession3`).
+- **Break Time**: Time between `end` of one session and `start` of the next session (or outside session hours) is evaluated as **`BREAK`**.
+- **Session Switches**: Whenever session status changes, `DataMgr` writes an automated log event:
+  `Exchange XHKG session changed: BREAK -> Xsession1 at 09:30:00`
+
+---
+
+## Price Tolerance Configuration (`limitchecker.ini`)
+
+Configured in [`config/limitchecker.ini`](config/limitchecker.ini):
+
+```ini
+;; Last Price Tolerance price precedence per session
+lpt_xsession1=open
+lpt_xsession2=last
+lpt_xsession3=last
+
+;; Missing price exception handling (ignore or reject)
+invalid_close_price_action=ignore
+invalid_last_price_action=ignore
+invalid_bbo_price_action=reject
+```
+
+---
+
+## Architecture & Project Structure
 
 ```
 GCE (Global Compliance Engine)
@@ -33,18 +101,25 @@ GCE (Global Compliance Engine)
 │   │   └── instrument_cache.py (Security universe)
 │   ├── controls/
 │   │   ├── base_control.py (Control framework with performance tracking)
-│   │   ├── quantity_control.py (MaxOrderQuantity validation)
-│   │   ├── price_control.py (MaxOrderPrice validation)
-│   │   └── max_order_consideration.py (FX-converted consideration limit control)
-│   ├── datamgr.py (Instrument static manager & SQLite RMS control limits manager)
-│   ├── pxfeeder.py (yfinance prices & US/EU/APAC FX feeder with hourly background refresh)
+│   │   ├── config_helper.py (LimitCheckerConfig loader for limitchecker.ini)
+│   │   ├── quantity_control.py (MaxOrderQuantity control -> MaxOrderSize)
+│   │   ├── price_control.py (MaxOrderPrice control -> MaxOrderPrice)
+│   │   ├── max_order_consideration.py (MaxOrderConsideration control -> MaxOrderValue)
+│   │   ├── close_price_tolerance.py (ClosePriceTolerance control -> ClosePriceTolerance)
+│   │   ├── last_price_tolerance.py (LastPriceTolerance control -> LastPriceTolerance)
+│   │   └── bbo_price_tolerance.py (BBOPriceTolerance control -> BBOPriceTolerance)
+│   ├── datamgr.py (Instrument static manager, SQLite DB manager, session timings)
+│   ├── pxfeeder.py (yfinance prices & US/EU/APAC FX feeder)
 │   ├── engine.py (GCE orchestrator with control registry & execution pipeline)
 │   ├── logger.py (Structured logging with nanosecond timestamps)
 │   ├── order_state_machine.py (Order state transition validation)
 │   ├── position_updater.py (Fill application and reconciliation)
 │   └── reconciler.py (Position variance detection)
-├── Instrument Static/ (Directory containing instrument static data CSV files)
+├── Instrument Static/ (Directory containing static data CSV files)
 │   └── HK-ListOfSecurities.csv
+├── config/
+│   ├── Datamgr.ini (Exchange session timings)
+│   └── limitchecker.ini (Price tolerance configuration settings)
 ├── rms_limits.db (SQLite database storing RMS control limit rules)
 ├── utils/
 │   ├── cache_reader.py (Utilities for reading OrderCache, PXFeeder, and PositionCache)
@@ -52,120 +127,65 @@ GCE (Global Compliance Engine)
 │   └── price_updater.py (Price cache management utility)
 ├── tests/
 │   ├── test_datamgr.py (Unit tests for DataMgr static instrument manager)
-│   ├── test_datamgr_sqlite.py (Unit tests for DataMgr SQLite DB & RMS limits)
+│   ├── test_datamgr_sqlite.py (Unit tests for SQLite DB & RMS limits)
+│   ├── test_datamgr_sessions.py (Unit tests for exchange session timings)
+│   ├── test_price_tolerances.py (Unit tests for Close/Last/BBO Price Tolerances)
 │   ├── test_pxfeeder.py (Unit tests for PXFeeder & FX conversions)
 │   ├── test_cache_readers.py (Unit tests for cache readers)
 │   ├── test_max_order_consideration.py (Max order consideration unit tests)
 │   └── integration_tests.py (Comprehensive integration test suite)
-├── config/
-│   └── controls.json (Control configuration)
-├── logs/
-│   └── GCE.log (Rotating log file with 10MB max, 5 backups)
 └── example_usage.py (Comprehensive usage examples)
 ```
 
 ---
 
-## Core Components & Usage
+## Usage Examples
 
-### 1. DataMgr (Instrument Static & SQLite RMS Limits)
-
-`DataMgr` reads instrument static data from `"Instrument Static"` CSV files and manages RMS Control Limits in a local SQLite database (`rms_limits.db`):
+### 1. DataMgr (SQLite RMS Limits & Session Timings)
 
 ```python
 from gce.datamgr import DataMgr
 
-# Initialize DataMgr reading static folder and SQLite limits DB
+# Initialize DataMgr reading static CSV folder, SQLite DB, and session config
 datamgr = DataMgr(
     static_dir="Instrument Static",
     dat_path="InstrumentStatic.dat",
-    db_path="rms_limits.db"
+    db_path="rms_limits.db",
+    ini_path="config/Datamgr.ini"
 )
 
-# 1. Replace limits in SQLite DB from a CSV file
-count = datamgr.replace_limits_from_csv("rms_limits.csv")
-print(f"Imported {count} limit rules into SQLite DB!")
+# Replace limits in SQLite DB from CSV
+datamgr.replace_limits_from_csv("rms_limits.csv")
 
-# 2. Reload limits from DB into memory on demand
-datamgr.reload_limits_from_db()
-
-# 3. Match order attributes against cached RMS limits
+# Match order attributes against cached RMS limits
 matched_limits = datamgr.get_matching_limits(order)
-print("Max Order Size:", matched_limits['MaxOrderSize'])
-print("Max Order Value:", matched_limits['MaxOrderValue'])
 
-# 4. Instrument static lookup & order detail enrichment
-inst = datamgr.get_instrument("0700.HK")
-enriched_details = datamgr.lookup_order_details(order)
+# Check exchange session status
+status = datamgr.get_session_status("XHKG", "09:45")  # Returns "Xsession1"
+is_trading = datamgr.is_trading_time("XHKG", "09:45") # Returns True
 ```
 
-### 2. PXFeeder & FX Rate Feeder
-
-`PXFeeder` downloads market data and FX conversion rates at startup and automatically refreshes them every hour in a background daemon thread:
-
-```python
-from gce.pxfeeder import PXFeeder
-
-# Initialize PXFeeder with binary .dat persistence and hourly refresh
-feeder = PXFeeder(
-    dat_path="PriceCache.dat",
-    symbols=["0700.HK", "9988.HK", "AAPL", "MSFT"],
-    fetch_on_start=True,
-    refresh_interval=3600,  # 1 hour
-    auto_start_bg=True
-)
-
-# Zero-latency in-memory FX conversion (US, EU, APAC currencies)
-hkd_usd = feeder.get_fx_rate("HKD", "USD")  # e.g., 0.128
-
-# Stop background refresh on shutdown
-feeder.stop()
-```
-
-### 3. GCE Engine & Control Validation
-
-The `GCE` engine orchestrates controls, market data, static instruments, and SQLite RMS limits (`DataMgr`):
+### 2. Validating Orders with Risk Controls
 
 ```python
 from gce import GCE
-from gce.controls.max_order_consideration import MaxOrderConsideration
 from gce.controls.quantity_control import MaxOrderQuantity
-from gce.cache.order_cache import Order
-
-# Initialize GCE (automatically loads DataMgr, PXFeeder, PriceCache.dat, instruments, orders)
-gce = GCE(
-    instrument_csv="HK-ListOfSecurities.csv",
-    price_csv="PriceCache.csv",
-    order_csv="OrderCache.csv",
-    position_csv="PositionsCache.csv"
-)
-
-# Register controls
-gce.register_control("MaxOrderQuantity", MaxOrderQuantity(limit=1000))
-
-# Validate order concurrently
-passed, rejections = gce.validate_order(order, is_new=True, parallel=True)
-
-# Shutdown engine & background threads
-gce.shutdown()
-```
-
----
-
-## How to Start the App and Send Test Orders
-
-### Option 1: Run Demonstration Script
-```powershell
-$env:PYTHONPATH="."
-python example_usage.py
-```
-
-### Option 2: Programmatic Usage (Python API)
-```python
-from gce import GCE
+from gce.controls.price_control import MaxOrderPrice
+from gce.controls.max_order_consideration import MaxOrderConsideration
+from gce.controls.close_price_tolerance import ClosePriceTolerance
+from gce.controls.last_price_tolerance import LastPriceTolerance
+from gce.controls.bbo_price_tolerance import BBOPriceTolerance
 from gce.cache.order_cache import Order
 
 gce = GCE()
+
+# Register controls
+gce.register_control("MaxOrderQuantity", MaxOrderQuantity())
+gce.register_control("MaxOrderPrice", MaxOrderPrice())
+gce.register_control("MaxOrderConsideration", MaxOrderConsideration())
+gce.register_control("ClosePriceTolerance", ClosePriceTolerance())
+gce.register_control("LastPriceTolerance", LastPriceTolerance())
+gce.register_control("BBOPriceTolerance", BBOPriceTolerance())
 
 # Create test order
 order = Order(order_id="ORD001", symbol="0700.HK", quantity=100, price=380.0, side="B", currency="HKD")
@@ -177,26 +197,12 @@ print("APPROVED" if passed else f"REJECTED: {rejections}")
 
 ---
 
-## Data Persistence & Storage Formats
-
-- **rms_limits.db**: SQLite database storing pre-trade RMS control limits and rule attributes.
-- **InstrumentStatic.dat**: Binary snapshot of static instrument definitions loaded from `"Instrument Static"` CSV files.
-- **PriceCache.dat**: Binary snapshot storage (via `pickle`) for fast startup recovery of prices and FX rates.
-- **OrderCache.csv**: Order lifecycle records and statuses (`Live`, `Fill`, `Rejected`, `Cancelled`).
-- **PositionsCache.csv**: Real-time position volumes, exposures, and USD values.
-
----
-
 ## Running Tests
 
-Run all unit and integration test suites:
+Run the complete unit test suite (35 tests):
 
 ```bash
-# Run complete unit test suite
-python -m unittest tests/test_datamgr.py tests/test_datamgr_sqlite.py tests/test_pxfeeder.py tests/test_cache_readers.py tests/test_max_order_consideration.py tests/test_yfinance_price_cache.py
-
-# Run comprehensive integration test suite
-python tests/integration_tests.py
+python -m unittest tests/test_cache_readers.py tests/test_datamgr.py tests/test_datamgr_sqlite.py tests/test_datamgr_sessions.py tests/test_order_cache_schema.py tests/test_parallel_controls.py tests/test_risk_analytics.py tests/test_max_order_consideration.py tests/test_price_tolerances.py
 ```
 
 ---
