@@ -243,3 +243,115 @@
 2026-08-15 21:28:55,466 [GCE] [ORD-20260815-212855-205] [INFO] [PASS] last_tolerance: Control passed | LMT=0.0, ORD=0.0 {last_price_tolerance.py:97 71900 nano seconds}
 2026-08-15 21:28:55,467 [GCE] [ORD-20260815-212855-205] [INFO] 6 controls validated, 6 passed, 0 failed
 2026-08-15 21:28:55,468 [GCE] [ORD-20260815-212855-205] [INFO] LMT_CHECK_OVER in 2.55ms
+2026-08-15 21:39:22,949 [GCE] [-] [INFO] GCE Control Center GUI started
+2026-08-15 21:39:23,150 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-15 21:39:23,151 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from D:\Github\projects\config\Datamgr.ini
+2026-08-15 21:41:41,380 [GCE] [-] [INFO] GCE Control Center GUI started
+2026-08-15 21:41:41,573 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-15 21:41:41,574 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from D:\Github\projects\config\Datamgr.ini
+2026-08-15 21:56:31,667 [GCE] [-] [INFO] GCE Control Center GUI started
+2026-08-15 21:56:31,789 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-15 21:56:31,789 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from D:\Github\projects\config\Datamgr.ini
+2026-08-15 21:56:32,053 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-15 21:56:32,054 [GCE] [-] [INFO] Loaded 17635 static instruments in DataMgr
+2026-08-15 21:56:32,197 [GCE] [-] [INFO] Loaded 17635 instruments
+2026-08-15 21:56:32,198 [GCE] [-] [INFO] Loaded/fetched 2 prices in cache via PXFeeder
+2026-08-15 21:56:32,200 [GCE] [-] [INFO] Loaded 7 orders
+2026-08-15 21:56:32,200 [GCE] [-] [ERROR] Failed to load positions: CSV file not found: D:\Github\projects\PositionsCache.csv
+2026-08-15 21:56:32,202 [GCE] [ORD-20260815-215631-938] [INFO] LMT_CHECK_START
+2026-08-15 21:56:32,203 [GCE] [ORD-20260815-215631-938] [INFO] LMT_CHECK_NEW B 0700.HK 300@LMT 355.0 HKD "PAFTDACXUAT" Equity|AUTO_TRADER|DMA|Waleed|Equity_apac|APAC_EQTY_CASH|TestClient|XHKG|0700|VWAP|DAY
+2026-08-15 21:56:32,203 [GCE] [ORD-20260815-215631-938] [INFO] LMT_MKTDAT 0700.HK Last=440.0, Bid=440.0, Ask=440.2, Open=436.0, Close=441.0
+2026-08-15 21:56:32,203 [GCE] [ORD-20260815-215631-938] [INFO] [PASS] max_qty: Control passed | LMT=1000000, ORD=300 {quantity_control.py:19 63000 nano seconds}
+2026-08-15 21:56:32,203 [GCE] [ORD-20260815-215631-938] [INFO] [PASS] max_price: Control passed | LMT=1000000.0, ORD=355.0 {price_control.py:19 71900 nano seconds}
+2026-08-15 21:56:32,203 [GCE] [ORD-20260815-215631-938] [INFO] [PASS] max_consideration: Control passed | LMT=100000000.0, ORD=106500.0 {max_order_consideration.py:139 42600 nano seconds}
+2026-08-15 21:56:32,204 [GCE] [ORD-20260815-215631-938] [INFO] [PASS] bbo_tolerance: Control passed | LMT=0.0, ORD=0.0 {bbo_price_tolerance.py:57 35800 nano seconds}
+2026-08-15 21:56:32,204 [GCE] [ORD-20260815-215631-938] [INFO] [PASS] close_tolerance: Control passed | LMT=0.0, ORD=0.0 {close_price_tolerance.py:56 30200 nano seconds}
+2026-08-15 21:56:32,205 [GCE] [ORD-20260815-215631-938] [INFO] [PASS] last_tolerance: Control passed | LMT=0.0, ORD=0.0 {last_price_tolerance.py:97 29900 nano seconds}
+2026-08-15 21:56:32,205 [GCE] [ORD-20260815-215631-938] [INFO] 6 controls validated, 6 passed, 0 failed
+2026-08-15 21:56:32,205 [GCE] [ORD-20260815-215631-938] [INFO] LMT_CHECK_OVER in 1.18ms
+2026-08-15 22:00:35,229 [GCE] [ORD-20260815-220035-226] [INFO] LMT_CHECK_START
+2026-08-15 22:00:35,229 [GCE] [ORD-20260815-220035-226] [INFO] LMT_CHECK_NEW B 00700.HK 100@LMT 400.0 HKD "PAFTDACXUAT" Equity|AUTO_TRADER|DMA|TRADER1|HONGKONG_DESK|ACC01|CLIENT_A|XHKG|00700|VWAP|DAY
+2026-08-15 22:00:35,229 [GCE] [ORD-20260815-220035-226] [INFO] LMT_MKTDAT 00700.HK Last=0.0, Bid=0.0, Ask=0.0, Open=0.0, Close=0.0
+2026-08-15 22:00:35,230 [GCE] [ORD-20260815-220035-226] [INFO] [PASS] max_qty: Control passed | LMT=1000000, ORD=100 {quantity_control.py:19 103900 nano seconds}
+2026-08-15 22:00:35,230 [GCE] [ORD-20260815-220035-226] [INFO] [PASS] max_price: Control passed | LMT=1000000.0, ORD=400.0 {price_control.py:19 127600 nano seconds}
+2026-08-15 22:00:35,231 [GCE] [ORD-20260815-220035-226] [INFO] [PASS] max_consideration: Control passed | LMT=100000000.0, ORD=40000.0 {max_order_consideration.py:139 107300 nano seconds}
+2026-08-15 22:00:35,231 [GCE] [ORD-20260815-220035-226] [INFO] [PASS] bbo_tolerance: Control passed | LMT=0.0, ORD=0.0 {bbo_price_tolerance.py:57 69100 nano seconds}
+2026-08-15 22:00:35,231 [GCE] [ORD-20260815-220035-226] [INFO] [PASS] close_tolerance: Control passed | LMT=0.0, ORD=0.0 {close_price_tolerance.py:56 77900 nano seconds}
+2026-08-15 22:00:35,232 [GCE] [ORD-20260815-220035-226] [INFO] [PASS] last_tolerance: Control passed | LMT=0.0, ORD=0.0 {last_price_tolerance.py:97 61200 nano seconds}
+2026-08-15 22:00:35,233 [GCE] [ORD-20260815-220035-226] [INFO] 6 controls validated, 6 passed, 0 failed
+2026-08-15 22:00:35,234 [GCE] [ORD-20260815-220035-226] [INFO] LMT_CHECK_OVER in 2.04ms
+2026-08-15 22:07:08,596 [GCE] [-] [INFO] GCE Control Center GUI started
+2026-08-15 22:07:08,867 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-15 22:07:08,868 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from D:\Github\projects\config\Datamgr.ini
+2026-08-15 22:07:18,986 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-15 22:07:18,986 [GCE] [-] [INFO] Loaded 17635 static instruments in DataMgr
+2026-08-15 22:07:19,174 [GCE] [-] [INFO] Loaded 17635 instruments
+2026-08-15 22:07:19,207 [GCE] [-] [INFO] Loaded/fetched 3 prices in cache via PXFeeder
+2026-08-15 22:07:19,208 [GCE] [-] [INFO] Loaded 9 orders
+2026-08-15 22:07:19,209 [GCE] [-] [ERROR] Failed to load positions: CSV file not found: D:\Github\projects\PositionsCache.csv
+2026-08-15 22:07:19,219 [GCE] [ORD-20260815-220718-803] [INFO] LMT_CHECK_START
+2026-08-15 22:07:19,220 [GCE] [ORD-20260815-220718-803] [INFO] LMT_CHECK_NEW B 0700.HK 150@LMT 360.0 HKD PAFTDACXUAT Equity|*|*|TRADER_CACHE_TEST|*|ACC01|*|XHKG|0700|*|DAY
+2026-08-15 22:07:19,220 [GCE] [ORD-20260815-220718-803] [INFO] LMT_MKTDAT 0700.HK Last=360.0, Bid=359.5, Ask=360.5, Open=355.0, Close=358.0
+2026-08-15 22:07:19,220 [GCE] [ORD-20260815-220718-803] [INFO] [PASS] max_qty: Control passed | LMT=1000000, ORD=150 {quantity_control.py:19 55300 nano seconds}
+2026-08-15 22:07:19,221 [GCE] [ORD-20260815-220718-803] [INFO] [PASS] max_price: Control passed | LMT=1000000.0, ORD=360.0 {price_control.py:19 54000 nano seconds}
+2026-08-15 22:07:19,221 [GCE] [ORD-20260815-220718-803] [INFO] [PASS] max_consideration: Control passed | LMT=100000000.0, ORD=54000.0 {max_order_consideration.py:139 38700 nano seconds}
+2026-08-15 22:07:19,222 [GCE] [ORD-20260815-220718-803] [INFO] [PASS] bbo_tolerance: Control passed | LMT=0.0, ORD=0.0 {bbo_price_tolerance.py:57 42100 nano seconds}
+2026-08-15 22:07:19,222 [GCE] [ORD-20260815-220718-803] [INFO] [PASS] close_tolerance: Control passed | LMT=0.0, ORD=0.0 {close_price_tolerance.py:56 31100 nano seconds}
+2026-08-15 22:07:19,222 [GCE] [ORD-20260815-220718-803] [INFO] [PASS] last_tolerance: Control passed | LMT=0.0, ORD=0.0 {last_price_tolerance.py:97 29500 nano seconds}
+2026-08-15 22:07:19,222 [GCE] [ORD-20260815-220718-803] [INFO] 6 controls validated, 6 passed, 0 failed
+2026-08-15 22:07:19,222 [GCE] [ORD-20260815-220718-803] [INFO] LMT_CHECK_OVER in 1.35ms
+2026-08-15 22:11:49,889 [GCE] [ORD-20260815-221149-882] [INFO] LMT_CHECK_START
+2026-08-15 22:11:49,891 [GCE] [ORD-20260815-221149-882] [INFO] LMT_CHECK_NEW B 00700.HK 100@MKT 0.0 HKD PAFTDACXUAT Equity|AUTO_TRADER|DMA|TRADER1|HONGKONG_DESK|ACC01|CLIENT_A|XHKG|00700|VWAP|DAY
+2026-08-15 22:11:49,893 [GCE] [ORD-20260815-221149-882] [INFO] LMT_MKTDAT 00700.HK Last=450.0, Bid=430.0, Ask=440.0, Open=425.0, Close=420.0
+2026-08-15 22:11:49,895 [GCE] [ORD-20260815-221149-882] [INFO] [PASS] max_qty: Control passed | LMT=1000000, ORD=100 {quantity_control.py:19 253400 nano seconds}
+2026-08-15 22:11:49,898 [GCE] [ORD-20260815-221149-882] [INFO] [PASS] max_price: Control passed | LMT=1000000.0, ORD=0.0 {price_control.py:19 422700 nano seconds}
+2026-08-15 22:11:49,901 [GCE] [ORD-20260815-221149-882] [INFO] [PASS] max_consideration: Control passed | LMT=100000000.0, ORD=44000.0 {max_order_consideration.py:139 505500 nano seconds}
+2026-08-15 22:11:49,902 [GCE] [ORD-20260815-221149-882] [INFO] [PASS] bbo_tolerance: Control passed | LMT=0.0, ORD=0.0 {bbo_price_tolerance.py:57 195900 nano seconds}
+2026-08-15 22:11:49,902 [GCE] [ORD-20260815-221149-882] [INFO] [PASS] close_tolerance: Control passed | LMT=0.0, ORD=0.0 {close_price_tolerance.py:56 279200 nano seconds}
+2026-08-15 22:11:49,903 [GCE] [ORD-20260815-221149-882] [INFO] [PASS] last_tolerance: Control passed | LMT=0.0, ORD=0.0 {last_price_tolerance.py:97 371600 nano seconds}
+2026-08-15 22:11:49,903 [GCE] [ORD-20260815-221149-882] [INFO] 6 controls validated, 6 passed, 0 failed
+2026-08-15 22:11:49,905 [GCE] [ORD-20260815-221149-882] [INFO] LMT_CHECK_OVER in 5.61ms
+2026-08-15 22:12:31,784 [GCE] [ORD-20260815-221231-782] [INFO] LMT_CHECK_START
+2026-08-15 22:12:31,784 [GCE] [ORD-20260815-221231-782] [INFO] LMT_CHECK_NEW B 00700.HK 100@MKT 0.0 HKD PAFTDACXUAT Equity|AUTO_TRADER|DMA|TRADER1|HONGKONG_DESK|ACC01|CLIENT_A|XHKG|00700|VWAP|DAY
+2026-08-15 22:12:31,785 [GCE] [ORD-20260815-221231-782] [INFO] LMT_MKTDAT 00700.HK Last=450.0, Bid=430.0, Ask=440.0, Open=425.0, Close=420.0
+2026-08-15 22:12:31,785 [GCE] [ORD-20260815-221231-782] [INFO] [PASS] max_qty: Control passed | LMT=1000000, ORD=100 {quantity_control.py:19 70900 nano seconds}
+2026-08-15 22:12:31,786 [GCE] [ORD-20260815-221231-782] [INFO] [PASS] max_price: Control passed | LMT=1000000.0, ORD=0.0 {price_control.py:19 58600 nano seconds}
+2026-08-15 22:12:31,786 [GCE] [ORD-20260815-221231-782] [INFO] [PASS] max_consideration: Control passed | LMT=100000000.0, ORD=44000.0 {max_order_consideration.py:139 88600 nano seconds}
+2026-08-15 22:12:31,788 [GCE] [ORD-20260815-221231-782] [INFO] [PASS] bbo_tolerance: Control passed | LMT=0.0, ORD=0.0 {bbo_price_tolerance.py:57 54100 nano seconds}
+2026-08-15 22:12:31,792 [GCE] [ORD-20260815-221231-782] [INFO] [PASS] close_tolerance: Control passed | LMT=0.0, ORD=0.0 {close_price_tolerance.py:56 58500 nano seconds}
+2026-08-15 22:12:31,793 [GCE] [ORD-20260815-221231-782] [INFO] [PASS] last_tolerance: Control passed | LMT=0.0, ORD=0.0 {last_price_tolerance.py:97 57900 nano seconds}
+2026-08-15 22:12:31,794 [GCE] [ORD-20260815-221231-782] [INFO] 6 controls validated, 6 passed, 0 failed
+2026-08-15 22:12:31,794 [GCE] [ORD-20260815-221231-782] [INFO] LMT_CHECK_OVER in 1.21ms
+2026-08-15 22:12:32,820 [GCE] [ORD-20260815-221232-818] [INFO] LMT_CHECK_START
+2026-08-15 22:12:32,821 [GCE] [ORD-20260815-221232-818] [INFO] LMT_CHECK_NEW B 00700.HK 100@MKT 0.0 HKD PAFTDACXUAT Equity|AUTO_TRADER|DMA|TRADER1|HONGKONG_DESK|ACC01|CLIENT_A|XHKG|00700|VWAP|DAY
+2026-08-15 22:12:32,821 [GCE] [ORD-20260815-221232-818] [INFO] LMT_MKTDAT 00700.HK Last=450.0, Bid=430.0, Ask=440.0, Open=425.0, Close=420.0
+2026-08-15 22:12:32,822 [GCE] [ORD-20260815-221232-818] [INFO] [PASS] max_qty: Control passed | LMT=1000000, ORD=100 {quantity_control.py:19 70300 nano seconds}
+2026-08-15 22:12:32,822 [GCE] [ORD-20260815-221232-818] [INFO] [PASS] max_price: Control passed | LMT=1000000.0, ORD=0.0 {price_control.py:19 61700 nano seconds}
+2026-08-15 22:12:32,822 [GCE] [ORD-20260815-221232-818] [INFO] [PASS] max_consideration: Control passed | LMT=100000000.0, ORD=44000.0 {max_order_consideration.py:139 78000 nano seconds}
+2026-08-15 22:12:32,823 [GCE] [ORD-20260815-221232-818] [INFO] [PASS] bbo_tolerance: Control passed | LMT=0.0, ORD=0.0 {bbo_price_tolerance.py:57 51800 nano seconds}
+2026-08-15 22:12:32,824 [GCE] [ORD-20260815-221232-818] [INFO] [PASS] close_tolerance: Control passed | LMT=0.0, ORD=0.0 {close_price_tolerance.py:56 53000 nano seconds}
+2026-08-15 22:12:32,825 [GCE] [ORD-20260815-221232-818] [INFO] [PASS] last_tolerance: Control passed | LMT=0.0, ORD=0.0 {last_price_tolerance.py:97 57500 nano seconds}
+2026-08-15 22:12:32,826 [GCE] [ORD-20260815-221232-818] [INFO] 6 controls validated, 6 passed, 0 failed
+2026-08-15 22:12:32,826 [GCE] [ORD-20260815-221232-818] [INFO] LMT_CHECK_OVER in 1.20ms
+2026-08-15 22:15:11,612 [GCE] [ORD-20260815-221511-594] [INFO] LMT_CHECK_START
+2026-08-15 22:15:11,615 [GCE] [ORD-20260815-221511-594] [INFO] LMT_CHECK_NEW B 00700.HK 100@MKT 0.0 HKD PAFTDACXUAT Equity|AUTO_TRADER|DMA|TRADER1|HONGKONG_DESK|ACC01|CLIENT_A|XHKG|00700|VWAP|DAY
+2026-08-15 22:15:11,616 [GCE] [ORD-20260815-221511-594] [INFO] LMT_MKTDAT 00700.HK Last=450.0, Bid=430.0, Ask=440.0, Open=425.0, Close=420.0
+2026-08-15 22:15:11,620 [GCE] [ORD-20260815-221511-594] [INFO] [PASS] max_qty: Control passed | LMT=1000, ORD=100 {quantity_control.py:19 363900 nano seconds}
+2026-08-15 22:15:11,624 [GCE] [ORD-20260815-221511-594] [INFO] [PASS] max_price: Control passed | LMT=1000.0, ORD=0.0 {price_control.py:19 552200 nano seconds}
+2026-08-15 22:15:11,626 [GCE] [ORD-20260815-221511-594] [INFO] [PASS] max_consideration: Control passed | LMT=100000.0, ORD=44000.0 {max_order_consideration.py:139 708200 nano seconds}
+2026-08-15 22:15:11,628 [GCE] [ORD-20260815-221511-594] [INFO] [PASS] bbo_tolerance: Control passed | LMT=20.0, ORD=0.0 {bbo_price_tolerance.py:57 545200 nano seconds}
+2026-08-15 22:15:11,630 [GCE] [ORD-20260815-221511-594] [INFO] [PASS] close_tolerance: Control passed | LMT=20.0, ORD=4.761904761904762 {close_price_tolerance.py:56 478300 nano seconds}
+2026-08-15 22:15:11,633 [GCE] [ORD-20260815-221511-594] [INFO] [PASS] last_tolerance: Control passed | LMT=20.0, ORD=3.5294117647058822 {last_price_tolerance.py:97 9375900 nano seconds}
+2026-08-15 22:15:11,634 [GCE] [ORD-20260815-221511-594] [INFO] 6 controls validated, 6 passed, 0 failed
+2026-08-15 22:15:11,634 [GCE] [ORD-20260815-221511-594] [INFO] LMT_CHECK_OVER in 15.35ms
+2026-08-15 22:15:20,626 [GCE] [ORD-20260815-221520-623] [INFO] LMT_CHECK_START
+2026-08-15 22:15:20,627 [GCE] [ORD-20260815-221520-623] [INFO] LMT_CHECK_NEW B 00700.HK 100@MKT 0.0 HKD PAFTDACXUAT Equity|AUTO_TRADER|DMA|TRADER1|HONGKONG_DESK|ACC01|CLIENT_A|XHKG|00700|VWAP|DAY
+2026-08-15 22:15:20,627 [GCE] [ORD-20260815-221520-623] [INFO] LMT_MKTDAT 00700.HK Last=450.0, Bid=430.0, Ask=440.0, Open=425.0, Close=420.0
+2026-08-15 22:15:20,628 [GCE] [ORD-20260815-221520-623] [INFO] [PASS] max_qty: Control passed | LMT=1000, ORD=100 {quantity_control.py:19 157400 nano seconds}
+2026-08-15 22:15:20,629 [GCE] [ORD-20260815-221520-623] [INFO] [PASS] max_price: Control passed | LMT=1000.0, ORD=0.0 {price_control.py:19 166200 nano seconds}
+2026-08-15 22:15:20,630 [GCE] [ORD-20260815-221520-623] [INFO] [PASS] max_consideration: Control passed | LMT=100000.0, ORD=44000.0 {max_order_consideration.py:139 195600 nano seconds}
+2026-08-15 22:15:20,633 [GCE] [ORD-20260815-221520-623] [INFO] [PASS] bbo_tolerance: Control passed | LMT=20.0, ORD=0.0 {bbo_price_tolerance.py:57 184000 nano seconds}
+2026-08-15 22:15:20,634 [GCE] [ORD-20260815-221520-623] [INFO] [PASS] close_tolerance: Control passed | LMT=20.0, ORD=4.761904761904762 {close_price_tolerance.py:56 169500 nano seconds}
+2026-08-15 22:15:20,636 [GCE] [ORD-20260815-221520-623] [INFO] [PASS] last_tolerance: Control passed | LMT=20.0, ORD=3.5294117647058822 {last_price_tolerance.py:97 496700 nano seconds}
+2026-08-15 22:15:20,638 [GCE] [ORD-20260815-221520-623] [INFO] 6 controls validated, 6 passed, 0 failed
+2026-08-15 22:15:20,640 [GCE] [ORD-20260815-221520-623] [INFO] LMT_CHECK_OVER in 2.69ms

@@ -290,8 +290,19 @@ class PriceCache:
         return count
     
     def get_price(self, ric: str) -> Optional[PriceData]:
-        """Get price data by RIC"""
-        return self.prices.get(ric)
+        """Get price data by RIC with case-insensitive fallback."""
+        if not ric:
+            return None
+        if ric in self.prices:
+            return self.prices[ric]
+        ric_upper = str(ric).upper()
+        if ric_upper in self.prices:
+            return self.prices[ric_upper]
+        ric_lower = str(ric).lower()
+        for k, pd in self.prices.items():
+            if k.lower() == ric_lower:
+                return pd
+        return None
     
     def update_price(self, ric: str, bid: float, ask: float, last: float, 
                     close: float, open_price: float = 0.0) -> PriceData:

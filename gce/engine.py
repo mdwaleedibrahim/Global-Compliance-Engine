@@ -430,9 +430,34 @@ class GCE:
         order_id_val = getattr(order, 'order_id', '') or getattr(order, 'ric', '') or ''
         self.logger.lmt_check_start(order_id_val)
         if is_new:
-            self.logger.lmt_check_new()
+            self.logger.lmt_check_new(order)
         else:
-            self.logger.lmt_check_amend()
+            self.logger.lmt_check_amend(order)
+
+        # Log Market Data Prices (LMT_MKTDAT)
+        px_obj = None
+        ric = getattr(order, 'ric', getattr(order, 'symbol', '')) or ''
+        if ric:
+            if hasattr(self, 'prices') and self.prices:
+                px_obj = self.prices.get_price(ric)
+            if not px_obj and hasattr(self, 'pxfeeder') and self.pxfeeder:
+                px_obj = self.pxfeeder.get_price(ric)
+
+        last_px = getattr(px_obj, 'last', 0.0) if px_obj else 0.0
+        bid_px = getattr(px_obj, 'bid', 0.0) if px_obj else 0.0
+        ask_px = getattr(px_obj, 'ask', 0.0) if px_obj else 0.0
+        open_px = getattr(px_obj, 'open_price', getattr(px_obj, 'open', 0.0)) if px_obj else 0.0
+        close_px = getattr(px_obj, 'close', 0.0) if px_obj else 0.0
+
+        self.logger.lmt_mktdat(
+            ric=ric,
+            last=last_px,
+            bid=bid_px,
+            ask=ask_px,
+            open_px=open_px,
+            close=close_px,
+            order_id=order_id_val
+        )
             
         for c_name, passed, msg, limit, value, err, caller_loc, elapsed_ns in control_results:
             if err is not None:

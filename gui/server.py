@@ -398,7 +398,16 @@ def _get_gce_engine():
         except Exception as e:
             print(f"[GUI] GCE engine init warning: {e}")
             _state["gce"] = None
-    return _state.get("gce")
+
+    gce = _state.get("gce")
+    if gce:
+        gce.prices = _get("prices")
+        gce.pxfeeder = _get("pxfeeder")
+        gce.datamgr = _get("datamgr")
+        gce.instruments = _get("instruments")
+        gce.orders = _get("orders")
+        gce.positions = _get("positions")
+    return gce
 
 
 @app.route("/api/orders")
@@ -602,6 +611,10 @@ def api_prices_create():
         open_price = float(data.get("open", 0) or 0)
 
         p = pc.update_price(ric=ric, bid=bid, ask=ask, last=last, close=close, open_price=open_price)
+        pxf = _get("pxfeeder")
+        if pxf and hasattr(pxf, "_prices"):
+            pxf._prices[ric] = p
+            pxf._prices[ric.upper()] = p
         return jsonify({
             "ok": True,
             "message": f"Price entry for {ric} updated",
@@ -628,6 +641,10 @@ def api_prices_update(ric):
         open_price = float(data.get("open", 0) or 0)
 
         p = pc.update_price(ric=ric, bid=bid, ask=ask, last=last, close=close, open_price=open_price)
+        pxf = _get("pxfeeder")
+        if pxf and hasattr(pxf, "_prices"):
+            pxf._prices[ric] = p
+            pxf._prices[ric.upper()] = p
         return jsonify({
             "ok": True,
             "message": f"Price entry for {ric} updated",
@@ -906,6 +923,56 @@ def api_rms_orders(control, status):
 def api_performance():
     parser = _get("log_parser")
     return jsonify(parser.get_performance_data())
+
+
+# ---------------------------------------------------------------------------
+# Section 11 — Log Viewer & Order Log Search
+# ---------------------------------------------------------------------------
+@app.route("/api/logs")
+def api_logs():
+    order_id = request.args.get("order_id", "").strip()
+    search = request.args.get("search", "").strip()
+    level = request.args.get("level", "").strip().upper()
+    try:
+        limit = int(request.args.get("limit", 200))
+    except Exception:
+        limit = 200
+
+    log_path = Path(PROJECT_ROOT) / "logs" / "GCE.log"
+    if not log_path.exists():
+        return jsonify({"ok": True, "count": 0, "lines": [], "message": "Log file not found"})
+
+    matching_lines = []
+    try:
+        with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+
+        for line in lines:
+            line_str = line.strip()
+            if not line_str:
+                continue
+
+            if order_id and order_id not in line_str:
+                continue
+
+            if level and level != "ALL" and f"[{level}]" not in line_str:
+                continue
+
+            if search and search.lower() not in line_str.lower():
+                continue
+
+            matching_lines.append(line_str)
+
+        if limit > 0 and len(matching_lines) > limit:
+            matching_lines = matching_lines[-limit:]
+
+        return jsonify({
+            "ok": True,
+            "count": len(matching_lines),
+            "lines": matching_lines
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e), "lines": []}), 500
 
 
 # ---------------------------------------------------------------------------

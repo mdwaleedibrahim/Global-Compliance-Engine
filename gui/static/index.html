@@ -59,6 +59,9 @@
       <div class="nav-item" data-section="reconciliation" id="nav-reconciliation">
         <span class="nav-icon">🔄</span> Reconciliation
       </div>
+      <div class="nav-item" data-section="logs" id="nav-logs">
+        <span class="nav-icon">📜</span> Log Viewer
+      </div>
 
       <div class="nav-section-label">Coming Soon</div>
       <div class="nav-item" data-section="positions" id="nav-positions">
@@ -334,7 +337,7 @@
               <thead>
                 <tr>
                   <th>Order ID</th><th>RIC</th><th>Side</th><th>Qty</th><th>Price</th>
-                  <th>Status</th><th>Trader</th><th>Account</th><th>Filled</th><th>Time</th>
+                  <th>Status</th><th>Trader</th><th>Account</th><th>Filled</th><th>Time</th><th>Actions</th>
                 </tr>
               </thead>
               <tbody id="oms-tbody"></tbody>
@@ -342,6 +345,40 @@
           </div>
           <div class="empty-state" id="oms-empty" style="display:none">No orders found</div>
           <div class="pagination-bar" id="oms-pagination" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- Section: Log Viewer -->
+      <div class="section-panel" id="panel-logs">
+        <div class="search-bar" style="gap:12px;flex-wrap:wrap">
+          <input type="text" class="search-input" id="logs-search" placeholder="Search keyword or Order ID (e.g. ORD-...)" style="min-width:260px">
+          <select class="search-input" id="logs-level-filter" style="width:130px">
+            <option value="">All Levels</option>
+            <option value="INFO">INFO</option>
+            <option value="WARNING">WARNING</option>
+            <option value="ERROR">ERROR</option>
+            <option value="DEBUG">DEBUG</option>
+          </select>
+          <select class="search-input" id="logs-limit-select" style="width:130px">
+            <option value="100">Recent 100</option>
+            <option value="200" selected>Recent 200</option>
+            <option value="500">Recent 500</option>
+            <option value="1000">Recent 1000</option>
+            <option value="0">All Lines</option>
+          </select>
+          <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer">
+            <input type="checkbox" id="logs-autoscroll" checked> Auto-Scroll
+          </label>
+          <button class="btn btn-ghost btn-sm" onclick="loadLogsSection()">↻ Refresh Logs</button>
+        </div>
+        <div class="card" style="background:#0f172a;border-color:#334155">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #1e293b">
+            <div style="font-family:monospace;font-size:13px;color:#94a3b8">
+              📄 <span id="log-count-label">0 lines displayed</span> (Source: <code style="color:#38bdf8">logs/GCE.log</code>)
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="copyConsoleLogs()" style="color:#94a3b8;font-size:11px">📋 Copy All</button>
+          </div>
+          <pre id="log-console-content" style="margin:0;padding:16px;font-family:'Cascadia Code','Fira Code',Consolas,monospace;font-size:12px;line-height:1.6;color:#e2e8f0;background:#090d16;max-height:600px;overflow-y:auto;white-space:pre-wrap;word-break:break-all"></pre>
         </div>
       </div>
 
@@ -842,6 +879,27 @@
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="closeInstrModal()">Cancel</button>
         <button class="btn btn-primary" onclick="saveInstrument()">💾 Save Instrument</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Log Floating Modal -->
+  <div class="modal-overlay" id="order-log-modal" style="display:none">
+    <div class="modal-box" style="width:880px;max-width:95vw">
+      <div class="modal-header">
+        <h3 id="order-log-modal-title">📜 Order Execution Logs</h3>
+        <button class="modal-close" onclick="closeOrderLogModal()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:16px;background:#0f172a">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:12px;color:#94a3b8">
+          <span>Filter: <strong id="order-log-modal-ordid" style="color:#38bdf8">--</strong></span>
+          <span id="order-log-modal-count">0 matching log records</span>
+        </div>
+        <pre id="order-log-modal-content" style="margin:0;padding:14px;font-family:'Cascadia Code',Consolas,monospace;font-size:12px;line-height:1.5;color:#e2e8f0;background:#090d16;border:1px solid #1e293b;border-radius:6px;max-height:450px;overflow-y:auto;white-space:pre-wrap;word-break:break-all"></pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="copyOrderLogs()">📋 Copy Logs</button>
+        <button class="btn btn-primary" onclick="closeOrderLogModal()">Close</button>
       </div>
     </div>
   </div>

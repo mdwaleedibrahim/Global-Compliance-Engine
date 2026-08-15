@@ -25,7 +25,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     const titles = {
       services: 'Services', orders: 'Place Order', limits: 'GCE Limits', oms: 'OMS Browser',
       prices: 'Prices', instruments: 'Instruments', sessions: 'Exchange Sessions',
-      reconciliation: 'Reconciliation', positions: 'Positions',
+      reconciliation: 'Reconciliation', logs: 'Log Viewer', positions: 'Positions',
       rms: 'RMS Controls Summary', performance: 'Performance'
     };
     document.getElementById('section-title').textContent = titles[section] || section;
@@ -597,6 +597,7 @@ function renderOMSTable() {
       <td>${o.account}</td>
       <td>${o.filled || 0}</td>
       <td style="font-size:11px;color:var(--text-muted)">${(o.timestamp || '').substring(0, 19)}</td>
+      <td><button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" onclick="openOrderLogModal('${o.order_id}')">📜 Log</button></td>
     </tr>`;
   }).join('');
 
@@ -649,12 +650,12 @@ function renderPricesTable(data = pricesAllData) {
 
   tbody.innerHTML = pageSlice.map(p => `<tr>
     <td style="color:var(--text-bright);font-weight:500">${p.ric}</td>
-    <td>$${(p.open || 0).toFixed(2)}</td>
-    <td>$${(p.bid || 0).toFixed(2)}</td>
-    <td>$${(p.ask || 0).toFixed(2)}</td>
-    <td>$${(p.last || 0).toFixed(2)}</td>
-    <td>$${(p.close || 0).toFixed(2)}</td>
-    <td>$${(p.mid || 0).toFixed(2)}</td>
+    <td>${(p.open || 0).toFixed(2)}</td>
+    <td>${(p.bid || 0).toFixed(2)}</td>
+    <td>${(p.ask || 0).toFixed(2)}</td>
+    <td>${(p.last || 0).toFixed(2)}</td>
+    <td>${(p.close || 0).toFixed(2)}</td>
+    <td>${(p.mid || 0).toFixed(2)}</td>
     <td>
       <button class="btn btn-ghost btn-sm btn-icon-primary" onclick="openEditPriceModal('${p.ric}')">✏️ Edit</button>
       <button class="btn btn-ghost btn-sm btn-icon-danger" onclick="deletePrice('${p.ric}')">🗑️</button>
@@ -1409,7 +1410,7 @@ function renderRecentPlacedOrders() {
       <td>${o.ric || o.symbol}</td>
       <td><span class="badge ${o.side === 'B' ? 'badge-pass' : 'badge-fail'}">${o.side === 'B' ? 'BUY' : 'SELL'}</span></td>
       <td>${(o.quantity || 0).toLocaleString()}</td>
-      <td>$${(o.price || 0).toFixed(2)}</td>
+      <td>${(o.price || 0).toFixed(2)}</td>
       <td><span class="badge ${badgeClass}">${o.status}</span></td>
       <td>${o.trader}</td>
       <td>${o.account}</td>
@@ -1418,6 +1419,137 @@ function renderRecentPlacedOrders() {
     </tr>`;
   }).join('');
 }
+
+// ============================================================
+// Section: Log Viewer & Order Log Modal
+// ============================================================
+let logsFilterDebounceTimer = null;
+
+async function loadLogsSection() {
+  const search = (document.getElementById('logs-search') ? document.getElementById('logs-search').value : '').trim();
+  const level = document.getElementById('logs-level-filter') ? document.getElementById('logs-level-filter').value : '';
+  const limit = document.getElementById('logs-limit-select') ? document.getElementById('logs-limit-select').value : '200';
+
+  const query = new URLSearchParams({ search, level, limit });
+  const data = await api(`/api/logs?${query.toString()}`);
+  const consoleEl = document.getElementById('log-console-content');
+  const countLabel = document.getElementById('log-count-label');
+
+  if (!data || !data.ok) {
+    if (consoleEl) consoleEl.innerHTML = `<span style="color:#ef4444">Failed to load logs</span>`;
+    if (countLabel) countLabel.textContent = '0 lines displayed';
+    return;
+  }
+
+  const lines = data.lines || [];
+  if (countLabel) countLabel.textContent = `${lines.length} lines displayed`;
+
+  if (consoleEl) {
+    if (lines.length === 0) {
+      consoleEl.innerHTML = `<span style="color:#64748b">No matching log records found</span>`;
+    } else {
+      consoleEl.innerHTML = formatLogLinesHTML(lines);
+      const autoScrollEl = document.getElementById('logs-autoscroll');
+      if (autoScrollEl && autoScrollEl.checked) {
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+      }
+    }
+  }
+}
+
+function formatLogLinesHTML(lines) {
+  return lines.map(line => {
+    let escaped = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    
+    // Highlight log levels
+    escaped = escaped.replace(/\[(INFO)\]/g, '<span style="color:#38bdf8;font-weight:600">[$1]</span>');
+    escaped = escaped.replace(/\[(WARNING)\]/g, '<span style="color:#fbbf24;font-weight:600">[$1]</span>');
+    escaped = escaped.replace(/\[(ERROR)\]/g, '<span style="color:#f87171;font-weight:600">[$1]</span>');
+    escaped = escaped.replace(/\[(DEBUG)\]/g, '<span style="color:#a78bfa;font-weight:600">[$1]</span>');
+    
+    // Highlight PASS / FAIL statuses
+    escaped = escaped.replace(/\[PASS\]/g, '<span style="color:#4ade80;font-weight:bold">[PASS]</span>');
+    escaped = escaped.replace(/\[FAIL\]/g, '<span style="color:#f87171;font-weight:bold">[FAIL]</span>');
+    
+    // Highlight Order IDs
+    escaped = escaped.replace(/\[(ORD-[^\]]+)\]/g, '[<span style="color:#f472b6;font-weight:600">$1</span>]');
+
+    return escaped;
+  }).join('\n');
+}
+
+function copyConsoleLogs() {
+  const consoleEl = document.getElementById('log-console-content');
+  if (!consoleEl) return;
+  navigator.clipboard.writeText(consoleEl.textContent || '')
+    .then(() => alert('Log content copied to clipboard!'))
+    .catch(e => alert(`Copy failed: ${e}`));
+}
+
+// Order-specific Floating Log Modal
+async function openOrderLogModal(orderId) {
+  if (!orderId) return;
+  const modal = document.getElementById('order-log-modal');
+  const titleEl = document.getElementById('order-log-modal-title');
+  const ordIdEl = document.getElementById('order-log-modal-ordid');
+  const countEl = document.getElementById('order-log-modal-count');
+  const contentEl = document.getElementById('order-log-modal-content');
+
+  if (titleEl) titleEl.textContent = `📜 Order Execution Logs — ${orderId}`;
+  if (ordIdEl) ordIdEl.textContent = orderId;
+  if (contentEl) contentEl.innerHTML = `<span style="color:#64748b">Loading order logs...</span>`;
+  if (modal) modal.style.display = 'flex';
+
+  const data = await api(`/api/logs?order_id=${encodeURIComponent(orderId)}&limit=0`);
+  if (!data || !data.ok) {
+    if (contentEl) contentEl.innerHTML = `<span style="color:#ef4444">Failed to retrieve logs for order ${orderId}</span>`;
+    if (countEl) countEl.textContent = '0 matching log records';
+    return;
+  }
+
+  const lines = data.lines || [];
+  if (countEl) countEl.textContent = `${lines.length} matching log records`;
+  if (contentEl) {
+    if (lines.length === 0) {
+      contentEl.innerHTML = `<span style="color:#64748b">No log records found for order ${orderId}</span>`;
+    } else {
+      contentEl.innerHTML = formatLogLinesHTML(lines);
+      contentEl.scrollTop = contentEl.scrollHeight;
+    }
+  }
+}
+
+function closeOrderLogModal() {
+  const modal = document.getElementById('order-log-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function copyOrderLogs() {
+  const contentEl = document.getElementById('order-log-modal-content');
+  if (!contentEl) return;
+  navigator.clipboard.writeText(contentEl.textContent || '')
+    .then(() => alert('Order log records copied to clipboard!'))
+    .catch(e => alert(`Copy failed: ${e}`));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const logSearchInput = document.getElementById('logs-search');
+  const logLevelSelect = document.getElementById('logs-level-filter');
+  const logLimitSelect = document.getElementById('logs-limit-select');
+
+  if (logSearchInput) {
+    logSearchInput.addEventListener('input', () => {
+      clearTimeout(logsFilterDebounceTimer);
+      logsFilterDebounceTimer = setTimeout(loadLogsSection, 300);
+    });
+  }
+  if (logLevelSelect) {
+    logLevelSelect.addEventListener('change', loadLogsSection);
+  }
+  if (logLimitSelect) {
+    logLimitSelect.addEventListener('change', loadLogsSection);
+  }
+});
 
 // ============================================================
 // Refresh Logic
@@ -1433,6 +1565,8 @@ function refreshCurrentSection() {
     case 'prices': loadPrices(); loadFX(); break;
     case 'instruments': loadInstruments(); break;
     case 'sessions': loadSessions(); break;
+    case 'reconciliation': loadReconciliation(); break;
+    case 'logs': loadLogsSection(); break;
     case 'rms': loadRMS(); break;
     case 'performance': loadPerformance(); break;
   }
@@ -1442,6 +1576,7 @@ function refreshCurrentSection() {
 setInterval(() => {
   if (currentSection === 'services') loadServices();
   if (currentSection === 'prices') { loadPrices(); loadFX(); }
+  if (currentSection === 'logs') loadLogsSection();
 }, REFRESH_INTERVAL);
 
 // ============================================================

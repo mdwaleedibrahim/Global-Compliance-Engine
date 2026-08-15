@@ -211,13 +211,47 @@ class GCELogger:
             self.current_order_id = str(order_id)
         self._enqueue_log("INFO", "LMT_CHECK_START")
     
-    def lmt_check_new(self):
+    def _format_order_check_line(self, check_type: str, order: Optional[Any] = None) -> str:
+        """Format LMT_CHECK_NEW or LMT_CHECK_AMEND with full order parameters."""
+        if not order:
+            return check_type
+
+        side = str(getattr(order, 'side', '') or '').strip()
+        ric = str(getattr(order, 'ric', getattr(order, 'symbol', '')) or '').strip()
+        qty = getattr(order, 'quantity', 0)
+        ordertype = str(getattr(order, 'order_type', '') or '').strip()
+        price = getattr(order, 'price', 0.0)
+        currency = str(getattr(order, 'currency', 'HKD') or 'HKD').strip()
+
+        product = str(getattr(order, 'product', '') or '').strip()
+        app = str(getattr(order, 'application', '') or '').strip()
+        flow = str(getattr(order, 'flow', '') or '').strip()
+        trader = str(getattr(order, 'trader', '') or '').strip()
+        desk = str(getattr(order, 'desk', '') or '').strip()
+        account = str(getattr(order, 'account', '') or '').strip()
+        client = str(getattr(order, 'client', '') or '').strip()
+        exchange = str(getattr(order, 'exchange', '') or '').strip()
+        underlying = str(getattr(order, 'underlying', '') or '').strip()
+        algo = str(getattr(order, 'algo_strategy', getattr(order, 'algo', '')) or '').strip()
+        tif = str(getattr(order, 'tif', '') or '').strip()
+
+        pipe_details = f"{product}|{app}|{flow}|{trader}|{desk}|{account}|{client}|{exchange}|{underlying}|{algo}|{tif}"
+        return f"{check_type} {side} {ric} {qty}@{ordertype} {price} {currency} PAFTDACXUAT {pipe_details}"
+
+    def lmt_check_new(self, order: Optional[Any] = None):
         """Log new order limit check."""
-        self._enqueue_log("INFO", "LMT_CHECK_NEW")
+        msg = self._format_order_check_line("LMT_CHECK_NEW", order)
+        self._enqueue_log("INFO", msg)
     
-    def lmt_check_amend(self):
+    def lmt_check_amend(self, order: Optional[Any] = None):
         """Log amend order limit check."""
-        self._enqueue_log("INFO", "LMT_CHECK_AMEND")
+        msg = self._format_order_check_line("LMT_CHECK_AMEND", order)
+        self._enqueue_log("INFO", msg)
+
+    def lmt_mktdat(self, ric: str, last: Any = 0.0, bid: Any = 0.0, ask: Any = 0.0, open_px: Any = 0.0, close: Any = 0.0, order_id: str = ""):
+        """Log market data prices line (LMT_MKTDAT)."""
+        msg = f"LMT_MKTDAT {ric} Last={last}, Bid={bid}, Ask={ask}, Open={open_px}, Close={close}"
+        self._enqueue_log("INFO", msg, order_id=order_id or self.current_order_id)
     
     def control_passed(self, control_name: str, limit_value: Any,
                       order_value: Any, caller_location: str = "",
