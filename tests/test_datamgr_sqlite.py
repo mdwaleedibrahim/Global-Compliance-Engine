@@ -100,6 +100,62 @@ class TestDataMgrSQLite(unittest.TestCase):
         limits_unmatched = datamgr.get_matching_limits(order_unmatched)
         self.assertEqual(limits_unmatched['Trader'], "*")
 
+    def test_rate_limit_spec_parsing_and_enablement(self):
+        """Test DuplicateOrders/BurstOrders 'x,y' format parsing and 0=disabled behavior."""
+        from gce.datamgr import parse_rate_limit_spec, is_control_enabled, RMSLimitRule
+
+        # Test parsing 'x,y' format
+        self.assertEqual(parse_rate_limit_spec("10,60"), (10, 60))
+        self.assertEqual(parse_rate_limit_spec("5,10"), (5, 10))
+        self.assertIsNone(parse_rate_limit_spec("0"))
+        self.assertIsNone(parse_rate_limit_spec(0))
+
+        # Test control enablement (0 = disabled)
+        self.assertFalse(is_control_enabled(0))
+        self.assertFalse(is_control_enabled("0"))
+        self.assertTrue(is_control_enabled(500))
+        self.assertTrue(is_control_enabled("10,60"))
+
+        rule = RMSLimitRule({'DuplicateOrders': '10,60', 'BurstOrders': '0', 'MaxOrderSize': 1000, 'MaxOrderPrice': 0})
+        self.assertEqual(rule.parse_duplicate_orders(), (10, 60))
+        self.assertIsNone(rule.parse_burst_orders())
+        self.assertTrue(rule.is_control_enabled('MaxOrderSize'))
+        self.assertFalse(rule.is_control_enabled('MaxOrderPrice'))
+        self.assertTrue(rule.is_control_enabled('DuplicateOrders'))
+        self.assertFalse(rule.is_control_enabled('BurstOrders'))
+
+    def test_controls_dynamic_rms_limits_resolution(self):
+        """Verify controls resolve LMT from RMS limits in datamgr context."""
+        from gce.controls.quantity_control import MaxOrderQuantity
+        from gce.controls.price_control import MaxOrderPrice
+        from gce.controls.max_order_consideration import MaxOrderConsideration
+
+        datamgr = DataMgr(static_dir=self.test_dir, dat_path=self.test_dat, db_path=self.test_db)
+        datamgr.replace_limits_from_csv(self.test_csv)
+        context = {'datamgr': datamgr}
+
+        # Order matching TRADER_A rule (MaxOrderSize=500, MaxOrderPrice=1000, MaxOrderValue=500000)
+        order = Order(order_id="O1", symbol="0700.HK", quantity=400, price=500.0, trader="TRADER_A")
+
+        # Quantity control (MaxOrderSize)
+        ctrl_qty = MaxOrderQuantity()
+        passed, msg, lmt, ord_val = ctrl_qty.validate(order, context)
+        self.assertTrue(passed)
+        self.assertEqual(lmt, 500)
+
+        # Price control (MaxOrderPrice)
+        ctrl_px = MaxOrderPrice()
+        passed, msg, lmt, ord_val = ctrl_px.validate(order, context)
+        self.assertTrue(passed)
+        self.assertEqual(lmt, 1000.0)
+
+        # Consideration control (MaxOrderValue)
+        ctrl_val = MaxOrderConsideration(limit=0.0)
+        passed, msg, lmt, ord_val = ctrl_val.validate(order, context)
+        self.assertTrue(passed)
+        self.assertEqual(lmt, 500000.0)
+        self.assertEqual(ord_val, 200000.0)  # 400 * 500.0
+
 
 if __name__ == "__main__":
     unittest.main()

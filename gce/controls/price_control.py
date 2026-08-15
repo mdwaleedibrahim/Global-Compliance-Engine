@@ -7,34 +7,34 @@ from gce.controls.base_control import BaseControl
 class MaxOrderPrice(BaseControl):
     """Control: Maximum allowed order price"""
     
-    def __init__(self, limit: float):
+    def __init__(self, limit: float = 0.0):
         """
         Initialize Max Order Price control.
         
         Args:
-            limit: Maximum allowed order price
+            limit: Configured fallback limit when datamgr is not provided in context.
         """
-        super().__init__("MaxOrderPrice", limit)
+        super().__init__("MaxOrderPrice", float(limit))
     
     def validate(self, order: Any, context: Dict[str, Any]) -> Tuple[bool, str, float, float]:
         """
         Validate order price against limit.
         
-        Validation Rules:
-        - Pass: ORD <= LMT
-        - Fail: ORD > LMT
-        
-        Args:
-            order: Order to validate
-            context: Context dict with caches
-            
-        Returns:
-            (passed: bool, message: str, order_price: float, limit: float)
+        LMT is always taken from MaxOrderPrice in datamgr RMS limits when datamgr is present.
         """
-        order_price = order.price or 0.0
-        limit = self.limit
+        order_price = float(getattr(order, 'price', 0.0) or 0.0)
+
+        datamgr = context.get('datamgr') if context else None
+        if datamgr and hasattr(datamgr, 'get_matching_limits'):
+            matched = datamgr.get_matching_limits(order)
+            limit = float(matched.get('MaxOrderPrice', 0.0) or 0.0)
+        else:
+            limit = self.limit
+
+        if limit == 0.0:
+            return (True, "Control MaxOrderPrice disabled (LMT=0)", 0.0, order_price)
         
         if order_price <= limit:
-            return (True, f"Order price OK: ORD={order_price} <= LMT={limit}", order_price, limit)
+            return (True, f"Order price OK: ORD={order_price} <= LMT={limit}", limit, order_price)
         else:
-            return (False, f"Order price is too big, ORD={order_price} > LMT={limit}", order_price, limit)
+            return (False, f"Order price is too big, ORD={order_price} > LMT={limit}", limit, order_price)

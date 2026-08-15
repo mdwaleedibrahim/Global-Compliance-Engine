@@ -153,7 +153,16 @@ class MaxOrderConsideration(BaseControl):
         xr_rate = self._get_fx_rate(order_currency, context)
         
         ord_val = order_qty * ref_price * xr_rate
-        limit = self.limit
+
+        datamgr = context.get('datamgr') if context else None
+        if datamgr and hasattr(datamgr, 'get_matching_limits'):
+            matched = datamgr.get_matching_limits(order)
+            limit = float(matched.get('MaxOrderValue', 0.0) or 0.0)
+        else:
+            limit = self.limit
+
+        if limit == 0.0:
+            return (True, "Control MaxOrderConsideration disabled (LMT=0)", 0.0, ord_val)
         
         if ord_val <= limit:
             return (True, f"Order consideration OK: ORD={ord_val} <= LMT={limit}", limit, ord_val)
