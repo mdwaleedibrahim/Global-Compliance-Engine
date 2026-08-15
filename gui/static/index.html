@@ -217,11 +217,16 @@
           <button class="tab-btn" onclick="switchPriceTab('fx')">FX Rates</button>
         </div>
         <div class="tab-content active" id="tab-market">
+          <div class="search-bar" style="margin-bottom:12px">
+            <input type="text" class="search-input" id="prices-search" placeholder="Search RIC...">
+            <button class="btn btn-primary btn-sm" onclick="openAddPriceModal()">➕ Add / Edit Price</button>
+            <button class="btn btn-ghost btn-sm" onclick="loadPrices()">↻</button>
+          </div>
           <div class="card">
             <div class="table-wrapper">
               <table>
                 <thead>
-                  <tr><th>RIC</th><th>Open</th><th>Bid</th><th>Ask</th><th>Last</th><th>Close</th><th>Mid</th></tr>
+                  <tr><th>RIC</th><th>Open</th><th>Bid</th><th>Ask</th><th>Last</th><th>Close</th><th>Mid</th><th>Actions</th></tr>
                 </thead>
                 <tbody id="prices-tbody"></tbody>
               </table>
@@ -584,6 +589,53 @@
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="closeImportModal()">Cancel</button>
         <button class="btn btn-primary" onclick="importLimitsCSV()">Upload & Import</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Price Add / Edit Modal -->
+  <div class="modal-overlay" id="price-modal" style="display:none">
+    <div class="modal-card" style="max-width:550px">
+      <div class="modal-header">
+        <div class="modal-title" id="price-modal-title">💹 Add / Edit Price Data</div>
+        <button class="modal-close" onclick="closePriceModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="price-form">
+          <div class="form-grid" style="grid-template-columns:1fr">
+            <div class="form-group">
+              <label>RIC (Instrument Symbol)</label>
+              <input type="text" id="price-field-ric" list="price-ric-list" placeholder="e.g. 0700.HK or AAPL" required autocomplete="off">
+              <datalist id="price-ric-list"></datalist>
+            </div>
+          </div>
+          <div class="form-grid" style="margin-top:12px">
+            <div class="form-group">
+              <label>Open Price</label>
+              <input type="number" step="0.001" id="price-field-open" value="0.0">
+            </div>
+            <div class="form-group">
+              <label>Bid Price</label>
+              <input type="number" step="0.001" id="price-field-bid" value="0.0">
+            </div>
+            <div class="form-group">
+              <label>Ask Price</label>
+              <input type="number" step="0.001" id="price-field-ask" value="0.0">
+            </div>
+            <div class="form-group">
+              <label>Last Price</label>
+              <input type="number" step="0.001" id="price-field-last" value="0.0">
+            </div>
+            <div class="form-group">
+              <label>Close Price</label>
+              <input type="number" step="0.001" id="price-field-close" value="0.0">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closePriceModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="savePrice()">💾 Save Price</button>
       </div>
     </div>
   </div>

@@ -418,6 +418,76 @@ def api_prices():
     return jsonify(prices_list)
 
 
+@app.route("/api/prices", methods=["POST"])
+def api_prices_create():
+    pc = _get("prices")
+    if not pc:
+        return jsonify({"ok": False, "message": "PriceCache not available"}), 500
+    try:
+        data = request.json or {}
+        ric = str(data.get("ric", "") or "").strip()
+        if not ric:
+            return jsonify({"ok": False, "message": "RIC is required"}), 400
+        
+        bid = float(data.get("bid", 0) or 0)
+        ask = float(data.get("ask", 0) or 0)
+        last = float(data.get("last", 0) or 0)
+        close = float(data.get("close", 0) or 0)
+        open_price = float(data.get("open", 0) or 0)
+
+        p = pc.update_price(ric=ric, bid=bid, ask=ask, last=last, close=close, open_price=open_price)
+        return jsonify({
+            "ok": True,
+            "message": f"Price entry for {ric} updated",
+            "price": {
+                "ric": p.ric, "open": p.open_price, "bid": p.bid, "ask": p.ask,
+                "last": p.last, "close": p.close, "mid": p.mid, "timestamp": p.timestamp
+            }
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 400
+
+
+@app.route("/api/prices/<path:ric>", methods=["PUT"])
+def api_prices_update(ric):
+    pc = _get("prices")
+    if not pc:
+        return jsonify({"ok": False, "message": "PriceCache not available"}), 500
+    try:
+        data = request.json or {}
+        bid = float(data.get("bid", 0) or 0)
+        ask = float(data.get("ask", 0) or 0)
+        last = float(data.get("last", 0) or 0)
+        close = float(data.get("close", 0) or 0)
+        open_price = float(data.get("open", 0) or 0)
+
+        p = pc.update_price(ric=ric, bid=bid, ask=ask, last=last, close=close, open_price=open_price)
+        return jsonify({
+            "ok": True,
+            "message": f"Price entry for {ric} updated",
+            "price": {
+                "ric": p.ric, "open": p.open_price, "bid": p.bid, "ask": p.ask,
+                "last": p.last, "close": p.close, "mid": p.mid, "timestamp": p.timestamp
+            }
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 400
+
+
+@app.route("/api/prices/<path:ric>", methods=["DELETE"])
+def api_prices_delete(ric):
+    pc = _get("prices")
+    if not pc:
+        return jsonify({"ok": False, "message": "PriceCache not available"}), 500
+    try:
+        success = pc.delete_price(ric)
+        if success:
+            return jsonify({"ok": True, "message": f"Price entry for {ric} deleted"})
+        return jsonify({"ok": False, "message": f"Price entry for {ric} not found"}), 404
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 400
+
+
 @app.route("/api/fx")
 def api_fx():
     px = _get("pxfeeder")

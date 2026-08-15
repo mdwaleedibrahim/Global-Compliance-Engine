@@ -614,14 +614,22 @@ let pricesPage = 1;
 async function loadPrices() {
   const data = await api('/api/prices');
   pricesAllData = data || [];
-  pricesPage = 1;
-  renderPricesTable();
+  filterAndRenderPrices();
 }
 
-function renderPricesTable() {
+function filterAndRenderPrices() {
+  const search = (document.getElementById('prices-search').value || '').toLowerCase();
+  let filtered = pricesAllData;
+  if (search) {
+    filtered = filtered.filter(p => (p.ric || '').toLowerCase().includes(search));
+  }
+  renderPricesTable(filtered);
+}
+
+function renderPricesTable(data = pricesAllData) {
   const tbody = document.getElementById('prices-tbody');
   const empty = document.getElementById('prices-empty');
-  const total = pricesAllData.length;
+  const total = data.length;
 
   if (total === 0) {
     tbody.innerHTML = '';
@@ -632,22 +640,140 @@ function renderPricesTable() {
   empty.style.display = 'none';
 
   const startIdx = (pricesPage - 1) * PAGE_SIZE;
-  const pageSlice = pricesAllData.slice(startIdx, startIdx + PAGE_SIZE);
+  const pageSlice = data.slice(startIdx, startIdx + PAGE_SIZE);
 
   tbody.innerHTML = pageSlice.map(p => `<tr>
     <td style="color:var(--text-bright);font-weight:500">${p.ric}</td>
-    <td>${(p.open || 0).toFixed(2)}</td>
-    <td>${(p.bid || 0).toFixed(2)}</td>
-    <td>${(p.ask || 0).toFixed(2)}</td>
-    <td>${(p.last || 0).toFixed(2)}</td>
-    <td>${(p.close || 0).toFixed(2)}</td>
-    <td>${(p.mid || 0).toFixed(2)}</td>
+    <td>$${(p.open || 0).toFixed(2)}</td>
+    <td>$${(p.bid || 0).toFixed(2)}</td>
+    <td>$${(p.ask || 0).toFixed(2)}</td>
+    <td>$${(p.last || 0).toFixed(2)}</td>
+    <td>$${(p.close || 0).toFixed(2)}</td>
+    <td>$${(p.mid || 0).toFixed(2)}</td>
+    <td>
+      <button class="btn btn-ghost btn-sm btn-icon-primary" onclick="openEditPriceModal('${p.ric}')">✏️ Edit</button>
+      <button class="btn btn-ghost btn-sm btn-icon-danger" onclick="deletePrice('${p.ric}')">🗑️</button>
+    </td>
   </tr>`).join('');
 
   renderPaginationBar('prices-pagination', total, pricesPage, PAGE_SIZE, newPage => {
     pricesPage = newPage;
-    renderPricesTable();
+    renderPricesTable(data);
   }, 'Total Records');
+}
+
+// Search input listener
+document.getElementById('prices-search').addEventListener('input', () => { pricesPage = 1; filterAndRenderPrices(); });
+
+// Auto-populate price fields if entered RIC exists in prices cache
+function checkAndPopulatePriceByRIC(ricInput) {
+  const cleanRic = (ricInput || '').trim();
+  if (!cleanRic) return;
+
+  const item = pricesAllData.find(p => p.ric.toLowerCase() === cleanRic.toLowerCase());
+  if (item) {
+    document.getElementById('price-field-open').value = item.open || 0;
+    document.getElementById('price-field-bid').value = item.bid || 0;
+    document.getElementById('price-field-ask').value = item.ask || 0;
+    document.getElementById('price-field-last').value = item.last || 0;
+    document.getElementById('price-field-close').value = item.close || 0;
+  }
+}
+
+const priceRicInputEl = document.getElementById('price-field-ric');
+priceRicInputEl.addEventListener('input', (e) => checkAndPopulatePriceByRIC(e.target.value));
+priceRicInputEl.addEventListener('change', (e) => checkAndPopulatePriceByRIC(e.target.value));
+
+// Price Modal Handlers
+function openAddPriceModal() {
+  document.getElementById('price-modal-title').textContent = '➕ Add / Edit Market Price';
+  document.getElementById('price-field-ric').value = '';
+  document.getElementById('price-field-ric').disabled = false;
+  document.getElementById('price-field-open').value = '0.0';
+  document.getElementById('price-field-bid').value = '0.0';
+  document.getElementById('price-field-ask').value = '0.0';
+  document.getElementById('price-field-last').value = '0.0';
+  document.getElementById('price-field-close').value = '0.0';
+
+  // Populate datalist with known RICs for autocomplete
+  const datalist = document.getElementById('price-ric-list');
+  if (datalist) {
+    const knownRics = new Set([
+      ...pricesAllData.map(p => p.ric),
+      ...(instrAllData || []).map(i => i.ric)
+    ]);
+    datalist.innerHTML = Array.from(knownRics).slice(0, 500).map(ric => `<option value="${ric}">`).join('');
+  }
+
+  document.getElementById('price-modal').style.display = 'flex';
+}
+
+function openEditPriceModal(ric) {
+  const item = pricesAllData.find(p => p.ric === ric);
+  if (!item) return;
+
+  document.getElementById('price-modal-title').textContent = `✏️ Edit Market Price (${ric})`;
+  document.getElementById('price-field-ric').value = item.ric;
+  document.getElementById('price-field-ric').disabled = true;
+  document.getElementById('price-field-open').value = item.open || 0;
+  document.getElementById('price-field-bid').value = item.bid || 0;
+  document.getElementById('price-field-ask').value = item.ask || 0;
+  document.getElementById('price-field-last').value = item.last || 0;
+  document.getElementById('price-field-close').value = item.close || 0;
+  document.getElementById('price-modal').style.display = 'flex';
+}
+
+function closePriceModal() {
+  document.getElementById('price-modal').style.display = 'none';
+}
+
+async function savePrice() {
+  const ric = (document.getElementById('price-field-ric').value || '').trim();
+  if (!ric) {
+    alert('Please enter a RIC symbol');
+    return;
+  }
+
+  const payload = {
+    ric,
+    open: Number(document.getElementById('price-field-open').value || 0),
+    bid: Number(document.getElementById('price-field-bid').value || 0),
+    ask: Number(document.getElementById('price-field-ask').value || 0),
+    last: Number(document.getElementById('price-field-last').value || 0),
+    close: Number(document.getElementById('price-field-close').value || 0),
+  };
+
+  try {
+    const r = await fetch('/api/prices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const res = await r.json();
+    if (res.ok) {
+      closePriceModal();
+      loadPrices();
+    } else {
+      alert(`Error saving price: ${res.message}`);
+    }
+  } catch (e) {
+    alert(`Failed to save price: ${e}`);
+  }
+}
+
+async function deletePrice(ric) {
+  if (!confirm(`Are you sure you want to delete price data for ${ric}?`)) return;
+  try {
+    const r = await fetch(`/api/prices/${encodeURIComponent(ric)}`, { method: 'DELETE' });
+    const res = await r.json();
+    if (res.ok) {
+      loadPrices();
+    } else {
+      alert(`Error deleting price: ${res.message}`);
+    }
+  } catch (e) {
+    alert(`Failed to delete price: ${e}`);
+  }
 }
 
 async function loadFX() {

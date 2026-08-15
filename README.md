@@ -10,7 +10,7 @@ A high-performance pre-trade order risk management system for Hong Kong & global
   - **Services Management**: Check status and **Start / Stop / Restart** sub-services (`Engine`, `PXFeeder`, `Logger Worker`, `DataMgr`).
   - **GCE Limits**: Full 49-column horizontal-scrolling CRUD table for SQLite RMS limits (`rms_limits.db`) with **column-level search filters** (supporting exact matches, text search, and numerical operators like `>1000`), linked instrument dropdowns (`Product`, `SecurityType`, `symbol`, `Currency`), **CSV Download**, **CSV Upload** (Replace/Append), and dynamic pagination (> 20 records threshold).
   - **OMS Browser**: Interactive order browser with search, status filtering, and dynamic bottom pagination (50 per page, threshold > 20 records).
-  - **Prices & FX**: Market prices cache view (with pagination > 20 records) and multi-currency FX rates grid.
+  - **Prices & FX**: Market prices cache view with **full CRUD management** (Add/Edit/Delete prices directly from Web GUI into `PriceCache` with `.dat` file persistence), real-time RIC search, bottom pagination (50 per page), and multi-currency FX rates grid.
   - **Instruments**: Searchable instrument catalog (17,635 RICs, RIC masterkey index) displaying stock code, **Exchange** (`XHKG`), name, category, **SecurityType** (mapped from CSV `Sub-Category`), board lot, trading currency, eligibility flags, bottom pagination (50 per page), and an on-demand **`↻ Reload CSV`** button to re-parse instrument static data directly from CSV files.
   - **Exchange Sessions**: Visual session status (`XHKG`, `XSES`) with live state badges (🟢 Trading, 🟡 Break, 🔴 Closed) and configuration reloading.
   - **Reconciliation**: Audit order fills against position caches with variance alerts.

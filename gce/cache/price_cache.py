@@ -296,7 +296,7 @@ class PriceCache:
     def update_price(self, ric: str, bid: float, ask: float, last: float, 
                     close: float, open_price: float = 0.0) -> PriceData:
         """
-        Update or create price data
+        Update or create price data and auto-save persistence if configured.
         """
         price_data = PriceData(
             ric=ric,
@@ -307,7 +307,26 @@ class PriceCache:
             open_price=open_price
         )
         self.prices[ric] = price_data
+        if self.dat_path:
+            try:
+                self.save_to_dat(self.dat_path)
+            except Exception as e:
+                print(f"Warning: Failed to persist price cache to .dat: {e}")
         return price_data
+
+    def delete_price(self, ric: str) -> bool:
+        """
+        Delete price data entry by RIC and auto-save persistence if configured.
+        """
+        if ric in self.prices:
+            del self.prices[ric]
+            if self.dat_path:
+                try:
+                    self.save_to_dat(self.dat_path)
+                except Exception as e:
+                    print(f"Warning: Failed to persist price cache to .dat: {e}")
+            return True
+        return False
     
     def save_to_csv(self, csv_path: str) -> int:
         """
