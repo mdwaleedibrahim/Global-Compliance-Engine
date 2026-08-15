@@ -243,6 +243,130 @@ def api_service_restart(name):
 
 
 # ---------------------------------------------------------------------------
+# Section 2 — GCE Limits (RMS Control Limits CRUD & Import/Export)
+# ---------------------------------------------------------------------------
+@app.route("/api/limits")
+def api_limits_list():
+    dm = _get("datamgr")
+    if not dm:
+        return jsonify([])
+    rows = dm.get_all_limits_from_db()
+    return jsonify(rows)
+
+
+@app.route("/api/limits/options")
+def api_limits_options():
+    dm = _get("datamgr")
+    if not dm:
+        return jsonify({})
+    return jsonify(dm.get_limit_options())
+
+
+@app.route("/api/limits", methods=["POST"])
+def api_limits_create():
+    dm = _get("datamgr")
+    if not dm:
+        return jsonify({"ok": False, "message": "DataMgr not available"}), 500
+    try:
+        data = request.json or {}
+        db_id = dm.add_limit_rule(data)
+        return jsonify({"ok": True, "db_id": db_id, "message": "Limit rule created successfully"})
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 400
+
+
+@app.route("/api/limits/<int:db_id>", methods=["PUT"])
+def api_limits_update(db_id):
+    dm = _get("datamgr")
+    if not dm:
+        return jsonify({"ok": False, "message": "DataMgr not available"}), 500
+    try:
+        data = request.json or {}
+        success = dm.update_limit_rule(db_id, data)
+        if success:
+            return jsonify({"ok": True, "message": f"Limit rule {db_id} updated"})
+        return jsonify({"ok": False, "message": f"Rule {db_id} not found"}), 404
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 400
+
+
+@app.route("/api/limits/<int:db_id>", methods=["DELETE"])
+def api_limits_delete(db_id):
+    dm = _get("datamgr")
+    if not dm:
+        return jsonify({"ok": False, "message": "DataMgr not available"}), 500
+    try:
+        success = dm.delete_limit_rule(db_id)
+        if success:
+            return jsonify({"ok": True, "message": f"Limit rule {db_id} deleted"})
+        return jsonify({"ok": False, "message": f"Rule {db_id} not found"}), 404
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 400
+
+
+@app.route("/api/limits/export")
+def api_limits_export():
+    dm = _get("datamgr")
+    if not dm:
+        return "DataMgr not available", 500
+    from gce.datamgr import ALL_DB_COLUMNS
+    rows = dm.get_all_limits_from_db()
+    
+    import io, csv
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=ALL_DB_COLUMNS)
+    writer.writeheader()
+    for r in rows:
+        row_dict = {col: r.get(col, '') for col in ALL_DB_COLUMNS}
+        writer.writerow(row_dict)
+
+    from flask import Response
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename=rms_control_limits.csv"}
+    )
+
+
+@app.route("/api/limits/import", methods=["POST"])
+def api_limits_import():
+    dm = _get("datamgr")
+    if not dm:
+        return jsonify({"ok": False, "message": "DataMgr not available"}), 500
+    
+    if "file" not in request.files:
+        return jsonify({"ok": False, "message": "No CSV file uploaded"}), 400
+    
+    file = request.files["file"]
+    mode = request.form.get("mode", "replace")  # 'replace' or 'append'
+
+    import tempfile, os
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
+        file.save(tmp.name)
+        tmp_path = tmp.name
+
+    try:
+        if mode == "replace":
+            count = dm.replace_limits_from_csv(tmp_path)
+        else:
+            import csv
+            count = 0
+            with open(tmp_path, 'r', encoding='utf-8-sig') as f:
+                reader = csv.DictReader(f)
+                for r in reader:
+                    dm.add_limit_rule(dict(r))
+                    count += 1
+        return jsonify({"ok": True, "message": f"Successfully imported {count} rules ({mode} mode)"})
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 400
+    finally:
+        try:
+            os.remove(tmp_path)
+        except Exception:
+            pass
+
+
+# ---------------------------------------------------------------------------
 # Section 3 — OMS Browser (Orders)
 # ---------------------------------------------------------------------------
 @app.route("/api/orders")
@@ -310,6 +434,16 @@ def api_instruments():
     dm = _get("datamgr")
     instruments_list = []
 
+    # Check for force CSV reload parameter
+    reload_arg = request.args.get("reload", "").lower() in ("true", "1")
+    if reload_arg:
+        if dm:
+            dm.load(force_csv_reload=True)
+        if ic:
+            from pathlib import Path
+            if Path("HK-ListOfSecurities.csv").exists():
+                ic.load_from_csv("HK-ListOfSecurities.csv")
+
     # Prefer DataMgr static data (richer), fall back to InstrumentCache
     if dm and dm.count() > 0:
         search = request.args.get("search", "").upper()
@@ -323,10 +457,11 @@ def api_instruments():
                 "ric": ric,
                 "stock_code": getattr(inst, "stock_code", ""),
                 "name": getattr(inst, "name", ""),
+                "exchange": getattr(inst, "exchange", "XHKG"),
                 "category": getattr(inst, "category", ""),
                 "security_type": getattr(inst, "security_type", getattr(inst, "sub_category", "")),
                 "board_lot": getattr(inst, "board_lot", 0),
-                "currency": getattr(inst, "trading_currency", "HKD"),
+                "currency": getattr(inst, "trading_currency", getattr(inst, "currency", "HKD")),
                 "isin": getattr(inst, "isin", ""),
                 "shortsell": getattr(inst, "shortsell_eligible", False),
                 "cas": getattr(inst, "cas_eligible", False),
@@ -339,25 +474,28 @@ def api_instruments():
         search = request.args.get("search", "").upper()
         limit = int(request.args.get("limit", 0))
         count = 0
-        for ric, inst in ic.instruments.items():
-            if search and search not in ric.upper() and search not in inst.name.upper():
-                continue
-            instruments_list.append({
-                "ric": ric,
-                "stock_code": inst.stock_code,
-                "name": inst.name,
-                "category": inst.category,
-                "security_type": getattr(inst, "security_type", ""),
-                "board_lot": inst.board_lot,
-                "currency": inst.currency,
-                "isin": inst.isin,
-                "shortsell": inst.shortsell_eligible,
-                "cas": inst.cas_eligible,
-                "vcm": inst.vcm_eligible,
-            })
-            count += 1
-            if limit > 0 and count >= limit:
-                break
+        if ic:
+            for ric, inst in ic.instruments.items():
+                if search and search not in ric.upper() and search not in inst.name.upper():
+                    continue
+                instruments_list.append({
+                    "ric": ric,
+                    "stock_code": inst.stock_code,
+                    "name": inst.name,
+                    "exchange": getattr(inst, "exchange", "XHKG"),
+                    "category": inst.category,
+                    "security_type": getattr(inst, "security_type", ""),
+                    "board_lot": inst.board_lot,
+                    "currency": inst.currency,
+                    "isin": inst.isin,
+                    "shortsell": inst.shortsell_eligible,
+                    "cas": inst.cas_eligible,
+                    "vcm": inst.vcm_eligible,
+                })
+                count += 1
+                if limit > 0 and count >= limit:
+                    break
+
     return jsonify(instruments_list)
 
 

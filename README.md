@@ -8,9 +8,10 @@ A high-performance pre-trade order risk management system for Hong Kong & global
 
 - **GCE Control Center Web GUI (`gui/`)**: Real-time web-based control center dashboard built with a lightweight Flask REST backend and dark-mode glassmorphism single-page frontend.
   - **Services Management**: Check status and **Start / Stop / Restart** sub-services (`Engine`, `PXFeeder`, `Logger Worker`, `DataMgr`).
+  - **GCE Limits**: Full 49-column horizontal-scrolling CRUD table for SQLite RMS limits (`rms_limits.db`) with **column-level search filters** (supporting exact matches, text search, and numerical operators like `>1000`), linked instrument dropdowns (`Product`, `SecurityType`, `symbol`, `Currency`), **CSV Download**, **CSV Upload** (Replace/Append), and dynamic pagination (> 20 records threshold).
   - **OMS Browser**: Interactive order browser with search, status filtering, and dynamic bottom pagination (50 per page, threshold > 20 records).
   - **Prices & FX**: Market prices cache view (with pagination > 20 records) and multi-currency FX rates grid.
-  - **Instruments**: Searchable instrument catalog (17,635 RICs, RIC masterkey index) with **SecurityType** (mapped from CSV `Sub-Category`), `Total Instruments` indicator, and pagination (50 per page).
+  - **Instruments**: Searchable instrument catalog (17,635 RICs, RIC masterkey index) displaying stock code, **Exchange** (`XHKG`), name, category, **SecurityType** (mapped from CSV `Sub-Category`), board lot, trading currency, eligibility flags, bottom pagination (50 per page), and an on-demand **`↻ Reload CSV`** button to re-parse instrument static data directly from CSV files.
   - **Exchange Sessions**: Visual session status (`XHKG`, `XSES`) with live state badges (🟢 Trading, 🟡 Break, 🔴 Closed) and configuration reloading.
   - **Reconciliation**: Audit order fills against position caches with variance alerts.
   - **RMS Controls Summary**: Parsed `GCE.log` statistics per control with Chart.js Pass/Fail bar charts and **click-to-expand order drill-down**.
@@ -47,7 +48,7 @@ Access the dashboard in your web browser:
 
 ### Pagination & Threshold Rules
 - Applicable to **OMS Browser**, **Prices**, and **Instruments**.
-- When records exceed **20 items**, a pagination section appears at the bottom.
+- GCE Limits: Full CRUD manager for SQLite RMS limits (`rms_limits.db`) with linked instrument dropdowns (`Product`, `SecurityType`, `symbol`, `Currency`), **CSV Download**, **CSV Upload** (Replace/Append), and dynamic pagination (> 20 records threshold).
 - Displays **50 records per page** with `⏮ Prev`, `Page P of N`, and `Next ⏭` controls.
 - Displays `Total Records: X` (or `Total Instruments: 17,635` for Instruments).
 

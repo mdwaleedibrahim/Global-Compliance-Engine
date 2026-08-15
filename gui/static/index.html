@@ -45,6 +45,9 @@
       </div>
 
       <div class="nav-section-label">Operations</div>
+      <div class="nav-item" data-section="limits" id="nav-limits">
+        <span class="nav-icon">⚙️</span> GCE Limits
+      </div>
       <div class="nav-item" data-section="sessions" id="nav-sessions">
         <span class="nav-icon">🕐</span> Exchange Sessions
       </div>
@@ -53,9 +56,6 @@
       </div>
 
       <div class="nav-section-label">Coming Soon</div>
-      <div class="nav-item" data-section="limits" id="nav-limits">
-        <span class="nav-icon">🔒</span> GCE Limits
-      </div>
       <div class="nav-item" data-section="positions" id="nav-positions">
         <span class="nav-icon">🔒</span> Positions
       </div>
@@ -81,12 +81,101 @@
         <div class="card-grid" id="services-grid"></div>
       </div>
 
-      <!-- Section 2: GCE Limits Placeholder -->
+      <!-- Section 2: GCE Limits -->
       <div class="section-panel" id="panel-limits">
-        <div class="card placeholder-card">
-          <div class="placeholder-icon">🔒</div>
-          <div class="placeholder-text">GCE Limits Configuration</div>
-          <div class="placeholder-sub">Coming Soon — RMS limits editor will be available in a future release</div>
+        <div class="search-bar" style="flex-wrap:wrap">
+          <input type="text" class="search-input" id="limits-search" placeholder="Search product, trader, symbol, desk...">
+          <select class="search-input" id="limits-product-filter">
+            <option value="">All Products</option>
+          </select>
+          <select class="search-input" id="limits-sectype-filter">
+            <option value="">All SecurityTypes</option>
+          </select>
+          <select class="search-input" id="limits-enabled-filter">
+            <option value="">All Statuses</option>
+            <option value="Y">Enabled (Y)</option>
+            <option value="N">Disabled (N)</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="openAddLimitModal()">➕ Add New Rule</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportLimitsCSV()">📥 Download CSV</button>
+          <button class="btn btn-ghost btn-sm" onclick="openImportModal()">📤 Upload CSV</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadLimits()">↻</button>
+        </div>
+        <div class="card">
+          <div class="table-wrapper">
+            <table class="table-scrollable">
+              <thead>
+                <tr>
+                  <th>ID</th><th>Product</th><th>SecurityType</th><th>App</th><th>Flow</th><th>Trader</th>
+                  <th>Desk</th><th>Account</th><th>Client</th><th>Symbol</th><th>Exch</th><th>Underlying</th>
+                  <th>Algo</th><th>Ccy</th><th>Side</th><th>OrderType</th><th>TIF</th>
+                  <th>ExtKey1</th><th>ExtKey2</th><th>ExtKey3</th><th>ExtKey4</th><th>ExtKey5</th>
+                  <th>MaxOrderQty</th><th>MaxOrderPrice</th><th>MaxOrderValue</th><th>MaxOrderADV%</th>
+                  <th>CloseTol%</th><th>LastTol%</th><th>BBOTol%</th><th>DepthCheck</th>
+                  <th>MaxDailyVol</th><th>MaxDailyVal</th><th>MaxDailyNetVal</th><th>MaxDailyTurnover</th>
+                  <th>MaxDailyExposure</th><th>MaxDailyOpenVal</th><th>MaxDailyActive</th>
+                  <th>DupOrders</th><th>BurstOrders</th>
+                  <th>ExtVal1</th><th>ExtVal2</th><th>ExtVal3</th><th>ExtVal4</th><th>ExtVal5</th>
+                  <th>Flags</th><th>Restricted</th><th>SSRestricted</th><th>Enabled</th>
+                  <th class="sticky-col-right">Actions</th>
+                </tr>
+                <tr class="column-filter-row">
+                  <th><input type="text" class="col-filter" data-col="DBId" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="Product" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="SecurityType" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="Application" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="Flow" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="Trader" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="Desk" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="Account" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="Client" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="symbol" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="exchange" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="underlying" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="AlgoStrategy" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="Currency" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="Side" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="OrderType" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="Tif" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="ExtendedKey1" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="ExtendedKey2" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="ExtendedKey3" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="ExtendedKey4" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="ExtendedKey5" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="MaxOrderSize" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="MaxOrderPrice" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="MaxOrderValue" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="MaxOrderADV" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="ClosePriceTolerance" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="LastPriceTolerance" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="BBOPriceTolerance" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="MarketDepthCheck" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="MaxDailyVolume" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="MaxDailyValue" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="MaxDailyNetValue" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="MaxDailyTurnover" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="MaxDailyExposure" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="MaxDailyOpenValue" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="MaxDailyActiveOrders" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="DuplicateOrders" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="BurstOrders" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="ExtendedValue1" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="ExtendedValue2" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="ExtendedValue3" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="ExtendedValue4" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="ExtendedValue5" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="Flags" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="Restricted" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="SSRestricted" placeholder="Filter..."></th>
+                  <th><input type="text" class="col-filter" data-col="Enabled" placeholder="Filter..."></th>
+                  <th class="sticky-col-right"></th>
+                </tr>
+              </thead>
+              <tbody id="limits-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state" id="limits-empty" style="display:none">No RMS limit rules found</div>
+          <div class="pagination-bar" id="limits-pagination" style="display:none"></div>
         </div>
       </div>
 
@@ -151,14 +240,14 @@
       <div class="section-panel" id="panel-instruments">
         <div class="search-bar">
           <input type="text" class="search-input" id="instr-search" placeholder="Search RIC or name...">
-          <button class="btn btn-ghost btn-sm" onclick="loadInstruments()">↻</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadInstruments(true)" title="Reload instruments from CSV files">↻ Reload CSV</button>
         </div>
         <div class="card">
           <div class="table-wrapper">
             <table>
               <thead>
                 <tr>
-                  <th>RIC</th><th>Code</th><th>Name</th><th>Category</th><th>SecurityType</th>
+                  <th>RIC</th><th>Code</th><th>Exchange</th><th>Name</th><th>Category</th><th>SecurityType</th>
                   <th>Board Lot</th><th>Currency</th><th>SS</th><th>CAS</th><th>VCM</th>
                 </tr>
               </thead>
@@ -268,6 +357,236 @@
   </div>
 
 </div>
+
+  <!-- Limit Edit / Add Modal -->
+  <div class="modal-overlay" id="limits-modal" style="display:none">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title" id="limits-modal-title">⚙️ Edit RMS Limit Rule</div>
+        <button class="modal-close" onclick="closeLimitModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="limit-form">
+          <input type="hidden" id="field-dbid">
+
+          <!-- Category 1: Key Criteria -->
+          <div class="form-section-title">🔑 Rule Matching Criteria (Keys)</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Product (Category)</label>
+              <select id="field-product"></select>
+            </div>
+            <div class="form-group">
+              <label>SecurityType</label>
+              <select id="field-securitytype"></select>
+            </div>
+            <div class="form-group">
+              <label>Application</label>
+              <input type="text" id="field-application" value="*">
+            </div>
+            <div class="form-group">
+              <label>Flow</label>
+              <input type="text" id="field-flow" value="*">
+            </div>
+            <div class="form-group">
+              <label>Trader</label>
+              <input type="text" id="field-trader" value="*">
+            </div>
+            <div class="form-group">
+              <label>Desk</label>
+              <input type="text" id="field-desk" value="*">
+            </div>
+            <div class="form-group">
+              <label>Account</label>
+              <input type="text" id="field-account" value="*">
+            </div>
+            <div class="form-group">
+              <label>Client</label>
+              <input type="text" id="field-client" value="*">
+            </div>
+            <div class="form-group">
+              <label>Symbol (RIC)</label>
+              <input type="text" id="field-symbol" value="*" placeholder="e.g. 0700.HK or *">
+            </div>
+            <div class="form-group">
+              <label>Exchange</label>
+              <select id="field-exchange"></select>
+            </div>
+            <div class="form-group">
+              <label>Underlying</label>
+              <input type="text" id="field-underlying" value="*">
+            </div>
+            <div class="form-group">
+              <label>AlgoStrategy</label>
+              <input type="text" id="field-algostrategy" value="*">
+            </div>
+            <div class="form-group">
+              <label>Currency</label>
+              <select id="field-currency"></select>
+            </div>
+            <div class="form-group">
+              <label>Side</label>
+              <select id="field-side"></select>
+            </div>
+            <div class="form-group">
+              <label>OrderType</label>
+              <select id="field-ordertype"></select>
+            </div>
+            <div class="form-group">
+              <label>Time In Force (TIF)</label>
+              <select id="field-tif"></select>
+            </div>
+            <div class="form-group">
+              <label>ExtendedKey1</label>
+              <input type="text" id="field-extendedkey1" value="*">
+            </div>
+            <div class="form-group">
+              <label>ExtendedKey2</label>
+              <input type="text" id="field-extendedkey2" value="*">
+            </div>
+            <div class="form-group">
+              <label>ExtendedKey3</label>
+              <input type="text" id="field-extendedkey3" value="*">
+            </div>
+            <div class="form-group">
+              <label>ExtendedKey4</label>
+              <input type="text" id="field-extendedkey4" value="*">
+            </div>
+            <div class="form-group">
+              <label>ExtendedKey5</label>
+              <input type="text" id="field-extendedkey5" value="*">
+            </div>
+          </div>
+
+          <!-- Category 2: Single Order Limits -->
+          <div class="form-section-title">📊 Order Level Risk Limits (0 = Disabled)</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>MaxOrderSize (Qty)</label>
+              <input type="number" id="field-maxordersize" value="0">
+            </div>
+            <div class="form-group">
+              <label>MaxOrderPrice</label>
+              <input type="number" step="0.01" id="field-maxorderprice" value="0">
+            </div>
+            <div class="form-group">
+              <label>MaxOrderValue (Consideration)</label>
+              <input type="number" step="0.01" id="field-maxordervalue" value="0">
+            </div>
+            <div class="form-group">
+              <label>MaxOrderADV (%)</label>
+              <input type="number" step="0.01" id="field-maxorderadv" value="0">
+            </div>
+            <div class="form-group">
+              <label>ClosePriceTolerance (%)</label>
+              <input type="number" step="0.01" id="field-closepricetolerance" value="0">
+            </div>
+            <div class="form-group">
+              <label>LastPriceTolerance (%)</label>
+              <input type="number" step="0.01" id="field-lastpricetolerance" value="0">
+            </div>
+            <div class="form-group">
+              <label>BBOTolerance (%)</label>
+              <input type="number" step="0.01" id="field-bbopricetolerance" value="0">
+            </div>
+            <div class="form-group">
+              <label>MarketDepthCheck</label>
+              <input type="number" id="field-marketdepthcheck" value="0">
+            </div>
+          </div>
+
+          <!-- Category 3: Daily Accumulation Limits -->
+          <div class="form-section-title">📅 Daily Accumulation Limits (0 = Disabled)</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>MaxDailyVolume</label>
+              <input type="number" id="field-maxdailyvolume" value="0">
+            </div>
+            <div class="form-group">
+              <label>MaxDailyValue</label>
+              <input type="number" step="0.01" id="field-maxdailyvalue" value="0">
+            </div>
+            <div class="form-group">
+              <label>MaxDailyNetValue</label>
+              <input type="number" step="0.01" id="field-maxdailynetvalue" value="0">
+            </div>
+            <div class="form-group">
+              <label>MaxDailyTurnover</label>
+              <input type="number" step="0.01" id="field-maxdailyturnover" value="0">
+            </div>
+            <div class="form-group">
+              <label>MaxDailyExposure</label>
+              <input type="number" step="0.01" id="field-maxdailyexposure" value="0">
+            </div>
+            <div class="form-group">
+              <label>MaxDailyOpenValue</label>
+              <input type="number" step="0.01" id="field-maxdailyopenvalue" value="0">
+            </div>
+            <div class="form-group">
+              <label>MaxDailyActiveOrders</label>
+              <input type="number" id="field-maxdailyactiveorders" value="0">
+            </div>
+          </div>
+
+          <!-- Category 4: Rate Limits & Status -->
+          <div class="form-section-title">⚡ Rate Limits & Restrictions</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>DuplicateOrders (x,y)</label>
+              <input type="text" id="field-duplicateorders" value="0" placeholder="e.g. 10,60 or 0">
+            </div>
+            <div class="form-group">
+              <label>BurstOrders (x,y)</label>
+              <input type="text" id="field-burstorders" value="0" placeholder="e.g. 10,60 or 0">
+            </div>
+            <div class="form-group">
+              <label>Restricted</label>
+              <select id="field-restricted"></select>
+            </div>
+            <div class="form-group">
+              <label>SSRestricted</label>
+              <select id="field-ssrestricted"></select>
+            </div>
+            <div class="form-group">
+              <label>Enabled</label>
+              <select id="field-enabled"></select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeLimitModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveLimitRule()">💾 Save Rule</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CSV Import Modal -->
+  <div class="modal-overlay" id="upload-modal" style="display:none">
+    <div class="modal-card" style="max-width:500px">
+      <div class="modal-header">
+        <div class="modal-title">📤 Upload CSV Rules</div>
+        <button class="modal-close" onclick="closeImportModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom:16px">
+          <label>Select CSV File</label>
+          <input type="file" id="import-file-input" accept=".csv">
+        </div>
+        <div class="form-group">
+          <label>Import Mode</label>
+          <select id="import-mode-select">
+            <option value="replace">Replace All (Clear existing DB rules)</option>
+            <option value="append">Append (Add alongside existing rules)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeImportModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="importLimitsCSV()">Upload & Import</button>
+      </div>
+    </div>
+  </div>
 
 <script src="/app.js"></script>
 </body>

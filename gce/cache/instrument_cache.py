@@ -16,13 +16,31 @@ class Instrument:
         self.isin = kwargs.get('isin', '')
         self.category = kwargs.get('category', '')
         self.security_type = kwargs.get('security_type', kwargs.get('sub_category', kwargs.get('Sub-Category', '')))
+        self.exchange = kwargs.get('exchange', kwargs.get('Exchange', 'XHKG'))
         self.shortsell_eligible = kwargs.get('shortsell_eligible', 'N') == 'Y'
         self.cas_eligible = kwargs.get('cas_eligible', 'N') == 'Y'
         self.vcm_eligible = kwargs.get('vcm_eligible', 'N') == 'Y'
         self.currency = kwargs.get('currency', 'HKD')
+
+    def to_dict(self) -> Dict[str, str]:
+        """Convert instrument to dictionary."""
+        return {
+            'ric': self.ric,
+            'stock_code': self.stock_code,
+            'name': self.name,
+            'exchange': self.exchange,
+            'category': self.category,
+            'security_type': self.security_type,
+            'board_lot': self.board_lot,
+            'isin': self.isin,
+            'shortsell': self.shortsell_eligible,
+            'cas': self.cas_eligible,
+            'vcm': self.vcm_eligible,
+            'currency': self.currency,
+        }
         
     def __repr__(self):
-        return f"Instrument(ric={self.ric}, code={self.stock_code}, name={self.name})"
+        return f"Instrument(ric={self.ric}, code={self.stock_code}, name={self.name}, exch={self.exchange})"
 
 
 class InstrumentCache:
@@ -61,6 +79,7 @@ class InstrumentCache:
                         continue
                     stock_code = row.get('Stock Code', '')
                     sec_type = row.get('Sub-Category') or row.get('SecurityType') or row.get('Security Type', '')
+                    exchange = row.get('Exchange') or row.get('exchange', 'XHKG')
                     
                     instrument = Instrument(
                         ric=ric,
@@ -70,6 +89,7 @@ class InstrumentCache:
                         isin=row.get('ISIN', ''),
                         category=row.get('Category', ''),
                         security_type=sec_type,
+                        exchange=exchange,
                         shortsell_eligible=row.get('Shortsell Eligible', 'N'),
                         cas_eligible=row.get('CAS Eligible', 'N'),
                         vcm_eligible=row.get('VCM Eligible', 'N'),

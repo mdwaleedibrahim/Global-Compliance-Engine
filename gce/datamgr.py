@@ -146,6 +146,7 @@ class InstrumentStatic:
         self.security_type = sub_category
         self.board_lot = int(board_lot or 100)
         self.isin = isin
+        self.exchange = kwargs.get('exchange', kwargs.get('Exchange', 'XHKG'))
         self.stamp_duty = bool(stamp_duty)
         self.shortsell_eligible = bool(shortsell_eligible)
         self.currency = currency or "HKD"
@@ -163,6 +164,7 @@ class InstrumentStatic:
             'ric': self.ric,
             'stock_code': self.stock_code,
             'name': self.name,
+            'exchange': self.exchange,
             'category': self.category,
             'sub_category': self.sub_category,
             'security_type': self.sub_category,
@@ -332,6 +334,29 @@ class DataMgr:
             conn.execute(sql)
             conn.commit()
 
+            # Ensure all expected columns exist (auto-migration for existing DBs)
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA table_info(rms_control_limits)")
+            existing_cols = {row['name'] for row in cursor.fetchall()}
+
+            for col in TEXT_KEY_COLUMNS:
+                if col not in existing_cols:
+                    cursor.execute(f"ALTER TABLE rms_control_limits ADD COLUMN {col} VARCHAR(64) DEFAULT '*'")
+            for col in CORE_NUMERICAL_COLUMNS + EXTENDED_NUMERICAL_COLUMNS:
+                if col not in existing_cols:
+                    cursor.execute(f"ALTER TABLE rms_control_limits ADD COLUMN {col} NUMERIC DEFAULT 0")
+            if 'DuplicateOrders' not in existing_cols:
+                cursor.execute("ALTER TABLE rms_control_limits ADD COLUMN DuplicateOrders VARCHAR(64) DEFAULT '0'")
+            if 'BurstOrders' not in existing_cols:
+                cursor.execute("ALTER TABLE rms_control_limits ADD COLUMN BurstOrders VARCHAR(64) DEFAULT '0'")
+            if 'Restricted' not in existing_cols:
+                cursor.execute("ALTER TABLE rms_control_limits ADD COLUMN Restricted VARCHAR(64) DEFAULT 'N'")
+            if 'SSRestricted' not in existing_cols:
+                cursor.execute("ALTER TABLE rms_control_limits ADD COLUMN SSRestricted VARCHAR(64) DEFAULT 'N'")
+            if 'Enabled' not in existing_cols:
+                cursor.execute("ALTER TABLE rms_control_limits ADD COLUMN Enabled VARCHAR(64) DEFAULT 'Y'")
+            conn.commit()
+
     @contextmanager
     def _get_db_connection(self):
         """Create and yield a SQLite database connection, ensuring it closes on exit."""
@@ -463,6 +488,119 @@ class DataMgr:
             cursor.execute("SELECT * FROM rms_control_limits")
             return [dict(r) for r in cursor.fetchall()]
 
+    def add_limit_rule(self, rule_dict: Dict[str, Any]) -> int:
+        """Insert a new RMS limit rule into SQLite DB and reload memory cache."""
+        parsed = {}
+        for col in TEXT_KEY_COLUMNS:
+            parsed[col] = str(rule_dict.get(col, '*') or '*').strip()[:MAX_TEXT_LENGTH]
+        for col in NUMERICAL_COLUMNS:
+            val_raw = rule_dict.get(col)
+            if val_raw is None and col == 'BBOPriceTolerance':
+                val_raw = rule_dict.get('BBOTolerance', 0)
+            try:
+                val = float(val_raw or 0)
+            except (ValueError, TypeError):
+                val = 0.0
+            parsed[col] = min(max(0.0, val), MAX_NUMERICAL_LIMIT)
+
+        parsed['DuplicateOrders'] = str(rule_dict.get('DuplicateOrders', '0') or '0').strip()[:MAX_TEXT_LENGTH]
+        parsed['BurstOrders'] = str(rule_dict.get('BurstOrders', '0') or '0').strip()[:MAX_TEXT_LENGTH]
+        parsed['Restricted'] = str(rule_dict.get('Restricted', 'N') or 'N').strip()[:MAX_TEXT_LENGTH]
+        parsed['SSRestricted'] = str(rule_dict.get('SSRestricted', 'N') or 'N').strip()[:MAX_TEXT_LENGTH]
+        parsed['Enabled'] = str(rule_dict.get('Enabled', 'Y') or 'Y').strip()[:MAX_TEXT_LENGTH]
+
+        all_cols = ALL_DB_COLUMNS
+        placeholders = ", ".join(["?"] * len(all_cols))
+        cols_str = ", ".join(all_cols)
+        insert_sql = f"INSERT INTO rms_control_limits ({cols_str}) VALUES ({placeholders})"
+
+        with self._get_db_connection() as conn:
+            cursor = conn.cursor()
+            values = [parsed[col] for col in all_cols]
+            cursor.execute(insert_sql, values)
+            db_id = cursor.lastrowid
+            conn.commit()
+
+        self.reload_limits_from_db()
+        return db_id
+
+    def update_limit_rule(self, db_id: int, rule_dict: Dict[str, Any]) -> bool:
+        """Update an existing RMS limit rule by DBId in SQLite DB and reload memory cache."""
+        parsed = {}
+        for col in TEXT_KEY_COLUMNS:
+            parsed[col] = str(rule_dict.get(col, '*') or '*').strip()[:MAX_TEXT_LENGTH]
+        for col in NUMERICAL_COLUMNS:
+            val_raw = rule_dict.get(col)
+            if val_raw is None and col == 'BBOPriceTolerance':
+                val_raw = rule_dict.get('BBOTolerance', 0)
+            try:
+                val = float(val_raw or 0)
+            except (ValueError, TypeError):
+                val = 0.0
+            parsed[col] = min(max(0.0, val), MAX_NUMERICAL_LIMIT)
+
+        parsed['DuplicateOrders'] = str(rule_dict.get('DuplicateOrders', '0') or '0').strip()[:MAX_TEXT_LENGTH]
+        parsed['BurstOrders'] = str(rule_dict.get('BurstOrders', '0') or '0').strip()[:MAX_TEXT_LENGTH]
+        parsed['Restricted'] = str(rule_dict.get('Restricted', 'N') or 'N').strip()[:MAX_TEXT_LENGTH]
+        parsed['SSRestricted'] = str(rule_dict.get('SSRestricted', 'N') or 'N').strip()[:MAX_TEXT_LENGTH]
+        parsed['Enabled'] = str(rule_dict.get('Enabled', 'Y') or 'Y').strip()[:MAX_TEXT_LENGTH]
+
+        all_cols = ALL_DB_COLUMNS
+        set_clause = ", ".join([f"{col} = ?" for col in all_cols])
+        update_sql = f"UPDATE rms_control_limits SET {set_clause} WHERE DBId = ?"
+
+        with self._get_db_connection() as conn:
+            cursor = conn.cursor()
+            values = [parsed[col] for col in all_cols] + [db_id]
+            cursor.execute(update_sql, values)
+            rowcount = cursor.rowcount
+            conn.commit()
+
+        self.reload_limits_from_db()
+        return rowcount > 0
+
+    def delete_limit_rule(self, db_id: int) -> bool:
+        """Delete an RMS limit rule by DBId from SQLite DB and reload memory cache."""
+        with self._get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM rms_control_limits WHERE DBId = ?", (db_id,))
+            rowcount = cursor.rowcount
+            conn.commit()
+
+        self.reload_limits_from_db()
+        return rowcount > 0
+
+    def get_limit_options(self) -> Dict[str, List[str]]:
+        """Return unique options for UI dropdowns linked with Instruments cache."""
+        categories = set()
+        sec_types = set()
+        currencies = set()
+
+        with self._lock:
+            for inst in self.instruments.values():
+                cat = getattr(inst, 'category', '')
+                if cat:
+                    categories.add(cat)
+                st = getattr(inst, 'security_type', getattr(inst, 'sub_category', ''))
+                if st:
+                    sec_types.add(st)
+                ccy = getattr(inst, 'trading_currency', getattr(inst, 'currency', ''))
+                if ccy:
+                    currencies.add(ccy)
+
+        return {
+            'Product': ['*'] + sorted(list(categories)),
+            'SecurityType': ['*'] + sorted(list(sec_types)),
+            'Currency': ['*'] + sorted(list(currencies)),
+            'Side': ['*', 'B', 'S', 'SS'],
+            'OrderType': ['*', 'LMT', 'MKT'],
+            'Tif': ['*', 'DAY', 'OPG', 'CLO'],
+            'exchange': ['*', 'XHKG', 'XSES'],
+            'Restricted': ['N', 'Y'],
+            'SSRestricted': ['N', 'Y'],
+            'Enabled': ['Y', 'N'],
+        }
+
     # ------------------------------------------------------------------
     # Instrument Static Data Management (CSV & .DAT)
     # ------------------------------------------------------------------
@@ -524,6 +662,7 @@ class DataMgr:
                     name = row.get('Name of Securities') or row.get('Name', '')
                     category = row.get('Category', '')
                     sub_category = row.get('Sub-Category', '')
+                    exchange = row.get('Exchange') or row.get('exchange', 'XHKG')
 
                     lot_raw = (row.get('Board Lot', '100') or '100').replace(',', '').strip()
                     board_lot = int(lot_raw) if lot_raw.isdigit() else 100
@@ -539,6 +678,7 @@ class DataMgr:
                         name=name,
                         category=category,
                         sub_category=sub_category,
+                        exchange=exchange,
                         board_lot=board_lot,
                         isin=isin,
                         stamp_duty=stamp_duty,

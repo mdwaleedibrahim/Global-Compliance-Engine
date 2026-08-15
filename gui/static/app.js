@@ -104,6 +104,381 @@ async function svcAction(name, action) {
 }
 
 // ============================================================
+// Section 2: GCE Limits (RMS Control Limits CRUD & Import/Export)
+// ============================================================
+let limitsAllData = [];
+let limitsPage = 1;
+let limitsOptions = null;
+
+async function loadLimits() {
+  const [data, options] = await Promise.all([
+    api('/api/limits'),
+    api('/api/limits/options')
+  ]);
+
+  limitsAllData = data || [];
+  limitsOptions = options || {};
+  populateLimitOptions();
+  limitsPage = 1;
+  filterAndRenderLimits();
+}
+
+function populateLimitOptions() {
+  if (!limitsOptions) return;
+
+  const populateSelect = (selectId, optionsList, defaultVal = '*') => {
+    const el = document.getElementById(selectId);
+    if (!el) return;
+    const current = el.value || defaultVal;
+    el.innerHTML = (optionsList || []).map(opt => `<option value="${opt}">${opt}</option>`).join('');
+    if ((optionsList || []).includes(current)) el.value = current;
+    else if (optionsList && optionsList.length > 0) el.value = optionsList[0];
+  };
+
+  // Populate search filter dropdowns
+  populateSelect('limits-product-filter', ['All Products', ...(limitsOptions.Product || []).filter(p => p !== '*')], 'All Products');
+  populateSelect('limits-sectype-filter', ['All SecurityTypes', ...(limitsOptions.SecurityType || []).filter(s => s !== '*')], 'All SecurityTypes');
+
+  // Populate modal form dropdowns
+  populateSelect('field-product', limitsOptions.Product || ['*'], '*');
+  populateSelect('field-securitytype', limitsOptions.SecurityType || ['*'], '*');
+  populateSelect('field-currency', limitsOptions.Currency || ['*'], '*');
+  populateSelect('field-side', limitsOptions.Side || ['*', 'B', 'S', 'SS'], '*');
+  populateSelect('field-ordertype', limitsOptions.OrderType || ['*', 'LMT', 'MKT'], '*');
+  populateSelect('field-tif', limitsOptions.Tif || ['*', 'DAY', 'OPG', 'CLO'], '*');
+  populateSelect('field-exchange', limitsOptions.exchange || ['*', 'XHKG', 'XSES'], '*');
+  populateSelect('field-restricted', limitsOptions.Restricted || ['N', 'Y'], 'N');
+  populateSelect('field-ssrestricted', limitsOptions.SSRestricted || ['N', 'Y'], 'N');
+  populateSelect('field-enabled', limitsOptions.Enabled || ['Y', 'N'], 'Y');
+}
+
+let columnFilters = {};
+
+function filterAndRenderLimits() {
+  const search = (document.getElementById('limits-search').value || '').toLowerCase();
+  const prodFilter = document.getElementById('limits-product-filter').value;
+  const secTypeFilter = document.getElementById('limits-sectype-filter').value;
+  const enabledFilter = document.getElementById('limits-enabled-filter').value;
+
+  let filtered = limitsAllData;
+
+  // Global toolbar search filter across all fields
+  if (search) {
+    filtered = filtered.filter(r =>
+      Object.values(r).some(val => String(val || '').toLowerCase().includes(search))
+    );
+  }
+
+  if (prodFilter && prodFilter !== 'All Products') {
+    filtered = filtered.filter(r => r.Product === prodFilter);
+  }
+
+  if (secTypeFilter && secTypeFilter !== 'All SecurityTypes') {
+    filtered = filtered.filter(r => r.SecurityType === secTypeFilter);
+  }
+
+  if (enabledFilter) {
+    filtered = filtered.filter(r => r.Enabled === enabledFilter);
+  }
+
+  // Column-specific header filters
+  Object.keys(columnFilters).forEach(col => {
+    const term = (columnFilters[col] || '').trim().toLowerCase();
+    if (!term) return;
+
+    filtered = filtered.filter(r => {
+      const val = r[col];
+      if (val === undefined || val === null) return false;
+
+      // Handle numerical search comparisons like '>1000' or '<50'
+      if (/^[><=]/.test(term)) {
+        const op = term[0];
+        const numVal = parseFloat(term.slice(1));
+        const cellVal = parseFloat(val);
+        if (isNaN(numVal) || isNaN(cellVal)) return false;
+        if (op === '>') return cellVal > numVal;
+        if (op === '<') return cellVal < numVal;
+        if (op === '=') return cellVal === numVal;
+      }
+
+      return String(val).toLowerCase().includes(term);
+    });
+  });
+
+  renderLimitsTable(filtered);
+}
+
+function renderLimitsTable(data) {
+  const tbody = document.getElementById('limits-tbody');
+  const empty = document.getElementById('limits-empty');
+  const total = data.length;
+
+  if (total === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    renderPaginationBar('limits-pagination', 0, 1, PAGE_SIZE, () => {}, 'Total Rules');
+    return;
+  }
+  empty.style.display = 'none';
+
+  const startIdx = (limitsPage - 1) * PAGE_SIZE;
+  const pageSlice = data.slice(startIdx, startIdx + PAGE_SIZE);
+
+  tbody.innerHTML = pageSlice.map(r => {
+    const isEnabled = (r.Enabled || 'Y') === 'Y';
+    const enabledBadge = isEnabled ? '<span class="badge badge-pass">Y</span>' : '<span class="badge badge-fail">N</span>';
+
+    return `<tr>
+      <td style="color:var(--text-bright);font-weight:600">#${r.DBId}</td>
+      <td>${r.Product || '*'}</td>
+      <td>${r.SecurityType || '*'}</td>
+      <td>${r.Application || '*'}</td>
+      <td>${r.Flow || '*'}</td>
+      <td>${r.Trader || '*'}</td>
+      <td>${r.Desk || '*'}</td>
+      <td>${r.Account || '*'}</td>
+      <td>${r.Client || '*'}</td>
+      <td style="color:var(--text-bright);font-weight:500">${r.symbol || '*'}</td>
+      <td>${r.exchange || '*'}</td>
+      <td>${r.underlying || '*'}</td>
+      <td>${r.AlgoStrategy || '*'}</td>
+      <td>${r.Currency || '*'}</td>
+      <td>${r.Side || '*'}</td>
+      <td>${r.OrderType || '*'}</td>
+      <td>${r.Tif || '*'}</td>
+      <td>${r.ExtendedKey1 || '*'}</td>
+      <td>${r.ExtendedKey2 || '*'}</td>
+      <td>${r.ExtendedKey3 || '*'}</td>
+      <td>${r.ExtendedKey4 || '*'}</td>
+      <td>${r.ExtendedKey5 || '*'}</td>
+
+      <td>${Number(r.MaxOrderSize || 0).toLocaleString()}</td>
+      <td>$${Number(r.MaxOrderPrice || 0).toFixed(2)}</td>
+      <td>$${Number(r.MaxOrderValue || 0).toLocaleString()}</td>
+      <td>${r.MaxOrderADV || 0}%</td>
+      <td>${r.ClosePriceTolerance || 0}%</td>
+      <td>${r.LastPriceTolerance || 0}%</td>
+      <td>${r.BBOPriceTolerance !== undefined ? r.BBOPriceTolerance : (r.BBOTolerance || 0)}%</td>
+      <td>${r.MarketDepthCheck || 0}</td>
+
+      <td>${Number(r.MaxDailyVolume || 0).toLocaleString()}</td>
+      <td>$${Number(r.MaxDailyValue || 0).toLocaleString()}</td>
+      <td>$${Number(r.MaxDailyNetValue || 0).toLocaleString()}</td>
+      <td>$${Number(r.MaxDailyTurnover || 0).toLocaleString()}</td>
+      <td>$${Number(r.MaxDailyExposure || 0).toLocaleString()}</td>
+      <td>$${Number(r.MaxDailyOpenValue || 0).toLocaleString()}</td>
+      <td>${r.MaxDailyActiveOrders || 0}</td>
+
+      <td>${r.DuplicateOrders || '0'}</td>
+      <td>${r.BurstOrders || '0'}</td>
+      <td>${r.ExtendedValue1 || 0}</td>
+      <td>${r.ExtendedValue2 || 0}</td>
+      <td>${r.ExtendedValue3 || 0}</td>
+      <td>${r.ExtendedValue4 || 0}</td>
+      <td>${r.ExtendedValue5 || 0}</td>
+      <td>${r.Flags || 0}</td>
+      <td>${r.Restricted || 'N'}</td>
+      <td>${r.SSRestricted || 'N'}</td>
+      <td>${enabledBadge}</td>
+      <td class="sticky-col-right">
+        <button class="btn btn-ghost btn-sm btn-icon-primary" onclick="openEditLimitModal(${r.DBId})">✏️ Edit</button>
+        <button class="btn btn-ghost btn-sm btn-icon-danger" onclick="deleteLimitRule(${r.DBId})">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  renderPaginationBar('limits-pagination', total, limitsPage, PAGE_SIZE, newPage => {
+    limitsPage = newPage;
+    renderLimitsTable(data);
+  }, 'Total Rules');
+}
+
+// Wire up search, dropdown filters, & column filters
+document.getElementById('limits-search').addEventListener('input', () => { limitsPage = 1; filterAndRenderLimits(); });
+document.getElementById('limits-product-filter').addEventListener('change', () => { limitsPage = 1; filterAndRenderLimits(); });
+document.getElementById('limits-sectype-filter').addEventListener('change', () => { limitsPage = 1; filterAndRenderLimits(); });
+document.getElementById('limits-enabled-filter').addEventListener('change', () => { limitsPage = 1; filterAndRenderLimits(); });
+
+document.querySelectorAll('.col-filter').forEach(input => {
+  input.addEventListener('input', debounce(e => {
+    const col = e.target.getAttribute('data-col');
+    columnFilters[col] = e.target.value;
+    limitsPage = 1;
+    filterAndRenderLimits();
+  }, 200));
+});
+
+// Modal Handlers
+function openAddLimitModal() {
+  document.getElementById('limits-modal-title').textContent = '➕ Add New RMS Limit Rule';
+  document.getElementById('field-dbid').value = '';
+  document.getElementById('limit-form').reset();
+  populateLimitOptions();
+  document.getElementById('limits-modal').style.display = 'flex';
+}
+
+function openEditLimitModal(dbId) {
+  const rule = limitsAllData.find(r => r.DBId === dbId);
+  if (!rule) return;
+
+  document.getElementById('limits-modal-title').textContent = `✏️ Edit RMS Limit Rule #${dbId}`;
+  document.getElementById('field-dbid').value = dbId;
+  populateLimitOptions();
+
+  const textFields = ['product', 'securitytype', 'application', 'flow', 'trader', 'desk', 'account', 'client', 'symbol', 'exchange', 'underlying', 'algostrategy', 'currency', 'side', 'ordertype', 'tif', 'extendedkey1', 'extendedkey2', 'extendedkey3', 'extendedkey4', 'extendedkey5', 'duplicateorders', 'burstorders', 'restricted', 'ssrestricted', 'enabled'];
+  const numFields = ['maxordersize', 'maxorderprice', 'maxordervalue', 'maxorderadv', 'closepricetolerance', 'lastpricetolerance', 'bbopricetolerance', 'marketdepthcheck', 'maxdailyvolume', 'maxdailyvalue', 'maxdailynetvalue', 'maxdailyturnover', 'maxdailyexposure', 'maxdailyopenvalue', 'maxdailyactiveorders'];
+
+  textFields.forEach(f => {
+    const el = document.getElementById(`field-${f}`);
+    if (el) {
+      const dbKey = Object.keys(rule).find(k => k.toLowerCase() === f.toLowerCase()) || f;
+      el.value = rule[dbKey] !== undefined ? rule[dbKey] : '*';
+    }
+  });
+
+  numFields.forEach(f => {
+    const el = document.getElementById(`field-${f}`);
+    if (el) {
+      const dbKey = Object.keys(rule).find(k => k.toLowerCase() === f.toLowerCase()) || f;
+      el.value = rule[dbKey] !== undefined ? rule[dbKey] : 0;
+    }
+  });
+
+  document.getElementById('limits-modal').style.display = 'flex';
+}
+
+function closeLimitModal() {
+  document.getElementById('limits-modal').style.display = 'none';
+}
+
+async function saveLimitRule() {
+  const dbId = document.getElementById('field-dbid').value;
+  const isEdit = Boolean(dbId);
+
+  const payload = {
+    Product: document.getElementById('field-product').value || '*',
+    SecurityType: document.getElementById('field-securitytype').value || '*',
+    Application: document.getElementById('field-application').value || '*',
+    Flow: document.getElementById('field-flow').value || '*',
+    Trader: document.getElementById('field-trader').value || '*',
+    Desk: document.getElementById('field-desk').value || '*',
+    Account: document.getElementById('field-account').value || '*',
+    Client: document.getElementById('field-client').value || '*',
+    symbol: document.getElementById('field-symbol').value || '*',
+    exchange: document.getElementById('field-exchange').value || '*',
+    underlying: document.getElementById('field-underlying').value || '*',
+    AlgoStrategy: document.getElementById('field-algostrategy').value || '*',
+    Currency: document.getElementById('field-currency').value || '*',
+    Side: document.getElementById('field-side').value || '*',
+    OrderType: document.getElementById('field-ordertype').value || '*',
+    Tif: document.getElementById('field-tif').value || '*',
+    ExtendedKey1: document.getElementById('field-extendedkey1').value || '*',
+    ExtendedKey2: document.getElementById('field-extendedkey2').value || '*',
+    ExtendedKey3: document.getElementById('field-extendedkey3').value || '*',
+    ExtendedKey4: document.getElementById('field-extendedkey4').value || '*',
+    ExtendedKey5: document.getElementById('field-extendedkey5').value || '*',
+
+    MaxOrderSize: Number(document.getElementById('field-maxordersize').value || 0),
+    MaxOrderPrice: Number(document.getElementById('field-maxorderprice').value || 0),
+    MaxOrderValue: Number(document.getElementById('field-maxordervalue').value || 0),
+    MaxOrderADV: Number(document.getElementById('field-maxorderadv').value || 0),
+    ClosePriceTolerance: Number(document.getElementById('field-closepricetolerance').value || 0),
+    LastPriceTolerance: Number(document.getElementById('field-lastpricetolerance').value || 0),
+    BBOPriceTolerance: Number(document.getElementById('field-bbopricetolerance').value || 0),
+    MarketDepthCheck: Number(document.getElementById('field-marketdepthcheck').value || 0),
+
+    MaxDailyVolume: Number(document.getElementById('field-maxdailyvolume').value || 0),
+    MaxDailyValue: Number(document.getElementById('field-maxdailyvalue').value || 0),
+    MaxDailyNetValue: Number(document.getElementById('field-maxdailynetvalue').value || 0),
+    MaxDailyTurnover: Number(document.getElementById('field-maxdailyturnover').value || 0),
+    MaxDailyExposure: Number(document.getElementById('field-maxdailyexposure').value || 0),
+    MaxDailyOpenValue: Number(document.getElementById('field-maxdailyopenvalue').value || 0),
+    MaxDailyActiveOrders: Number(document.getElementById('field-maxdailyactiveorders').value || 0),
+
+    DuplicateOrders: document.getElementById('field-duplicateorders').value || '0',
+    BurstOrders: document.getElementById('field-burstorders').value || '0',
+    Restricted: document.getElementById('field-restricted').value || 'N',
+    SSRestricted: document.getElementById('field-ssrestricted').value || 'N',
+    Enabled: document.getElementById('field-enabled').value || 'Y',
+  };
+
+  try {
+    const url = isEdit ? `/api/limits/${dbId}` : '/api/limits';
+    const method = isEdit ? 'PUT' : 'POST';
+    const r = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const res = await r.json();
+    if (res.ok) {
+      closeLimitModal();
+      loadLimits();
+    } else {
+      alert(`Error saving rule: ${res.message}`);
+    }
+  } catch (e) {
+    alert(`Failed to save rule: ${e}`);
+  }
+}
+
+async function deleteLimitRule(dbId) {
+  if (!confirm(`Are you sure you want to delete RMS limit rule #${dbId}?`)) return;
+  try {
+    const r = await fetch(`/api/limits/${dbId}`, { method: 'DELETE' });
+    const res = await r.json();
+    if (res.ok) {
+      loadLimits();
+    } else {
+      alert(`Error deleting rule: ${res.message}`);
+    }
+  } catch (e) {
+    alert(`Failed to delete rule: ${e}`);
+  }
+}
+
+function exportLimitsCSV() {
+  window.location.href = '/api/limits/export';
+}
+
+function openImportModal() {
+  document.getElementById('upload-modal').style.display = 'flex';
+}
+
+function closeImportModal() {
+  document.getElementById('upload-modal').style.display = 'none';
+}
+
+async function importLimitsCSV() {
+  const fileInput = document.getElementById('import-file-input');
+  if (!fileInput.files || fileInput.files.length === 0) {
+    alert('Please select a CSV file to upload');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', fileInput.files[0]);
+  formData.append('mode', document.getElementById('import-mode-select').value);
+
+  try {
+    const r = await fetch('/api/limits/import', {
+      method: 'POST',
+      body: formData
+    });
+    const res = await r.json();
+    if (res.ok) {
+      alert(res.message);
+      closeImportModal();
+      loadLimits();
+    } else {
+      alert(`Import failed: ${res.message}`);
+    }
+  } catch (e) {
+    alert(`Failed to upload CSV: ${e}`);
+  }
+}
+
+// ============================================================
 // Pagination Helper (Shows when > 20 records, 50 per page)
 // ============================================================
 const PAGE_SIZE = 50;
@@ -310,9 +685,10 @@ function switchPriceTab(tab) {
 let instrAllData = [];
 let instrPage = 1;
 
-async function loadInstruments() {
+async function loadInstruments(forceReload = false) {
   const search = document.getElementById('instr-search').value || '';
-  const data = await api(`/api/instruments?search=${encodeURIComponent(search)}&limit=0`);
+  const reloadParam = forceReload ? '&reload=true' : '';
+  const data = await api(`/api/instruments?search=${encodeURIComponent(search)}&limit=0${reloadParam}`);
   instrAllData = data || [];
   instrPage = 1;
   renderInstrTable();
@@ -337,6 +713,7 @@ function renderInstrTable() {
   tbody.innerHTML = pageSlice.map(i => `<tr>
     <td style="color:var(--text-bright);font-weight:500">${i.ric}</td>
     <td>${i.stock_code}</td>
+    <td><span class="badge badge-pass">${i.exchange || 'XHKG'}</span></td>
     <td>${i.name}</td>
     <td>${i.category}</td>
     <td>${i.security_type || i.sub_category || '—'}</td>
@@ -598,6 +975,7 @@ function refreshCurrentSection() {
   document.getElementById('last-refresh').textContent = ts;
   switch (currentSection) {
     case 'services': loadServices(); break;
+    case 'limits': loadLimits(); break;
     case 'oms': loadOrders(); break;
     case 'prices': loadPrices(); loadFX(); break;
     case 'instruments': loadInstruments(); break;
