@@ -427,7 +427,8 @@ class GCE:
             self.orders.add_order(order)
         
         # --- PARALLEL LOGGING PATH: Post-checking async log dispatch ---
-        self.logger.lmt_check_start()
+        order_id_val = getattr(order, 'order_id', '') or getattr(order, 'ric', '') or ''
+        self.logger.lmt_check_start(order_id_val)
         if is_new:
             self.logger.lmt_check_new()
         else:

@@ -160,3 +160,86 @@
 2026-08-15 20:55:10,578 [GCE] [INFO] [PASS] last_tolerance: Control passed | LMT=0.0, ORD=0.0 {last_price_tolerance.py:97 75300 nano seconds}
 2026-08-15 20:55:10,579 [GCE] [INFO] 6 controls validated, 6 passed, 0 failed
 2026-08-15 20:55:10,580 [GCE] [INFO] LMT_CHECK_OVER in 2.32ms
+2026-08-15 21:13:38,854 [GCE] [INFO] LMT_CHECK_START
+2026-08-15 21:13:38,855 [GCE] [INFO] LMT_CHECK_NEW
+2026-08-15 21:13:38,855 [GCE] [INFO] [PASS] max_qty: Control passed | LMT=1000000, ORD=100 {quantity_control.py:19 34400 nano seconds}
+2026-08-15 21:13:38,855 [GCE] [INFO] [PASS] max_price: Control passed | LMT=1000000.0, ORD=350.0 {price_control.py:19 45200 nano seconds}
+2026-08-15 21:13:38,855 [GCE] [INFO] [PASS] max_consideration: Control passed | LMT=0.0, ORD=35000.0 {max_order_consideration.py:139 77500 nano seconds}
+2026-08-15 21:13:38,855 [GCE] [INFO] [PASS] bbo_tolerance: Control passed | LMT=0.0, ORD=0.0 {bbo_price_tolerance.py:57 83200 nano seconds}
+2026-08-15 21:13:38,856 [GCE] [INFO] [PASS] close_tolerance: Control passed | LMT=0.0, ORD=0.0 {close_price_tolerance.py:56 66200 nano seconds}
+2026-08-15 21:13:38,856 [GCE] [INFO] [PASS] last_tolerance: Control passed | LMT=0.0, ORD=0.0 {last_price_tolerance.py:97 41000 nano seconds}
+2026-08-15 21:13:38,858 [GCE] [INFO] 6 controls validated, 6 passed, 0 failed
+2026-08-15 21:13:38,859 [GCE] [INFO] LMT_CHECK_OVER in 1.21ms
+2026-08-15 21:14:54,268 [GCE] [INFO] GCE Control Center GUI started
+2026-08-15 21:14:54,476 [GCE] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-15 21:14:54,476 [GCE] [INFO] Loaded session timings for 2 exchanges from D:\Github\projects\config\Datamgr.ini
+2026-08-15 21:14:54,818 [GCE] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-15 21:14:54,818 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
+2026-08-15 21:14:54,965 [GCE] [INFO] Loaded 17635 instruments
+2026-08-15 21:14:54,966 [GCE] [INFO] Loaded/fetched 2 prices in cache via PXFeeder
+2026-08-15 21:14:54,966 [GCE] [INFO] Loaded 3 orders
+2026-08-15 21:14:54,967 [GCE] [ERROR] Failed to load positions: CSV file not found: D:\Github\projects\PositionsCache.csv
+2026-08-15 21:14:54,969 [GCE] [INFO] LMT_CHECK_START
+2026-08-15 21:14:54,969 [GCE] [INFO] LMT_CHECK_NEW
+2026-08-15 21:14:54,969 [GCE] [INFO] [PASS] max_qty: Control passed | LMT=1000000, ORD=100 {quantity_control.py:19 96700 nano seconds}
+2026-08-15 21:14:54,969 [GCE] [INFO] [PASS] max_price: Control passed | LMT=1000000.0, ORD=350.0 {price_control.py:19 63900 nano seconds}
+2026-08-15 21:14:54,970 [GCE] [INFO] [PASS] max_consideration: Control passed | LMT=100000000.0, ORD=35000.0 {max_order_consideration.py:139 34400 nano seconds}
+2026-08-15 21:14:54,970 [GCE] [INFO] [PASS] bbo_tolerance: Control passed | LMT=0.0, ORD=0.0 {bbo_price_tolerance.py:57 46400 nano seconds}
+2026-08-15 21:14:54,972 [GCE] [INFO] [PASS] close_tolerance: Control passed | LMT=0.0, ORD=0.0 {close_price_tolerance.py:56 44700 nano seconds}
+2026-08-15 21:14:54,972 [GCE] [INFO] [PASS] last_tolerance: Control passed | LMT=0.0, ORD=0.0 {last_price_tolerance.py:97 30500 nano seconds}
+2026-08-15 21:14:54,973 [GCE] [INFO] 6 controls validated, 6 passed, 0 failed
+2026-08-15 21:14:54,973 [GCE] [INFO] LMT_CHECK_OVER in 1.40ms
+2026-08-15 21:18:39,386 [GCE] [INFO] LMT_CHECK_START
+2026-08-15 21:18:39,387 [GCE] [INFO] LMT_CHECK_NEW
+2026-08-15 21:18:39,387 [GCE] [INFO] [PASS] max_qty: Control passed | LMT=1000000, ORD=100 {quantity_control.py:19 76300 nano seconds}
+2026-08-15 21:18:39,388 [GCE] [INFO] [PASS] max_price: Control passed | LMT=1000000.0, ORD=100.0 {price_control.py:19 74800 nano seconds}
+2026-08-15 21:18:39,389 [GCE] [INFO] [PASS] max_consideration: Control passed | LMT=100000000.0, ORD=44020.0 {max_order_consideration.py:139 85000 nano seconds}
+2026-08-15 21:18:39,389 [GCE] [INFO] [PASS] bbo_tolerance: Control passed | LMT=0.0, ORD=0.0 {bbo_price_tolerance.py:57 47600 nano seconds}
+2026-08-15 21:18:39,390 [GCE] [INFO] [PASS] close_tolerance: Control passed | LMT=0.0, ORD=0.0 {close_price_tolerance.py:56 61000 nano seconds}
+2026-08-15 21:18:39,390 [GCE] [INFO] [PASS] last_tolerance: Control passed | LMT=0.0, ORD=0.0 {last_price_tolerance.py:97 55800 nano seconds}
+2026-08-15 21:18:39,390 [GCE] [INFO] 6 controls validated, 6 passed, 0 failed
+2026-08-15 21:18:39,391 [GCE] [INFO] LMT_CHECK_OVER in 1.24ms
+2026-08-15 21:19:07,546 [GCE] [INFO] GCE Control Center GUI started
+2026-08-15 21:19:07,758 [GCE] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-15 21:19:07,759 [GCE] [INFO] Loaded session timings for 2 exchanges from D:\Github\projects\config\Datamgr.ini
+2026-08-15 21:22:44,135 [GCE] [INFO] GCE Control Center GUI started
+2026-08-15 21:22:44,349 [GCE] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-15 21:22:44,350 [GCE] [INFO] Loaded session timings for 2 exchanges from D:\Github\projects\config\Datamgr.ini
+2026-08-15 21:23:12,196 [GCE] [INFO] GCE Control Center GUI started
+2026-08-15 21:23:12,310 [GCE] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-15 21:23:12,310 [GCE] [INFO] Loaded session timings for 2 exchanges from D:\Github\projects\config\Datamgr.ini
+2026-08-15 21:23:12,563 [GCE] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-15 21:23:12,563 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
+2026-08-15 21:23:12,705 [GCE] [INFO] Loaded 17635 instruments
+2026-08-15 21:23:12,707 [GCE] [INFO] Loaded/fetched 2 prices in cache via PXFeeder
+2026-08-15 21:23:12,707 [GCE] [INFO] Loaded 5 orders
+2026-08-15 21:23:12,708 [GCE] [ERROR] Failed to load positions: CSV file not found: D:\Github\projects\PositionsCache.csv
+2026-08-15 21:23:12,709 [GCE] [INFO] LMT_CHECK_START
+2026-08-15 21:23:12,710 [GCE] [INFO] LMT_CHECK_NEW
+2026-08-15 21:23:12,710 [GCE] [INFO] [PASS] max_qty: Control passed | LMT=1000000, ORD=500 {quantity_control.py:19 48600 nano seconds}
+2026-08-15 21:23:12,710 [GCE] [INFO] [PASS] max_price: Control passed | LMT=1000000.0, ORD=0.0 {price_control.py:19 50100 nano seconds}
+2026-08-15 21:23:12,710 [GCE] [INFO] [PASS] max_consideration: Control passed | LMT=100000000.0, ORD=220100.0 {max_order_consideration.py:139 49900 nano seconds}
+2026-08-15 21:23:12,711 [GCE] [INFO] [PASS] bbo_tolerance: Control passed | LMT=0.0, ORD=0.0 {bbo_price_tolerance.py:57 26500 nano seconds}
+2026-08-15 21:23:12,712 [GCE] [INFO] [PASS] close_tolerance: Control passed | LMT=0.0, ORD=0.0 {close_price_tolerance.py:56 53200 nano seconds}
+2026-08-15 21:23:12,712 [GCE] [INFO] [PASS] last_tolerance: Control passed | LMT=0.0, ORD=0.0 {last_price_tolerance.py:97 29100 nano seconds}
+2026-08-15 21:23:12,712 [GCE] [INFO] 6 controls validated, 6 passed, 0 failed
+2026-08-15 21:23:12,712 [GCE] [INFO] LMT_CHECK_OVER in 1.07ms
+2026-08-15 21:28:54,947 [GCE] [-] [INFO] GCE Control Center GUI started
+2026-08-15 21:28:55,063 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-15 21:28:55,063 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from D:\Github\projects\config\Datamgr.ini
+2026-08-15 21:28:55,307 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-15 21:28:55,307 [GCE] [-] [INFO] Loaded 17635 static instruments in DataMgr
+2026-08-15 21:28:55,451 [GCE] [-] [INFO] Loaded 17635 instruments
+2026-08-15 21:28:55,454 [GCE] [-] [INFO] Loaded/fetched 2 prices in cache via PXFeeder
+2026-08-15 21:28:55,455 [GCE] [-] [INFO] Loaded 6 orders
+2026-08-15 21:28:55,456 [GCE] [-] [ERROR] Failed to load positions: CSV file not found: D:\Github\projects\PositionsCache.csv
+2026-08-15 21:28:55,461 [GCE] [ORD-20260815-212855-205] [INFO] LMT_CHECK_START
+2026-08-15 21:28:55,462 [GCE] [ORD-20260815-212855-205] [INFO] LMT_CHECK_NEW
+2026-08-15 21:28:55,462 [GCE] [ORD-20260815-212855-205] [INFO] [PASS] max_qty: Control passed | LMT=1000000, ORD=250 {quantity_control.py:19 119400 nano seconds}
+2026-08-15 21:28:55,462 [GCE] [ORD-20260815-212855-205] [INFO] [PASS] max_price: Control passed | LMT=1000000.0, ORD=345.5 {price_control.py:19 106400 nano seconds}
+2026-08-15 21:28:55,463 [GCE] [ORD-20260815-212855-205] [INFO] [PASS] max_consideration: Control passed | LMT=100000000.0, ORD=86375.0 {max_order_consideration.py:139 88800 nano seconds}
+2026-08-15 21:28:55,463 [GCE] [ORD-20260815-212855-205] [INFO] [PASS] bbo_tolerance: Control passed | LMT=0.0, ORD=0.0 {bbo_price_tolerance.py:57 108100 nano seconds}
+2026-08-15 21:28:55,464 [GCE] [ORD-20260815-212855-205] [INFO] [PASS] close_tolerance: Control passed | LMT=0.0, ORD=0.0 {close_price_tolerance.py:56 64300 nano seconds}
+2026-08-15 21:28:55,466 [GCE] [ORD-20260815-212855-205] [INFO] [PASS] last_tolerance: Control passed | LMT=0.0, ORD=0.0 {last_price_tolerance.py:97 71900 nano seconds}
+2026-08-15 21:28:55,467 [GCE] [ORD-20260815-212855-205] [INFO] 6 controls validated, 6 passed, 0 failed
+2026-08-15 21:28:55,468 [GCE] [ORD-20260815-212855-205] [INFO] LMT_CHECK_OVER in 2.55ms

@@ -23,7 +23,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     const panel = document.getElementById('panel-' + section);
     if (panel) panel.classList.add('active');
     const titles = {
-      services: 'Services', limits: 'GCE Limits', oms: 'OMS Browser',
+      services: 'Services', orders: 'Place Order', limits: 'GCE Limits', oms: 'OMS Browser',
       prices: 'Prices', instruments: 'Instruments', sessions: 'Exchange Sessions',
       reconciliation: 'Reconciliation', positions: 'Positions',
       rms: 'RMS Controls Summary', performance: 'Performance'
@@ -47,9 +47,14 @@ async function api(path) {
   }
 }
 
-async function apiPost(path) {
+async function apiPost(path, body = null) {
   try {
-    const r = await fetch(path, { method: 'POST' });
+    const opts = { method: 'POST' };
+    if (body !== null && body !== undefined) {
+      opts.headers = { 'Content-Type': 'application/json' };
+      opts.body = typeof body === 'string' ? body : JSON.stringify(body);
+    }
+    const r = await fetch(path, opts);
     return await r.json();
   } catch (e) {
     console.error('API POST error:', path, e);
@@ -1228,6 +1233,26 @@ async function loadPerformance() {
 // ============================================================
 let recentPlacedOrdersData = [];
 
+function handleOrderTypeChange() {
+  const orderType = document.getElementById('order-field-type') ? document.getElementById('order-field-type').value : 'LMT';
+  const priceGroup = document.getElementById('order-group-price');
+  const priceInput = document.getElementById('order-field-price');
+
+  if (!priceInput) return;
+
+  if (orderType === 'MKT') {
+    priceInput.value = '0';
+    priceInput.required = false;
+    if (priceGroup) priceGroup.style.display = 'none';
+  } else {
+    if (priceInput.value === '0' || priceInput.value === '0.0' || !priceInput.value) {
+      priceInput.value = '100.0';
+    }
+    priceInput.required = true;
+    if (priceGroup) priceGroup.style.display = 'block';
+  }
+}
+
 function autoFillOrderFieldsByRIC(inputRic) {
   const cleanRic = (inputRic || '').trim();
   if (!cleanRic) return;
@@ -1240,9 +1265,12 @@ function autoFillOrderFieldsByRIC(inputRic) {
     document.getElementById('order-field-currency').value = inst.currency || 'HKD';
   }
 
-  const px = (pricesAllData || []).find(p => p.ric.toLowerCase() === cleanRic.toLowerCase());
-  if (px && px.last) {
-    document.getElementById('order-field-price').value = px.last;
+  const orderType = document.getElementById('order-field-type') ? document.getElementById('order-field-type').value : 'LMT';
+  if (orderType !== 'MKT') {
+    const px = (pricesAllData || []).find(p => p.ric.toLowerCase() === cleanRic.toLowerCase());
+    if (px && px.last) {
+      document.getElementById('order-field-price').value = px.last;
+    }
   }
 }
 
@@ -1252,10 +1280,15 @@ if (orderRicInputEl) {
   orderRicInputEl.addEventListener('change', (e) => autoFillOrderFieldsByRIC(e.target.value));
 }
 
+const orderTypeSelectEl = document.getElementById('order-field-type');
+if (orderTypeSelectEl) {
+  orderTypeSelectEl.addEventListener('change', handleOrderTypeChange);
+}
+
 function resetOrderPlacementForm() {
   document.getElementById('order-placement-form').reset();
+  handleOrderTypeChange();
   document.getElementById('order-field-qty').value = '100';
-  document.getElementById('order-field-price').value = '100.0';
   document.getElementById('order-field-product').value = 'Equity';
   document.getElementById('order-field-exchange').value = 'XHKG';
   document.getElementById('order-field-currency').value = 'HKD';
@@ -1277,7 +1310,8 @@ async function submitOrderPlacement() {
 
   const ric = (document.getElementById('order-field-ric').value || '').trim();
   const quantity = Number(document.getElementById('order-field-qty').value || 0);
-  const price = Number(document.getElementById('order-field-price').value || 0);
+  const orderType = document.getElementById('order-field-type').value;
+  const price = orderType === 'MKT' ? 0.0 : Number(document.getElementById('order-field-price').value || 0);
 
   if (!ric) {
     alert('Please enter a RIC symbol');
@@ -1287,8 +1321,8 @@ async function submitOrderPlacement() {
     alert('Quantity must be greater than 0');
     return;
   }
-  if (price <= 0) {
-    alert('Price must be greater than 0');
+  if (orderType === 'LMT' && price <= 0) {
+    alert('Price must be greater than 0 for Limit orders');
     return;
   }
 

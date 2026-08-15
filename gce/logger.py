@@ -12,12 +12,15 @@ import threading
 
 
 class GCEFormatter(logging.Formatter):
-    """Custom formatter for GCE logs with nanosecond precision."""
+    """Custom formatter for GCE logs with nanosecond precision and Order ID tracking."""
     
-    LOG_FORMAT = "%(asctime)s [GCE] [%(levelname)s] %(message)s"
+    LOG_FORMAT = "%(asctime)s [GCE] [%(order_id)s] [%(levelname)s] %(message)s"
+    
+    def __init__(self, fmt: Optional[str] = None, datefmt: Optional[str] = None, style: str = '%'):
+        super().__init__(fmt=fmt or self.LOG_FORMAT, datefmt=datefmt, style=style)
     
     def format(self, record):
-        """Format log record with nanosecond precision timestamp."""
+        """Format log record with nanosecond precision timestamp and order_id."""
         # Get nanosecond timestamp
         timestamp_ns = int(time.time_ns())
         seconds = timestamp_ns // 1_000_000_000
@@ -28,6 +31,8 @@ class GCEFormatter(logging.Formatter):
         timestamp = f"{timestamp}.{nanoseconds:09d}"
         
         record.asctime = timestamp
+        if not hasattr(record, 'order_id') or not record.order_id:
+            record.order_id = "-"
         return super().format(record)
 
 
@@ -112,6 +117,7 @@ class GCELogger:
         self.rejections: List[str] = []
         self.start_time: Optional[datetime] = None
         self.async_logging = async_logging
+        self.current_order_id = "-"
         
         formatter = GCEFormatter(GCEFormatter.LOG_FORMAT)
         
@@ -160,39 +166,49 @@ class GCELogger:
                 self.log_queue.task_done()
                 break
                 
-            level, msg = item
+            if len(item) == 3:
+                level, msg, ord_id = item
+            else:
+                level, msg = item
+                ord_id = getattr(self, 'current_order_id', '-')
+
+            extra = {'order_id': ord_id or '-'}
             try:
                 if level == "INFO":
-                    self.logger.info(msg)
+                    self.logger.info(msg, extra=extra)
                 elif level == "WARNING":
-                    self.logger.warning(msg)
+                    self.logger.warning(msg, extra=extra)
                 elif level == "ERROR":
-                    self.logger.error(msg)
+                    self.logger.error(msg, extra=extra)
                 elif level == "DEBUG":
-                    self.logger.debug(msg)
+                    self.logger.debug(msg, extra=extra)
             except Exception as e:
                 sys.stderr.write(f"Logger worker error: {e}\n")
             finally:
                 self.log_queue.task_done()
 
-    def _enqueue_log(self, level: str, msg: str):
+    def _enqueue_log(self, level: str, msg: str, order_id: Optional[str] = None):
         """Enqueue log message for parallel background processing."""
+        target_ord_id = order_id or getattr(self, 'current_order_id', '-') or '-'
         if self.async_logging:
-            self.log_queue.put((level, msg))
+            self.log_queue.put((level, msg, target_ord_id))
         else:
+            extra = {'order_id': target_ord_id}
             if level == "INFO":
-                self.logger.info(msg)
+                self.logger.info(msg, extra=extra)
             elif level == "WARNING":
-                self.logger.warning(msg)
+                self.logger.warning(msg, extra=extra)
             elif level == "ERROR":
-                self.logger.error(msg)
+                self.logger.error(msg, extra=extra)
             elif level == "DEBUG":
-                self.logger.debug(msg)
+                self.logger.debug(msg, extra=extra)
     
-    def lmt_check_start(self):
+    def lmt_check_start(self, order_id: str = ""):
         """Log limit check start."""
         self.start_time = datetime.now()
         self.rejections = []
+        if order_id:
+            self.current_order_id = str(order_id)
         self._enqueue_log("INFO", "LMT_CHECK_START")
     
     def lmt_check_new(self):
@@ -253,6 +269,7 @@ class GCELogger:
     def lmt_check_over(self, elapsed_time: float):
         """Log limit check completion with elapsed time."""
         self._enqueue_log("INFO", f"LMT_CHECK_OVER in {elapsed_time*1000:.2f}ms")
+        self.current_order_id = "-"
     
     def log_rejections(self):
         """Log all rejections as comma-separated summary."""

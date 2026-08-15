@@ -433,26 +433,22 @@ def api_orders():
 def api_orders_place():
     orders_cache = _get("orders")
     dm = _get("datamgr")
-    data = request.json or {}
-
-    ric = str(data.get("ric", "") or "").strip()
-    if not ric:
-        return jsonify({"ok": False, "message": "RIC/Symbol is required"}), 400
+    data = request.get_json(force=True, silent=True) or request.form or {}
 
     try:
+        ric = str(data.get("ric", "") or "").strip()
+        if not ric:
+            return jsonify({"ok": False, "message": "RIC/Symbol is required"}), 400
+
+        side = str(data.get("side", "B") or "B").strip().upper()
+        order_type = str(data.get("order_type", "LMT") or "LMT").strip().upper()
+
         qty = int(data.get("quantity", 0) or 0)
         px = float(data.get("price", 0.0) or 0.0)
         if qty <= 0:
             return jsonify({"ok": False, "message": "Quantity must be > 0"}), 400
-        if px <= 0.0:
-            return jsonify({"ok": False, "message": "Price must be > 0"}), 400
-
-        order_id = str(data.get("order_id", "") or "").strip()
-        if not order_id:
-            order_id = f"ORD-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{int(time.time()*1000)%1000:03d}"
-
-        side = str(data.get("side", "B") or "B").strip().upper()
-        order_type = str(data.get("order_type", "LMT") or "LMT").strip().upper()
+        if order_type != "MKT" and px <= 0.0:
+            return jsonify({"ok": False, "message": "Price must be > 0 for Limit orders"}), 400
         trader = str(data.get("trader", "*") or "*").strip()
         account = str(data.get("account", "*") or "*").strip()
         client = str(data.get("client", "*") or "*").strip()
@@ -465,6 +461,9 @@ def api_orders_place():
         flow = str(data.get("flow", "*") or "*").strip()
         algo_strategy = str(data.get("algo_strategy", "*") or "*").strip()
         tif = str(data.get("tif", "DAY") or "DAY").strip()
+        order_id = str(data.get("order_id", "") or "").strip()
+        if not order_id:
+            order_id = f"ORD-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{int(time.time()*1000)%1000:03d}"
 
         order = Order(
             order_id=order_id,
