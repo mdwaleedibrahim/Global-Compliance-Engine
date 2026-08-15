@@ -1,11 +1,20 @@
 # GCE - Global Compliance Engine
 
-A high-performance pre-trade order risk management system for Hong Kong & global securities trading. Provides real-time order validation using configurable limit controls with parallel execution, nanosecond-precision logging, automated multi-currency FX data feeding, static instrument management, exchange session timing tracking, and SQLite RMS control limits (`DataMgr`).
+A high-performance pre-trade order risk management system for Hong Kong & global securities trading. Provides real-time order validation using configurable limit controls with parallel execution, nanosecond-precision logging, automated multi-currency FX data feeding, static instrument management, exchange session timing tracking, SQLite RMS control limits (`DataMgr`), and a web-based **GCE Control Center GUI**.
 
 ---
 
 ## Key Features
 
+- **GCE Control Center Web GUI (`gui/`)**: Real-time web-based control center dashboard built with a lightweight Flask REST backend and dark-mode glassmorphism single-page frontend.
+  - **Services Management**: Check status and **Start / Stop / Restart** sub-services (`Engine`, `PXFeeder`, `Logger Worker`, `DataMgr`).
+  - **OMS Browser**: Interactive order browser with search, status filtering, and dynamic bottom pagination (50 per page, threshold > 20 records).
+  - **Prices & FX**: Market prices cache view (with pagination > 20 records) and multi-currency FX rates grid.
+  - **Instruments**: Searchable instrument catalog (17,635 RICs, RIC masterkey index) with **SecurityType** (mapped from CSV `Sub-Category`), `Total Instruments` indicator, and pagination (50 per page).
+  - **Exchange Sessions**: Visual session status (`XHKG`, `XSES`) with live state badges (🟢 Trading, 🟡 Break, 🔴 Closed) and configuration reloading.
+  - **Reconciliation**: Audit order fills against position caches with variance alerts.
+  - **RMS Controls Summary**: Parsed `GCE.log` statistics per control with Chart.js Pass/Fail bar charts and **click-to-expand order drill-down**.
+  - **Performance Metrics**: Real-time validation time line chart (ms) and per-control nanosecond execution stacked bar chart (`{file:line Xns}`).
 - **Pre-Trade Control Engine**: Validates orders against multiple configurable limit controls (`MaxOrderQuantity`, `MaxOrderPrice`, `MaxOrderConsideration`, `ClosePriceTolerance`, `LastPriceTolerance`, `BBOPriceTolerance`) before execution.
 - **DataMgr & SQLite RMS Control Limits**: Manages instrument static data from `"Instrument Static"` CSV files and maintains a local SQLite database (`rms_limits.db`) for RMS control limits.
   - Loads DB limits into an in-memory cache on startup.
@@ -13,23 +22,34 @@ A high-performance pre-trade order risk management system for Hong Kong & global
   - Supports bulk replacement of existing DB limits via CSV file (`replace_limits_from_csv()`).
   - Enforces text length limits (max 64 characters) and numerical caps (`999,999,999,999`).
   - Provides hierarchical wildcard matching for order limits (`Product`, `Trader`, `Account`, `symbol`, etc.).
-- **Control Disable Status (`0 = Disabled`)**:
-  - Setting any core/extended numerical limit or rate limit control to `0` or `'0'` disables that specific control check.
-- **Sliding Window Rate Limit Specification (`x,y`)**:
-  - Supports `"x,y"` format for `DuplicateOrders` and `BurstOrders` (e.g., `"10,60"` = maximum 10 orders allowed within a sliding 60-second window).
-- **Exchange Session Timing Management (`config/Datamgr.ini`)**:
-  - Parses session start and end times for exchanges (e.g. `XHKG`, `XSES`).
-  - Evaluates current exchange state as active trading time (`Xsession1`, `Xsession2`, `Xsession3`) vs. break time (`BREAK`).
-  - Detects session switches automatically and logs state changes in structured logs.
-- **Price Tolerance Controls & `limitchecker.ini` Configuration**:
-  - **`ClosePriceTolerance`**: Validates order price deviation % from Close price.
-  - **`LastPriceTolerance`**: Validates order price deviation % from Last price, with session price overrides (`lpt_xsession1`, `lpt_xsession2`, `lpt_xsession3`).
-  - **`BBOPriceTolerance`**: Validates order price deviation % from Ask (buy) or Bid (sell).
-  - Exception handling configuration via [`config/limitchecker.ini`](config/limitchecker.ini) (`invalid_close_price_action`, `invalid_last_price_action`, `invalid_bbo_price_action`).
+  - **RIC Masterkey Indexing**: Stores instruments using RIC as the primary masterkey (`00001.HK`, `0700.HK`) with fallback stock code lookup.
+- **Control Disable Status (`0 = Disabled`)**: Setting any limit control to `0` or `'0'` disables that check.
+- **Sliding Window Rate Limit Specification (`x,y`)**: Supports `"x,y"` format for `DuplicateOrders` and `BurstOrders` (e.g., `"10,60"` = maximum 10 orders within 60s).
+- **Exchange Session Timing Management (`config/Datamgr.ini`)**: Parses session start and end times for exchanges (e.g. `XHKG`, `XSES`), tracking active trading vs. break times.
+- **Price Tolerance Controls & `limitchecker.ini` Configuration**: Controls for `ClosePriceTolerance`, `LastPriceTolerance`, and `BBOPriceTolerance` configured via [`config/limitchecker.ini`](config/limitchecker.ini).
 - **PXFeeder Market & FX Data Feeder**: Integrated `PXFeeder` module fetching live prices and FX rates for major **US, EU, and APAC currencies** (`USD`, `EUR`, `GBP`, `JPY`, `HKD`, `AUD`, `SGD`, `CNH`, `CAD`, `CHF`) via `yfinance`.
 - **Zero-Latency In-Memory Caching & Binary `.DAT` Snapshot Persistence**: All market data, positions, orders, instruments, FX rates, and RMS limits are cached in memory with binary snapshot recovery (`PriceCache.dat`, `InstrumentStatic.dat`).
-- **Structured Logging**: Nanosecond-precision timestamps with rejection tracking.
+- **Nanosecond-Precision Logging & Timing**: Control execution logs append caller location and nanosecond timing details at line ends (e.g., `{price_control.py:19 2800 nano seconds}`).
 - **Performance**: Average validation time < 0.1ms, **20,000+ orders/sec** throughput.
+
+---
+
+## GCE Control Center GUI
+
+Launch the web GUI server:
+
+```bash
+python gui/server.py
+```
+
+Access the dashboard in your web browser:
+👉 **[http://localhost:5050](http://localhost:5050)**
+
+### Pagination & Threshold Rules
+- Applicable to **OMS Browser**, **Prices**, and **Instruments**.
+- When records exceed **20 items**, a pagination section appears at the bottom.
+- Displays **50 records per page** with `⏮ Prev`, `Page P of N`, and `Next ⏭` controls.
+- Displays `Total Records: X` (or `Total Instruments: 17,635` for Instruments).
 
 ---
 
@@ -49,45 +69,6 @@ The local SQLite table `rms_control_limits` is defined in the following exact co
 
 ---
 
-## Exchange Session Timings (`Datamgr.ini`)
-
-Configured in [`config/Datamgr.ini`](config/Datamgr.ini):
-
-```ini
-;;Session timings
-Xsession1_start=XHKG:09:30, XSES:09:00
-Xsession1_end=XHKG:13:00, XSES:12:00
-Xsession2_start=XHKG:14:00, XSES:13:00
-Xsession2_end=XHKG:16:00, XSES:17:00
-Xsession3_start=XHKG:16:00, XSES:17:06
-Xsession3_end=XHKG:16:10, XSES:17:16
-```
-
-- **Trading Time**: Time between `start` and `end` for a session (`Xsession1`, `Xsession2`, `Xsession3`).
-- **Break Time**: Time between `end` of one session and `start` of the next session (or outside session hours) is evaluated as **`BREAK`**.
-- **Session Switches**: Whenever session status changes, `DataMgr` writes an automated log event:
-  `Exchange XHKG session changed: BREAK -> Xsession1 at 09:30:00`
-
----
-
-## Price Tolerance Configuration (`limitchecker.ini`)
-
-Configured in [`config/limitchecker.ini`](config/limitchecker.ini):
-
-```ini
-;; Last Price Tolerance price precedence per session
-lpt_xsession1=open
-lpt_xsession2=last
-lpt_xsession3=last
-
-;; Missing price exception handling (ignore or reject)
-invalid_close_price_action=ignore
-invalid_last_price_action=ignore
-invalid_bbo_price_action=reject
-```
-
----
-
 ## Architecture & Project Structure
 
 ```
@@ -98,7 +79,7 @@ GCE (Global Compliance Engine)
 │   │   ├── order_cache.py (Order CRUD and state management)
 │   │   ├── position_cache.py (Position tracking and reconciliation)
 │   │   ├── price_cache.py (Price cache with .dat binary persistence)
-│   │   └── instrument_cache.py (Security universe)
+│   │   └── instrument_cache.py (Security universe with RIC masterkey)
 │   ├── controls/
 │   │   ├── base_control.py (Control framework with performance tracking)
 │   │   ├── config_helper.py (LimitCheckerConfig loader for limitchecker.ini)
@@ -108,13 +89,21 @@ GCE (Global Compliance Engine)
 │   │   ├── close_price_tolerance.py (ClosePriceTolerance control -> ClosePriceTolerance)
 │   │   ├── last_price_tolerance.py (LastPriceTolerance control -> LastPriceTolerance)
 │   │   └── bbo_price_tolerance.py (BBOPriceTolerance control -> BBOPriceTolerance)
-│   ├── datamgr.py (Instrument static manager, SQLite DB manager, session timings)
+│   ├── datamgr.py (Instrument static manager, RIC indexing, SQLite DB, session timings)
 │   ├── pxfeeder.py (yfinance prices & US/EU/APAC FX feeder)
 │   ├── engine.py (GCE orchestrator with control registry & execution pipeline)
-│   ├── logger.py (Structured logging with nanosecond timestamps)
+│   ├── logger.py (Structured logging with nanosecond timestamps & caller metadata)
 │   ├── order_state_machine.py (Order state transition validation)
 │   ├── position_updater.py (Fill application and reconciliation)
 │   └── reconciler.py (Position variance detection)
+├── gui/
+│   ├── server.py (Flask API server for Control Center GUI)
+│   ├── log_parser.py (GCE.log parser for RMS summary & performance timing)
+│   ├── requirements.txt (GUI dependencies: Flask >= 3.0)
+│   └── static/
+│       ├── index.html (Single-page dashboard HTML)
+│       ├── styles.css (Dark-mode glassmorphism CSS design system)
+│       └── app.js (Frontend REST polling, Chart.js graphs, pagination & drill-down)
 ├── Instrument Static/ (Directory containing static data CSV files)
 │   └── HK-ListOfSecurities.csv
 ├── config/
@@ -199,7 +188,7 @@ print("APPROVED" if passed else f"REJECTED: {rejections}")
 
 ## Running Tests
 
-Run the complete unit test suite (35 tests):
+Run the complete unit test suite:
 
 ```bash
 python -m unittest tests/test_cache_readers.py tests/test_datamgr.py tests/test_datamgr_sqlite.py tests/test_datamgr_sessions.py tests/test_order_cache_schema.py tests/test_parallel_controls.py tests/test_risk_analytics.py tests/test_max_order_consideration.py tests/test_price_tolerances.py

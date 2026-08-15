@@ -143,6 +143,7 @@ class InstrumentStatic:
         self.name = name
         self.category = category
         self.sub_category = sub_category
+        self.security_type = sub_category
         self.board_lot = int(board_lot or 100)
         self.isin = isin
         self.stamp_duty = bool(stamp_duty)
@@ -164,6 +165,7 @@ class InstrumentStatic:
             'name': self.name,
             'category': self.category,
             'sub_category': self.sub_category,
+            'security_type': self.sub_category,
             'board_lot': self.board_lot,
             'isin': self.isin,
             'stamp_duty': self.stamp_duty,

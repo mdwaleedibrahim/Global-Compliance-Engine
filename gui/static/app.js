@@ -339,6 +339,7 @@ function renderInstrTable() {
     <td>${i.stock_code}</td>
     <td>${i.name}</td>
     <td>${i.category}</td>
+    <td>${i.security_type || i.sub_category || '—'}</td>
     <td>${(i.board_lot || 0).toLocaleString()}</td>
     <td>${i.currency}</td>
     <td>${i.shortsell ? '✅' : '—'}</td>

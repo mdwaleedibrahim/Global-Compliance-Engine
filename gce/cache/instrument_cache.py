@@ -15,6 +15,7 @@ class Instrument:
         self.board_lot = board_lot
         self.isin = kwargs.get('isin', '')
         self.category = kwargs.get('category', '')
+        self.security_type = kwargs.get('security_type', kwargs.get('sub_category', kwargs.get('Sub-Category', '')))
         self.shortsell_eligible = kwargs.get('shortsell_eligible', 'N') == 'Y'
         self.cas_eligible = kwargs.get('cas_eligible', 'N') == 'Y'
         self.vcm_eligible = kwargs.get('vcm_eligible', 'N') == 'Y'
@@ -59,6 +60,7 @@ class InstrumentCache:
                     if not ric:
                         continue
                     stock_code = row.get('Stock Code', '')
+                    sec_type = row.get('Sub-Category') or row.get('SecurityType') or row.get('Security Type', '')
                     
                     instrument = Instrument(
                         ric=ric,
@@ -67,6 +69,7 @@ class InstrumentCache:
                         board_lot=board_lot,
                         isin=row.get('ISIN', ''),
                         category=row.get('Category', ''),
+                        security_type=sec_type,
                         shortsell_eligible=row.get('Shortsell Eligible', 'N'),
                         cas_eligible=row.get('CAS Eligible', 'N'),
                         vcm_eligible=row.get('VCM Eligible', 'N'),
