@@ -287,6 +287,7 @@ class DataMgr:
         self._lock = threading.RLock()
         self.logger = logging.getLogger("GCE.DataMgr")
         self.instruments: Dict[str, InstrumentStatic] = {}
+        self.code_to_ric: Dict[str, str] = {}
         self._rms_limits: List[RMSLimitRule] = []
         self.session_config: Dict[str, List[SessionPeriod]] = {}
         self._exchange_session_state: Dict[str, str] = {}
@@ -509,7 +510,7 @@ class DataMgr:
             return 0
 
         count = 0
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, 'r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
             for row in reader:
                 try:
@@ -553,7 +554,7 @@ class DataMgr:
                     with self._lock:
                         self.instruments[ric] = instrument
                         if stock_code:
-                            self.instruments[stock_code] = instrument
+                            self.code_to_ric[stock_code] = ric
                     count += 1
                 except Exception:
                     continue
@@ -588,8 +589,9 @@ class DataMgr:
         count = 0
         with self._lock:
             for key, data in payload.items():
+                ric = data.get('ric') or key
                 inst = InstrumentStatic(
-                    ric=data['ric'],
+                    ric=ric,
                     stock_code=data.get('stock_code', ''),
                     name=data.get('name', ''),
                     category=data.get('category', ''),
@@ -606,7 +608,9 @@ class DataMgr:
                     spread_table=data.get('spread_table', ''),
                     rmb_counter=data.get('rmb_counter', '')
                 )
-                self.instruments[key] = inst
+                self.instruments[ric] = inst
+                if inst.stock_code:
+                    self.code_to_ric[inst.stock_code] = ric
                 count += 1
 
         return count
@@ -616,11 +620,16 @@ class DataMgr:
     # ------------------------------------------------------------------
 
     def get_instrument(self, symbol_or_ric: str) -> Optional[InstrumentStatic]:
-        """Lookup instrument static data by symbol or RIC code."""
+        """Lookup instrument static data using RIC as the masterkey (with stock_code fallback)."""
         if not symbol_or_ric:
             return None
         with self._lock:
-            return self.instruments.get(symbol_or_ric)
+            if symbol_or_ric in self.instruments:
+                return self.instruments[symbol_or_ric]
+            ric = self.code_to_ric.get(symbol_or_ric)
+            if ric and ric in self.instruments:
+                return self.instruments[ric]
+            return None
 
     def lookup_order_details(self, order: Any) -> Dict[str, Any]:
         """

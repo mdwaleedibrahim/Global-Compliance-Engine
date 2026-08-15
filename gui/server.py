@@ -313,7 +313,7 @@ def api_instruments():
     # Prefer DataMgr static data (richer), fall back to InstrumentCache
     if dm and dm.count() > 0:
         search = request.args.get("search", "").upper()
-        limit = int(request.args.get("limit", 200))
+        limit = int(request.args.get("limit", 0))
         count = 0
         for ric, inst in dm.instruments.items():
             inst_name = str(getattr(inst, "name", "") or "")
@@ -332,11 +332,11 @@ def api_instruments():
                 "vcm": getattr(inst, "vcm_eligible", False),
             })
             count += 1
-            if count >= limit:
+            if limit > 0 and count >= limit:
                 break
     else:
         search = request.args.get("search", "").upper()
-        limit = int(request.args.get("limit", 200))
+        limit = int(request.args.get("limit", 0))
         count = 0
         for ric, inst in ic.instruments.items():
             if search and search not in ric.upper() and search not in inst.name.upper():
@@ -354,7 +354,7 @@ def api_instruments():
                 "vcm": inst.vcm_eligible,
             })
             count += 1
-            if count >= limit:
+            if limit > 0 and count >= limit:
                 break
     return jsonify(instruments_list)
 

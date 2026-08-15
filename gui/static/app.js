@@ -104,8 +104,57 @@ async function svcAction(name, action) {
 }
 
 // ============================================================
+// Pagination Helper (Shows when > 20 records, 50 per page)
+// ============================================================
+const PAGE_SIZE = 50;
+
+function renderPaginationBar(containerId, totalCount, currentPage, pageSize, onPageChange, labelText = 'Total Records') {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  if (totalCount <= 20) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    return;
+  }
+
+  container.style.display = 'flex';
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const safePage = Math.max(1, Math.min(currentPage, totalPages));
+
+  container.innerHTML = `
+    <div class="pagination-info">
+      <span>${labelText}: <strong style="color:var(--text-bright)">${totalCount.toLocaleString()}</strong></span>
+    </div>
+    <div class="pagination-controls">
+      <button class="pagination-btn" id="${containerId}-prev" ${safePage <= 1 ? 'disabled' : ''}>⏮ Prev</button>
+      <span class="page-indicator">Page <strong style="color:var(--text-bright)">${safePage}</strong> of <strong>${totalPages}</strong></span>
+      <button class="pagination-btn" id="${containerId}-next" ${safePage >= totalPages ? 'disabled' : ''}>Next ⏭</button>
+    </div>
+  `;
+
+  const prevBtn = document.getElementById(`${containerId}-prev`);
+  const nextBtn = document.getElementById(`${containerId}-next`);
+
+  if (prevBtn) {
+    prevBtn.onclick = () => {
+      if (safePage > 1) onPageChange(safePage - 1);
+    };
+  }
+
+  if (nextBtn) {
+    nextBtn.onclick = () => {
+      if (safePage < totalPages) onPageChange(safePage + 1);
+    };
+  }
+}
+
+// ============================================================
 // Section 3: OMS Browser
 // ============================================================
+let omsAllFilteredOrders = [];
+let omsPage = 1;
+
 async function loadOrders() {
   const data = await api('/api/orders');
   if (!data) return;
@@ -127,16 +176,28 @@ async function loadOrders() {
     filtered = filtered.filter(o => o.status === statusFilter);
   }
 
+  omsAllFilteredOrders = filtered;
+  omsPage = 1;
+  renderOMSTable();
+}
+
+function renderOMSTable() {
   const tbody = document.getElementById('oms-tbody');
   const empty = document.getElementById('oms-empty');
-  if (filtered.length === 0) {
+  const total = omsAllFilteredOrders.length;
+
+  if (total === 0) {
     tbody.innerHTML = '';
     empty.style.display = 'block';
+    renderPaginationBar('oms-pagination', 0, 1, PAGE_SIZE, () => {}, 'Total Records');
     return;
   }
   empty.style.display = 'none';
 
-  tbody.innerHTML = filtered.map(o => {
+  const startIdx = (omsPage - 1) * PAGE_SIZE;
+  const pageSlice = omsAllFilteredOrders.slice(startIdx, startIdx + PAGE_SIZE);
+
+  tbody.innerHTML = pageSlice.map(o => {
     const sideBadge = o.side === 'B' ? 'badge-buy' : 'badge-sell';
     const sideLabel = o.side === 'B' ? 'BUY' : 'SELL';
     let statusBadge = 'badge-live';
@@ -158,6 +219,11 @@ async function loadOrders() {
       <td style="font-size:11px;color:var(--text-muted)">${(o.timestamp || '').substring(0, 19)}</td>
     </tr>`;
   }).join('');
+
+  renderPaginationBar('oms-pagination', total, omsPage, PAGE_SIZE, newPage => {
+    omsPage = newPage;
+    renderOMSTable();
+  }, 'Total Records');
 }
 
 // Wire up search/filter
@@ -167,17 +233,33 @@ document.getElementById('oms-status-filter').addEventListener('change', loadOrde
 // ============================================================
 // Section 4: Prices & FX
 // ============================================================
+let pricesAllData = [];
+let pricesPage = 1;
+
 async function loadPrices() {
   const data = await api('/api/prices');
+  pricesAllData = data || [];
+  pricesPage = 1;
+  renderPricesTable();
+}
+
+function renderPricesTable() {
   const tbody = document.getElementById('prices-tbody');
   const empty = document.getElementById('prices-empty');
-  if (!data || data.length === 0) {
+  const total = pricesAllData.length;
+
+  if (total === 0) {
     tbody.innerHTML = '';
     empty.style.display = 'block';
+    renderPaginationBar('prices-pagination', 0, 1, PAGE_SIZE, () => {}, 'Total Records');
     return;
   }
   empty.style.display = 'none';
-  tbody.innerHTML = data.map(p => `<tr>
+
+  const startIdx = (pricesPage - 1) * PAGE_SIZE;
+  const pageSlice = pricesAllData.slice(startIdx, startIdx + PAGE_SIZE);
+
+  tbody.innerHTML = pageSlice.map(p => `<tr>
     <td style="color:var(--text-bright);font-weight:500">${p.ric}</td>
     <td>${(p.open || 0).toFixed(2)}</td>
     <td>${(p.bid || 0).toFixed(2)}</td>
@@ -186,6 +268,11 @@ async function loadPrices() {
     <td>${(p.close || 0).toFixed(2)}</td>
     <td>${(p.mid || 0).toFixed(2)}</td>
   </tr>`).join('');
+
+  renderPaginationBar('prices-pagination', total, pricesPage, PAGE_SIZE, newPage => {
+    pricesPage = newPage;
+    renderPricesTable();
+  }, 'Total Records');
 }
 
 async function loadFX() {
@@ -220,18 +307,34 @@ function switchPriceTab(tab) {
 // ============================================================
 // Section 5: Instruments
 // ============================================================
+let instrAllData = [];
+let instrPage = 1;
+
 async function loadInstruments() {
   const search = document.getElementById('instr-search').value || '';
-  const data = await api(`/api/instruments?search=${encodeURIComponent(search)}&limit=200`);
+  const data = await api(`/api/instruments?search=${encodeURIComponent(search)}&limit=0`);
+  instrAllData = data || [];
+  instrPage = 1;
+  renderInstrTable();
+}
+
+function renderInstrTable() {
   const tbody = document.getElementById('instr-tbody');
   const empty = document.getElementById('instr-empty');
-  if (!data || data.length === 0) {
+  const total = instrAllData.length;
+
+  if (total === 0) {
     tbody.innerHTML = '';
     empty.style.display = 'block';
+    renderPaginationBar('instr-pagination', 0, 1, PAGE_SIZE, () => {}, 'Total Instruments');
     return;
   }
   empty.style.display = 'none';
-  tbody.innerHTML = data.map(i => `<tr>
+
+  const startIdx = (instrPage - 1) * PAGE_SIZE;
+  const pageSlice = instrAllData.slice(startIdx, startIdx + PAGE_SIZE);
+
+  tbody.innerHTML = pageSlice.map(i => `<tr>
     <td style="color:var(--text-bright);font-weight:500">${i.ric}</td>
     <td>${i.stock_code}</td>
     <td>${i.name}</td>
@@ -242,6 +345,11 @@ async function loadInstruments() {
     <td>${i.cas ? '✅' : '—'}</td>
     <td>${i.vcm ? '✅' : '—'}</td>
   </tr>`).join('');
+
+  renderPaginationBar('instr-pagination', total, instrPage, PAGE_SIZE, newPage => {
+    instrPage = newPage;
+    renderInstrTable();
+  }, 'Total Instruments');
 }
 
 document.getElementById('instr-search').addEventListener('input', debounce(loadInstruments, 300));

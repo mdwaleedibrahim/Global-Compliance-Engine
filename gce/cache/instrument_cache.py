@@ -49,17 +49,21 @@ class InstrumentCache:
             raise FileNotFoundError(f"CSV file not found: {csv_path}")
         
         count = 0
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, 'r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
             for row in reader:
                 try:
                     # Parse board lot (remove commas)
                     board_lot = int(row.get('Board Lot', '0').replace(',', ''))
+                    ric = row.get('RIC') or row.get('\ufeffRIC', '')
+                    if not ric:
+                        continue
+                    stock_code = row.get('Stock Code', '')
                     
                     instrument = Instrument(
-                        ric=row['RIC'],
-                        stock_code=row['Stock Code'],
-                        name=row['Name of Securities'],
+                        ric=ric,
+                        stock_code=stock_code,
+                        name=row.get('Name of Securities', ''),
                         board_lot=board_lot,
                         isin=row.get('ISIN', ''),
                         category=row.get('Category', ''),
@@ -70,7 +74,8 @@ class InstrumentCache:
                     )
                     
                     self.instruments[instrument.ric] = instrument
-                    self.ric_to_code[instrument.ric] = instrument.stock_code
+                    if stock_code:
+                        self.ric_to_code[instrument.ric] = stock_code
                     count += 1
                 except (ValueError, KeyError) as e:
                     print(f"Warning: Failed to parse row {row}: {e}")
@@ -78,9 +83,15 @@ class InstrumentCache:
         
         return count
     
-    def get_instrument(self, ric: str) -> Optional[Instrument]:
-        """Get instrument by RIC"""
-        return self.instruments.get(ric)
+    def get_instrument(self, symbol_or_ric: str) -> Optional[Instrument]:
+        """Get instrument by RIC masterkey (or fallback stock code)"""
+        if not symbol_or_ric:
+            return None
+        # Primary lookup: RIC masterkey
+        if symbol_or_ric in self.instruments:
+            return self.instruments[symbol_or_ric]
+        # Secondary lookup: stock code
+        return self.get_by_code(symbol_or_ric)
     
     def get_by_code(self, code: str) -> Optional[Instrument]:
         """Get instrument by stock code"""
