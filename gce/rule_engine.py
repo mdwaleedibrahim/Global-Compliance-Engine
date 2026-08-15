@@ -414,12 +414,18 @@ class RuleEngine:
             Dict[control_name -> limit_value] for controls with limit > 0
         """
         CONTROL_TO_LIMIT_COL: Dict[str, List[str]] = {
-            'max_qty':           ['MaxOrderSize', 'MaxOrderQuantity'],
-            'max_price':         ['MaxOrderPrice'],
-            'max_consideration': ['MaxOrderValue'],
-            'bbo_tolerance':     ['BBOPriceTolerance'],
-            'close_tolerance':   ['ClosePriceTolerance'],
-            'last_tolerance':    ['LastPriceTolerance'],
+            'MaxOrderQuantity':     ['MaxOrderSize', 'MaxOrderQuantity'],
+            'MaxOrderPrice':        ['MaxOrderPrice'],
+            'MaxOrderConsideration': ['MaxOrderValue'],
+            'BBOPriceTolerance':    ['BBOPriceTolerance'],
+            'ClosePriceTolerance':  ['ClosePriceTolerance'],
+            'LastPriceTolerance':   ['LastPriceTolerance'],
+            'max_qty':              ['MaxOrderSize', 'MaxOrderQuantity'],
+            'max_price':            ['MaxOrderPrice'],
+            'max_consideration':    ['MaxOrderValue'],
+            'bbo_tolerance':        ['BBOPriceTolerance'],
+            'close_tolerance':      ['ClosePriceTolerance'],
+            'last_tolerance':       ['LastPriceTolerance'],
         }
 
         active: Dict[str, float] = {}

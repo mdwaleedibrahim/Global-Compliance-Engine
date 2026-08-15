@@ -427,3 +427,24 @@
 2026-08-16 02:00:06,268 [GCE] [ORD-20260816-020005-985] [INFO] 6 controls validated, 3 passed, 3 failed
 2026-08-16 02:00:06,269 [GCE] [ORD-20260816-020005-985] [INFO] bbo_tolerance: BBO Price Tolerance exceeds limit, LMT=20.0, ORD=250.00 (LMT=20.0, ORD=250.0), close_tolerance: Close Price Tolerance exceeds limit, LMT=20.0, ORD=250.00 (LMT=20.0, ORD=250.0), last_tolerance: Last Price Tolerance exceeds limit, LMT=20.0, ORD=75.00 (LMT=20.0, ORD=75.0)
 2026-08-16 02:00:06,269 [GCE] [ORD-20260816-020005-985] [INFO] LMT_CHECK_OVER in 3.91ms
+2026-08-16 02:06:09,585 [GCE] [-] [INFO] GCE Control Center GUI started
+2026-08-16 02:06:09,724 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-16 02:06:09,726 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from D:\Github\projects\config\Datamgr.ini
+2026-08-16 02:06:10,245 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-16 02:06:10,246 [GCE] [-] [INFO] Loaded 17635 static instruments in DataMgr
+2026-08-16 02:06:10,507 [GCE] [-] [INFO] Loaded 17635 instruments
+2026-08-16 02:06:10,509 [GCE] [-] [INFO] Loaded/fetched 3 prices in cache via PXFeeder
+2026-08-16 02:06:10,510 [GCE] [-] [INFO] Loaded 19 orders
+2026-08-16 02:06:10,511 [GCE] [-] [ERROR] Failed to load positions: CSV file not found: D:\Github\projects\PositionsCache.csv
+2026-08-16 02:06:10,545 [GCE] [ORD-20260816-020610-006] [INFO] LMT_CHECK_START
+2026-08-16 02:06:10,546 [GCE] [ORD-20260816-020610-006] [INFO] LMT_CHECK_NEW B 0700.HK 100@LMT 350.0 HKD PAFTDACXUAT Equity|*|DMA|TRADER1|*|ACC01|*|XHKG|0700|*|DAY
+2026-08-16 02:06:10,546 [GCE] [ORD-20260816-020610-006] [INFO] LMT_MKTDAT 0700.HK Last=100.0, Bid=100.0, Ask=100.0, Open=200.0, Close=100.0
+2026-08-16 02:06:10,547 [GCE] [ORD-20260816-020610-006] [INFO] [PASS] MaxOrderQuantity: Control passed | LMT=1000, ORD=100 {quantity_control.py:19 13300 nano seconds}
+2026-08-16 02:06:10,548 [GCE] [ORD-20260816-020610-006] [INFO] [PASS] MaxOrderPrice: Control passed | LMT=1000.0, ORD=350.0 {price_control.py:19 24100 nano seconds}
+2026-08-16 02:06:10,548 [GCE] [ORD-20260816-020610-006] [INFO] [PASS] MaxOrderConsideration: Control passed | LMT=100000.0, ORD=35000.0 {max_order_consideration.py:139 18500 nano seconds}
+2026-08-16 02:06:10,549 [GCE] [ORD-20260816-020610-006] [WARNING] [FAIL] BBOPriceTolerance: BBO Price Tolerance exceeds limit, LMT=20.0, ORD=250.00 | LMT=20.0, ORD=250.0 {bbo_price_tolerance.py:57 35300 nano seconds}
+2026-08-16 02:06:10,549 [GCE] [ORD-20260816-020610-006] [WARNING] [FAIL] ClosePriceTolerance: Close Price Tolerance exceeds limit, LMT=20.0, ORD=250.00 | LMT=20.0, ORD=250.0 {close_price_tolerance.py:56 63000 nano seconds}
+2026-08-16 02:06:10,549 [GCE] [ORD-20260816-020610-006] [WARNING] [FAIL] LastPriceTolerance: Last Price Tolerance exceeds limit, LMT=20.0, ORD=75.00 | LMT=20.0, ORD=75.0 {last_price_tolerance.py:97 2325200 nano seconds}
+2026-08-16 02:06:10,549 [GCE] [ORD-20260816-020610-006] [INFO] 6 controls validated, 3 passed, 3 failed
+2026-08-16 02:06:10,550 [GCE] [ORD-20260816-020610-006] [INFO] BBOPriceTolerance: BBO Price Tolerance exceeds limit, LMT=20.0, ORD=250.00 (LMT=20.0, ORD=250.0), ClosePriceTolerance: Close Price Tolerance exceeds limit, LMT=20.0, ORD=250.00 (LMT=20.0, ORD=250.0), LastPriceTolerance: Last Price Tolerance exceeds limit, LMT=20.0, ORD=75.00 (LMT=20.0, ORD=75.0)
+2026-08-16 02:06:10,550 [GCE] [ORD-20260816-020610-006] [INFO] LMT_CHECK_OVER in 4.79ms

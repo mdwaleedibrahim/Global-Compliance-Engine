@@ -21,8 +21,8 @@ def example_basic_validation():
     engine = GCEEngine()
     
     # Register controls
-    engine.register_control("max_qty", MaxOrderQuantity(limit=1000))
-    engine.register_control("max_price", MaxOrderPrice(limit=500))
+    engine.register_control("MaxOrderQuantity", MaxOrderQuantity(limit=1000))
+    engine.register_control("MaxOrderPrice", MaxOrderPrice(limit=500))
     
     # Set context
     engine.set_context({})
@@ -61,8 +61,8 @@ def example_rejection_scenarios():
     print("="*70)
     
     engine = GCEEngine()
-    engine.register_control("max_qty", MaxOrderQuantity(limit=1000))
-    engine.register_control("max_price", MaxOrderPrice(limit=500))
+    engine.register_control("MaxOrderQuantity", MaxOrderQuantity(limit=1000))
+    engine.register_control("MaxOrderPrice", MaxOrderPrice(limit=500))
     engine.set_context({})
     
     gen = MockOrderGenerator()
@@ -92,8 +92,8 @@ def example_batch_validation():
     print("="*70)
     
     engine = GCEEngine()
-    engine.register_control("max_qty", MaxOrderQuantity(limit=1000))
-    engine.register_control("max_price", MaxOrderPrice(limit=500))
+    engine.register_control("MaxOrderQuantity", MaxOrderQuantity(limit=1000))
+    engine.register_control("MaxOrderPrice", MaxOrderPrice(limit=500))
     engine.set_context({})
     
     gen = MockOrderGenerator(seed=42)
@@ -130,8 +130,8 @@ def example_with_logging():
     
     # Create engine
     engine = GCEEngine()
-    engine.register_control("max_qty", MaxOrderQuantity(limit=1000))
-    engine.register_control("max_price", MaxOrderPrice(limit=500))
+    engine.register_control("MaxOrderQuantity", MaxOrderQuantity(limit=1000))
+    engine.register_control("MaxOrderPrice", MaxOrderPrice(limit=500))
     engine.set_context({})
     
     # Create orders
@@ -185,8 +185,8 @@ def example_custom_controls():
     
     # Create engine with custom control
     engine = GCEEngine()
-    engine.register_control("max_qty", MaxOrderQuantity(limit=1000))
-    engine.register_control("max_price", MaxOrderPrice(limit=500))
+    engine.register_control("MaxOrderQuantity", MaxOrderQuantity(limit=1000))
+    engine.register_control("MaxOrderPrice", MaxOrderPrice(limit=500))
     engine.register_control("max_notional", MaxNotionalValue(limit=100000))
     engine.set_context({})
     
@@ -215,8 +215,8 @@ def example_performance_benchmark():
     import time
     
     engine = GCEEngine()
-    engine.register_control("max_qty", MaxOrderQuantity(limit=1000))
-    engine.register_control("max_price", MaxOrderPrice(limit=500))
+    engine.register_control("MaxOrderQuantity", MaxOrderQuantity(limit=1000))
+    engine.register_control("MaxOrderPrice", MaxOrderPrice(limit=500))
     engine.set_context({})
     
     gen = MockOrderGenerator(seed=42)

@@ -528,6 +528,8 @@ class GCE:
     def _get_limit_mapped_controls() -> set:
         """Controls that have a limit column mapping — skipped if limit=0."""
         return {
+            'MaxOrderQuantity', 'MaxOrderPrice', 'MaxOrderConsideration',
+            'BBOPriceTolerance', 'ClosePriceTolerance', 'LastPriceTolerance',
             'max_qty', 'max_price', 'max_consideration',
             'bbo_tolerance', 'close_tolerance', 'last_tolerance',
         }
