@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="GCE Control Center — Real-time monitoring dashboard for the Global Compliance Engine">
+  <title>GCE Control Center</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- ============ Sidebar ============ -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">G</div>
+      <div>
+        <div class="sidebar-title">GCE Control Center</div>
+        <div class="sidebar-subtitle">Risk Management</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Monitoring</div>
+      <div class="nav-item active" data-section="services" id="nav-services">
+        <span class="nav-icon">⚡</span> Services
+      </div>
+      <div class="nav-item" data-section="rms" id="nav-rms">
+        <span class="nav-icon">🛡️</span> RMS Controls
+      </div>
+      <div class="nav-item" data-section="performance" id="nav-performance">
+        <span class="nav-icon">📊</span> Performance
+      </div>
+
+      <div class="nav-section-label">Data</div>
+      <div class="nav-item" data-section="oms" id="nav-oms">
+        <span class="nav-icon">📋</span> OMS Browser
+        <span class="nav-badge" id="order-count-badge">0</span>
+      </div>
+      <div class="nav-item" data-section="prices" id="nav-prices">
+        <span class="nav-icon">💹</span> Prices
+      </div>
+      <div class="nav-item" data-section="instruments" id="nav-instruments">
+        <span class="nav-icon">🏢</span> Instruments
+      </div>
+
+      <div class="nav-section-label">Operations</div>
+      <div class="nav-item" data-section="sessions" id="nav-sessions">
+        <span class="nav-icon">🕐</span> Exchange Sessions
+      </div>
+      <div class="nav-item" data-section="reconciliation" id="nav-reconciliation">
+        <span class="nav-icon">🔄</span> Reconciliation
+      </div>
+
+      <div class="nav-section-label">Coming Soon</div>
+      <div class="nav-item" data-section="limits" id="nav-limits">
+        <span class="nav-icon">🔒</span> GCE Limits
+      </div>
+      <div class="nav-item" data-section="positions" id="nav-positions">
+        <span class="nav-icon">🔒</span> Positions
+      </div>
+    </nav>
+  </aside>
+
+  <!-- ============ Main Area ============ -->
+  <div class="main-area">
+    <header class="main-header">
+      <h1 id="section-title">Services</h1>
+      <div class="header-actions">
+        <button class="btn btn-ghost btn-sm" id="btn-refresh" onclick="refreshCurrentSection()">
+          ↻ Refresh
+        </button>
+        <span id="last-refresh" style="font-size:11px;color:var(--text-muted)"></span>
+      </div>
+    </header>
+
+    <div class="main-content">
+
+      <!-- Section 1: Services -->
+      <div class="section-panel active" id="panel-services">
+        <div class="card-grid" id="services-grid"></div>
+      </div>
+
+      <!-- Section 2: GCE Limits Placeholder -->
+      <div class="section-panel" id="panel-limits">
+        <div class="card placeholder-card">
+          <div class="placeholder-icon">🔒</div>
+          <div class="placeholder-text">GCE Limits Configuration</div>
+          <div class="placeholder-sub">Coming Soon — RMS limits editor will be available in a future release</div>
+        </div>
+      </div>
+
+      <!-- Section 3: OMS Browser -->
+      <div class="section-panel" id="panel-oms">
+        <div class="search-bar">
+          <input type="text" class="search-input" id="oms-search" placeholder="Search symbol, trader, order ID...">
+          <select class="search-input" id="oms-status-filter">
+            <option value="">All Statuses</option>
+            <option value="Live">Live</option>
+            <option value="Fill">Fill</option>
+            <option value="Partial Fill">Partial Fill</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="loadOrders()">↻</button>
+        </div>
+        <div class="card">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Order ID</th><th>RIC</th><th>Side</th><th>Qty</th><th>Price</th>
+                  <th>Status</th><th>Trader</th><th>Account</th><th>Filled</th><th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="oms-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state" id="oms-empty" style="display:none">No orders found</div>
+        </div>
+      </div>
+
+      <!-- Section 4: Prices -->
+      <div class="section-panel" id="panel-prices">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchPriceTab('market')">Market Prices</button>
+          <button class="tab-btn" onclick="switchPriceTab('fx')">FX Rates</button>
+        </div>
+        <div class="tab-content active" id="tab-market">
+          <div class="card">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr><th>RIC</th><th>Open</th><th>Bid</th><th>Ask</th><th>Last</th><th>Close</th><th>Mid</th></tr>
+                </thead>
+                <tbody id="prices-tbody"></tbody>
+              </table>
+            </div>
+            <div class="empty-state" id="prices-empty" style="display:none">No prices available</div>
+          </div>
+        </div>
+        <div class="tab-content" id="tab-fx">
+          <div class="fx-grid" id="fx-grid"></div>
+          <div class="empty-state" id="fx-empty" style="display:none">No FX rates available</div>
+        </div>
+      </div>
+
+      <!-- Section 5: Instruments -->
+      <div class="section-panel" id="panel-instruments">
+        <div class="search-bar">
+          <input type="text" class="search-input" id="instr-search" placeholder="Search RIC or name...">
+          <button class="btn btn-ghost btn-sm" onclick="loadInstruments()">↻</button>
+        </div>
+        <div class="card">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>RIC</th><th>Code</th><th>Name</th><th>Category</th>
+                  <th>Board Lot</th><th>Currency</th><th>SS</th><th>CAS</th><th>VCM</th>
+                </tr>
+              </thead>
+              <tbody id="instr-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state" id="instr-empty" style="display:none">No instruments found</div>
+        </div>
+      </div>
+
+      <!-- Section 6: Exchange Sessions -->
+      <div class="section-panel" id="panel-sessions">
+        <div class="card" id="sessions-container">
+          <div class="card-title">📡 Exchange Session Status</div>
+          <div id="sessions-content"></div>
+          <div style="margin-top:14px">
+            <button class="btn btn-ghost btn-sm" onclick="reloadSessions()">↻ Reload from Config</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 7: Reconciliation -->
+      <div class="section-panel" id="panel-reconciliation">
+        <div style="margin-bottom:14px">
+          <button class="btn btn-primary" onclick="runReconciliation()">▶ Run Reconciliation</button>
+        </div>
+        <div class="card">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Symbol</th><th>Trader</th><th>Orders</th><th>Filled</th>
+                  <th>Net Qty</th><th>Qty Var</th><th>Status</th><th>Issues</th>
+                </tr>
+              </thead>
+              <tbody id="recon-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state" id="recon-empty">Click "Run Reconciliation" to generate report</div>
+        </div>
+      </div>
+
+      <!-- Section 8: Positions Placeholder -->
+      <div class="section-panel" id="panel-positions">
+        <div class="card placeholder-card">
+          <div class="placeholder-icon">🔒</div>
+          <div class="placeholder-text">Positions Management</div>
+          <div class="placeholder-sub">Coming Soon — Positions dashboard will be available in a future release</div>
+        </div>
+      </div>
+
+      <!-- Section 9: RMS Controls Summary -->
+      <div class="section-panel" id="panel-rms">
+        <div class="card-grid-3" id="rms-stats-cards" style="margin-bottom:16px"></div>
+        <div class="card-grid-2">
+          <div class="card">
+            <div class="card-title">📊 Control Pass/Fail Breakdown</div>
+            <div class="chart-container"><canvas id="rms-chart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">📋 Control Summary Table</div>
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>Control</th><th>Pass</th><th>Fail</th><th>Total</th><th>Rate</th></tr></thead>
+                <tbody id="rms-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div id="rms-drilldown" class="drill-down" style="display:none;margin-top:16px">
+          <div class="drill-down-title" id="rms-drilldown-title"></div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Time</th><th>Control</th><th>Status</th><th>Message</th><th>LMT</th><th>ORD</th><th>Source</th><th>Elapsed</th></tr></thead>
+              <tbody id="rms-drilldown-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 10: Performance -->
+      <div class="section-panel" id="panel-performance">
+        <div class="card-grid" id="perf-stats-cards" style="margin-bottom:16px"></div>
+        <div class="card-grid-2">
+          <div class="card">
+            <div class="card-title">⏱️ Order Validation Time (ms)</div>
+            <div class="chart-container"><canvas id="perf-order-chart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">🔬 Per-Control Timing (ns) — Last 20 Orders</div>
+            <div class="chart-container"><canvas id="perf-control-chart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span><span class="status-dot green pulse" id="engine-dot"></span> Engine <span id="engine-status-text">Running</span></span>
+      <span>|</span>
+      <span id="status-uptime">Uptime: --:--:--</span>
+      <span>|</span>
+      <span id="status-refresh">Auto-refresh: 5s</span>
+    </div>
+  </div>
+
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

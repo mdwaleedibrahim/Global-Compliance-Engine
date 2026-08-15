@@ -2,6 +2,7 @@ from typing import Dict, List, Tuple, Any, Optional
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
+from pathlib import Path
 
 from gce.controls.base_control import BaseControl, ControlExecution, ControlResult
 from gce.cache.order_cache import Order, OrderStatus
@@ -341,20 +342,29 @@ class GCE:
                 'datamgr': self.datamgr,
                 'fx_rates': self.pxfeeder.get_all_fx_rates()
             }
+            func_to_inspect = getattr(control_func, 'validate', control_func)
+            start_ns = time.time_ns()
             if hasattr(control_func, 'validate'):
                 result = control_func.validate(order, context)
             else:
                 result = control_func(order, self.instruments, self.prices, self.positions)
+            elapsed_ns = time.time_ns() - start_ns
+
+            code = getattr(func_to_inspect, '__code__', None)
+            if code:
+                caller_loc = f"{Path(code.co_filename).name}:{code.co_firstlineno}"
+            else:
+                caller_loc = ""
 
             if isinstance(result, tuple) and len(result) == 4:
                 passed, msg, limit, value = result
             else:
                 passed, msg = result
                 limit = value = None
-            return (control_name, passed, msg, limit, value, None)
+            return (control_name, passed, msg, limit, value, None, caller_loc, elapsed_ns)
         except Exception as e:
             err_msg = f"Control error: {e}"
-            return (control_name, False, err_msg, None, None, e)
+            return (control_name, False, err_msg, None, None, e, "", 0)
     
     def validate_order(self, order: Order, is_new: bool = True, parallel: bool = True) -> Tuple[bool, List[str]]:
         """
@@ -385,8 +395,9 @@ class GCE:
                 for c_name, c_func in self.controls.items()
             ]
             for future in futures:
-                c_name, passed, msg, limit, value, err = future.result()
-                control_results.append((c_name, passed, msg, limit, value, err))
+                res = future.result()
+                c_name, passed, msg, limit, value, err, caller_loc, elapsed_ns = res
+                control_results.append(res)
                 if passed:
                     passed_count += 1
                 else:
@@ -395,7 +406,7 @@ class GCE:
         else:
             for control_name, control_func in self.controls.items():
                 res = self._run_single_control(control_name, control_func, order)
-                c_name, passed, msg, limit, value, err = res
+                c_name, passed, msg, limit, value, err, caller_loc, elapsed_ns = res
                 control_results.append(res)
                 if passed:
                     passed_count += 1
@@ -422,14 +433,13 @@ class GCE:
         else:
             self.logger.lmt_check_amend()
             
-        for control_name, passed, msg, limit, value, err in control_results:
+        for c_name, passed, msg, limit, value, err, caller_loc, elapsed_ns in control_results:
             if err is not None:
-                self.logger.error(f"Error in control {control_name}: {err}")
+                self.logger.error(f"Error in control {c_name}: {err}")
             elif passed:
-                if limit is not None and value is not None:
-                    self.logger.control_passed(control_name, limit, value)
+                self.logger.control_passed(c_name, limit, value, caller_location=caller_loc, elapsed_ns=elapsed_ns)
             else:
-                self.logger.control_failed(control_name, limit, value, msg)
+                self.logger.control_failed(c_name, limit, value, msg, caller_location=caller_loc, elapsed_ns=elapsed_ns)
         
         total_controls = len(self.controls)
         self.logger.lmt_check_summary(total_controls, passed_count, failed_count)

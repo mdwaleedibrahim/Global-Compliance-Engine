@@ -203,23 +203,43 @@ class GCELogger:
         """Log amend order limit check."""
         self._enqueue_log("INFO", "LMT_CHECK_AMEND")
     
-    def control_passed(self, control_name: str, limit_value: Any, 
-                      order_value: Any):
-        """Log control pass with limit and order values."""
+    def control_passed(self, control_name: str, limit_value: Any,
+                      order_value: Any, caller_location: str = "",
+                      elapsed_ns: Optional[Any] = None):
+        """Log control pass with limit, order values, caller location, and elapsed time."""
         msg = self.rejection_formatter.format_control_result(
             control_name, True, limit_value, order_value,
             "Control passed"
         )
+        if caller_location or elapsed_ns is not None:
+            if isinstance(elapsed_ns, (int, float)):
+                timing = f"{int(elapsed_ns)} nano seconds"
+            elif elapsed_ns:
+                timing = str(elapsed_ns)
+            else:
+                timing = ""
+            suffix = f"{caller_location} {timing}".strip()
+            msg = f"{msg} {{{suffix}}}"
         self._enqueue_log("INFO", msg)
     
-    def control_failed(self, control_name: str, limit_value: Any, 
-                      order_value: Any, reason: str):
-        """Log control failure with details."""
+    def control_failed(self, control_name: str, limit_value: Any,
+                      order_value: Any, reason: str, caller_location: str = "",
+                      elapsed_ns: Optional[Any] = None):
+        """Log control failure with details, caller location, and elapsed time."""
         msg = self.rejection_formatter.format_control_result(
             control_name, False, limit_value, order_value, reason
         )
+        if caller_location or elapsed_ns is not None:
+            if isinstance(elapsed_ns, (int, float)):
+                timing = f"{int(elapsed_ns)} nano seconds"
+            elif elapsed_ns:
+                timing = str(elapsed_ns)
+            else:
+                timing = ""
+            suffix = f"{caller_location} {timing}".strip()
+            msg = f"{msg} {{{suffix}}}"
         self._enqueue_log("WARNING", msg)
-        
+
         # Track rejection for summary
         rejection = self.rejection_formatter.format_rejection(
             control_name, limit_value, order_value, reason
