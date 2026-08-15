@@ -28,7 +28,7 @@ class MaxOrderConsideration(BaseControl):
         "SSE", "SHORT_SELL_EXEMPT", "SHORT SELL EXEMPT", "SHORT-SELL-EXEMPT"
     }
 
-    def __init__(self, limit: float, limit_currency: str = "HKD",
+    def __init__(self, limit: float = 0.0, limit_currency: str = "HKD",
                  price_hierarchy_buy: Optional[List[str]] = None,
                  price_hierarchy_sell: Optional[List[str]] = None):
         """
@@ -158,8 +158,6 @@ class MaxOrderConsideration(BaseControl):
         if datamgr and hasattr(datamgr, 'get_matching_limits'):
             matched = datamgr.get_matching_limits(order)
             limit = float(matched.get('MaxOrderValue', 0.0) or 0.0)
-            if limit == 0.0 and self.limit > 0.0:
-                limit = float(self.limit)
         else:
             limit = float(self.limit)
 

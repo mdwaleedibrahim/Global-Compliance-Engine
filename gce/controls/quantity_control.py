@@ -28,8 +28,6 @@ class MaxOrderQuantity(BaseControl):
         if datamgr and hasattr(datamgr, 'get_matching_limits'):
             matched = datamgr.get_matching_limits(order)
             limit = int(matched.get('MaxOrderQuantity', 0) or matched.get('MaxOrderSize', 0) or 0)
-            if limit == 0 and self.limit > 0:
-                limit = int(self.limit)
         else:
             limit = int(self.limit)
 

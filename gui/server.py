@@ -387,9 +387,9 @@ def _get_gce_engine():
             from gce.controls.close_price_tolerance import ClosePriceTolerance
             from gce.controls.last_price_tolerance import LastPriceTolerance
 
-            gce_inst.register_control("max_qty", MaxOrderQuantity(limit=1000000))
-            gce_inst.register_control("max_price", MaxOrderPrice(limit=1000000))
-            gce_inst.register_control("max_consideration", MaxOrderConsideration(limit=100000000.0))
+            gce_inst.register_control("max_qty", MaxOrderQuantity())
+            gce_inst.register_control("max_price", MaxOrderPrice())
+            gce_inst.register_control("max_consideration", MaxOrderConsideration())
             gce_inst.register_control("bbo_tolerance", BBOPriceTolerance())
             gce_inst.register_control("close_tolerance", ClosePriceTolerance())
             gce_inst.register_control("last_tolerance", LastPriceTolerance())

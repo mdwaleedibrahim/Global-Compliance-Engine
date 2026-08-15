@@ -59,8 +59,6 @@ class BBOPriceTolerance(BaseControl):
         if datamgr and hasattr(datamgr, 'get_matching_limits'):
             matched = datamgr.get_matching_limits(order)
             limit = float(matched.get('BBOPriceTolerance', 0.0) or 0.0)
-            if limit == 0.0 and self.limit > 0.0:
-                limit = float(self.limit)
         else:
             limit = float(self.limit)
 
