@@ -439,47 +439,26 @@ class DataMgr:
 
     def get_matching_limits(self, order: Any) -> Dict[str, Any]:
         """
-        Evaluate order against in-memory RMS limit rules to find best matching limits.
+        Evaluate order against in-memory RMS limit rules using the RuleEngine.
+
+        Selects ALL applicable enabled rules using *, $ wildcard semantics and
+        merges limits (most restrictive non-zero value per column) across all matched rules.
 
         Args:
             order: Order object or order dictionary.
 
         Returns:
-            Dict containing matched RMS control limits for the order.
+            Dict containing merged RMS control limits for the order.
         """
-        order_attrs = {}
-        if isinstance(order, dict):
-            order_attrs = dict(order)
-        else:
-            for col in TEXT_KEY_COLUMNS:
-                if hasattr(order, col):
-                    order_attrs[col] = getattr(order, col)
-                elif hasattr(order, col.lower()):
-                    order_attrs[col] = getattr(order, col.lower())
-
-        best_rule: Optional[RMSLimitRule] = None
-        best_score = -1
+        from gce.rule_engine import RuleEngine
+        re = RuleEngine()
 
         with self._lock:
             rules = list(self._rms_limits)
 
-        for rule in rules:
-            matches, score = rule.matches_order(order_attrs)
-            if matches and score > best_score:
-                best_score = score
-                best_rule = rule
-
-        if best_rule:
-            return best_rule.to_dict()
-
-        # Fallback default limits if no rule in DB matched
-        default_limits = {'DBId': None}
-        for col in TEXT_KEY_COLUMNS:
-            default_limits[col] = '*'
-        for col in NUMERICAL_COLUMNS:
-            default_limits[col] = 0.0
-        default_limits.update({'DuplicateOrders': '0', 'BurstOrders': '0', 'Restricted': 'N', 'SSRestricted': 'N', 'Enabled': 'Y'})
-        return default_limits
+        attrs = re.build_order_attrs(order, self)
+        selected = re.select_rules(attrs, rules)
+        return re.merge_limits(selected)
 
     def get_all_limits_from_db(self) -> List[Dict[str, Any]]:
         """Get all rows from SQLite DB table as list of dicts."""

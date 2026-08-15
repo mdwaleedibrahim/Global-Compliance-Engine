@@ -368,56 +368,112 @@ class GCE:
     
     def validate_order(self, order: Order, is_new: bool = True, parallel: bool = True) -> Tuple[bool, List[str]]:
         """
-        Validate order against all registered controls.
-        
-        Limit checking is performed on the critical path (concurrently in parallel if parallel=True).
-        Once limit checking completes, logging events are dispatched to the parallel logger path.
-        
+        Validate order against registered controls, driven by the Rule Engine.
+
+        Steps:
+          1. Derive order attributes from order fields + Instrument Cache
+          2. Select ALL applicable RMS rules (Enabled=Y, matching *, $, exact)
+          3. For each matched rule, execute controls using THAT rule's own limits
+          4. Order passes only if it passes every matched rule
+
         Args:
             order: Order to validate
             is_new: True for new order, False for amend
             parallel: Whether to execute controls in parallel
-            
+
         Returns:
             (passed: bool, rejection_messages: List[str])
         """
+        from gce.rule_engine import RuleEngine
+
         start_time = time.time()
         self.rejection_messages = []
-        
-        # --- CRITICAL PATH: Limit checking execution ---
-        control_results = []
-        passed_count = 0
-        failed_count = 0
 
-        if parallel and len(self.controls) > 1:
-            futures = [
-                self.executor.submit(self._run_single_control, c_name, c_func, order)
-                for c_name, c_func in self.controls.items()
-            ]
-            for future in futures:
-                res = future.result()
-                c_name, passed, msg, limit, value, err, caller_loc, elapsed_ns = res
-                control_results.append(res)
-                if passed:
-                    passed_count += 1
+        # --- Rule Engine: select matched rules ---
+        rule_engine = RuleEngine()
+        attrs = rule_engine.build_order_attrs(order, self.datamgr)
+        with self.datamgr._lock:
+            all_rules = list(self.datamgr._rms_limits)
+        selected_rules = rule_engine.select_rules(attrs, all_rules)
+
+        # Base context (shared caches, no rule-specific datamgr yet)
+        base_context = {
+            'instruments': self.instruments,
+            'prices': self.prices,
+            'positions': self.positions,
+            'pxfeeder': self.pxfeeder,
+            'datamgr': self.datamgr,
+            'fx_rates': self.pxfeeder.get_all_fx_rates() if hasattr(self.pxfeeder, 'get_all_fx_rates') else {},
+        }
+
+        # Build one context per rule (each with its own limits injected via _SingleRuleDataMgr)
+        rule_contexts = rule_engine.get_per_rule_contexts(selected_rules, base_context)
+
+        # --- CRITICAL PATH: Execute controls once per rule ---
+        all_control_results = []  # (rule_id, c_name, passed, msg, limit, value, err, caller_loc, elapsed_ns)
+        total_passed = 0
+        total_failed = 0
+
+        limit_mapped = self._get_limit_mapped_controls()
+
+        def _run(c_name, c_func, ctx):
+            try:
+                func_to_inspect = getattr(c_func, 'validate', c_func)
+                start_ns = time.time_ns()
+                if hasattr(c_func, 'validate'):
+                    result = c_func.validate(order, ctx)
                 else:
-                    self.rejection_messages.append(msg)
-                    failed_count += 1
-        else:
-            for control_name, control_func in self.controls.items():
-                res = self._run_single_control(control_name, control_func, order)
-                c_name, passed, msg, limit, value, err, caller_loc, elapsed_ns = res
-                control_results.append(res)
-                if passed:
-                    passed_count += 1
+                    result = c_func(order, self.instruments, self.prices, self.positions)
+                elapsed_ns = time.time_ns() - start_ns
+                code = getattr(func_to_inspect, '__code__', None)
+                caller_loc = f"{Path(code.co_filename).name}:{code.co_firstlineno}" if code else ""
+                if isinstance(result, tuple) and len(result) == 4:
+                    passed, msg, limit, value = result
                 else:
-                    self.rejection_messages.append(msg)
-                    failed_count += 1
-        
+                    passed, msg = result
+                    limit = value = None
+                return (c_name, passed, msg, limit, value, None, caller_loc, elapsed_ns)
+            except Exception as e:
+                return (c_name, False, f"Control error: {e}", None, None, e, "", 0)
+
+        for rule_ctx in rule_contexts:
+            rule_id = rule_ctx.get('rule_id')
+            rule_limits = rule_ctx.get('rule_limits', {})
+
+            # Determine active controls for this specific rule (limit > 0 or no limit mapping)
+            active_limits = rule_engine.get_active_control_limits(rule_limits, list(self.controls.keys()))
+            controls_to_run = {
+                name: func for name, func in self.controls.items()
+                if name in active_limits or name not in limit_mapped
+            }
+
+            rule_results = []
+            if parallel and len(controls_to_run) > 1:
+                futures = [
+                    self.executor.submit(_run, c_name, c_func, rule_ctx)
+                    for c_name, c_func in controls_to_run.items()
+                ]
+                for future in futures:
+                    rule_results.append(future.result())
+            else:
+                for c_name, c_func in controls_to_run.items():
+                    rule_results.append(_run(c_name, c_func, rule_ctx))
+
+            for res in rule_results:
+                c_name, passed, msg, limit, value, err, caller_loc, elapsed_ns = res
+                all_control_results.append((rule_id, *res))
+                if passed:
+                    total_passed += 1
+                else:
+                    # Annotate message with rule ID when multiple rules apply
+                    annotated = f"[Rule {rule_id}] {msg}" if rule_id is not None and len(rule_contexts) > 1 else msg
+                    self.rejection_messages.append(annotated)
+                    total_failed += 1
+
         elapsed_time = time.time() - start_time
-        order_passed = (failed_count == 0)
-        
-        # Update order state & cache on critical path
+        order_passed = (total_failed == 0)
+
+        # Update order state & cache
         if order_passed:
             order.status = OrderStatus.LIVE
             self.orders.add_order(order)
@@ -425,8 +481,8 @@ class GCE:
             order.status = OrderStatus.REJECTED
             order.rejection_reason = "; ".join(self.rejection_messages)
             self.orders.add_order(order)
-        
-        # --- PARALLEL LOGGING PATH: Post-checking async log dispatch ---
+
+        # --- LOGGING PATH ---
         order_id_val = getattr(order, 'order_id', '') or getattr(order, 'ric', '') or ''
         self.logger.lmt_check_start(order_id_val)
         if is_new:
@@ -434,7 +490,7 @@ class GCE:
         else:
             self.logger.lmt_check_amend(order)
 
-        # Log Market Data Prices (LMT_MKTDAT)
+        # Log Market Data Prices
         px_obj = None
         ric = getattr(order, 'ric', getattr(order, 'symbol', '')) or ''
         if ric:
@@ -443,36 +499,38 @@ class GCE:
             if not px_obj and hasattr(self, 'pxfeeder') and self.pxfeeder:
                 px_obj = self.pxfeeder.get_price(ric)
 
-        last_px = getattr(px_obj, 'last', 0.0) if px_obj else 0.0
-        bid_px = getattr(px_obj, 'bid', 0.0) if px_obj else 0.0
-        ask_px = getattr(px_obj, 'ask', 0.0) if px_obj else 0.0
-        open_px = getattr(px_obj, 'open_price', getattr(px_obj, 'open', 0.0)) if px_obj else 0.0
-        close_px = getattr(px_obj, 'close', 0.0) if px_obj else 0.0
-
         self.logger.lmt_mktdat(
             ric=ric,
-            last=last_px,
-            bid=bid_px,
-            ask=ask_px,
-            open_px=open_px,
-            close=close_px,
+            last=getattr(px_obj, 'last', 0.0) if px_obj else 0.0,
+            bid=getattr(px_obj, 'bid', 0.0) if px_obj else 0.0,
+            ask=getattr(px_obj, 'ask', 0.0) if px_obj else 0.0,
+            open_px=getattr(px_obj, 'open_price', getattr(px_obj, 'open', 0.0)) if px_obj else 0.0,
+            close=getattr(px_obj, 'close', 0.0) if px_obj else 0.0,
             order_id=order_id_val
         )
-            
-        for c_name, passed, msg, limit, value, err, caller_loc, elapsed_ns in control_results:
+
+        for rule_id, c_name, passed, msg, limit, value, err, caller_loc, elapsed_ns in all_control_results:
             if err is not None:
-                self.logger.error(f"Error in control {c_name}: {err}")
+                self.logger.error(f"[Rule {rule_id}] Error in control {c_name}: {err}")
             elif passed:
                 self.logger.control_passed(c_name, limit, value, caller_location=caller_loc, elapsed_ns=elapsed_ns)
             else:
                 self.logger.control_failed(c_name, limit, value, msg, caller_location=caller_loc, elapsed_ns=elapsed_ns)
-        
-        total_controls = len(self.controls)
-        self.logger.lmt_check_summary(total_controls, passed_count, failed_count)
+
+        num_rules = len(rule_contexts)
+        self.logger.lmt_check_summary(total_passed + total_failed, total_passed, total_failed)
         self.logger.log_rejections()
         self.logger.lmt_check_over(elapsed_time)
-        
+
         return order_passed, self.rejection_messages
+
+    @staticmethod
+    def _get_limit_mapped_controls() -> set:
+        """Controls that have a limit column mapping — skipped if limit=0."""
+        return {
+            'max_qty', 'max_price', 'max_consideration',
+            'bbo_tolerance', 'close_tolerance', 'last_tolerance',
+        }
     
     def save_state(self, order_csv: str = "OrderCache.csv", 
                    position_csv: str = "PositionsCache.csv") -> None:

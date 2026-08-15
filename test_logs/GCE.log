@@ -1,14 +1,14 @@
-2026-08-16 00:17:35,805 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
-2026-08-16 00:17:35,805 [GCE] [-] [INFO] Loaded 17635 static instruments in DataMgr
-2026-08-16 00:17:35,943 [GCE] [-] [INFO] Loaded 17635 instruments
-2026-08-16 00:17:35,975 [GCE] [-] [INFO] Loaded/fetched 3 prices in cache via PXFeeder
-2026-08-16 00:17:35,976 [GCE] [-] [INFO] Loaded 16 orders
-2026-08-16 00:17:35,976 [GCE] [-] [ERROR] Failed to load positions: CSV file not found: PositionsCache.csv
-2026-08-16 00:17:35,977 [GCE] [ORD123] [INFO] LMT_CHECK_START
-2026-08-16 00:17:35,977 [GCE] [ORD123] [INFO] LMT_CHECK_NEW B 0700.HK 500@LMT 200.0 HKD PAFTDACXUAT Equity||DMA|TRADER1||ACCT1||XHKG|0700||DAY
-2026-08-16 00:17:35,977 [GCE] [ORD123] [INFO] LMT_MKTDAT 0700.HK Last=110.0, Bid=100.0, Ask=120.0, Open=0.0, Close=105.0
-2026-08-16 00:17:35,979 [GCE] [ORD123] [INFO] [PASS] QtyControl: Control passed | LMT=1000, ORD=500 {test_parallel_logging.py:69 3100 nano seconds}
-2026-08-16 00:17:35,979 [GCE] [ORD123] [WARNING] [FAIL] PriceControl: Price Exceeds Limit | LMT=100.0, ORD=200.0 {test_parallel_logging.py:75 3500 nano seconds}
-2026-08-16 00:17:35,979 [GCE] [ORD123] [INFO] 2 controls validated, 1 passed, 1 failed
-2026-08-16 00:17:35,979 [GCE] [ORD123] [INFO] PriceControl: Price Exceeds Limit (LMT=100.0, ORD=200.0)
-2026-08-16 00:17:35,979 [GCE] [ORD123] [INFO] LMT_CHECK_OVER in 0.80ms
+2026-08-16 01:56:12,925 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-16 01:56:12,926 [GCE] [-] [INFO] Loaded 17635 static instruments in DataMgr
+2026-08-16 01:56:13,075 [GCE] [-] [INFO] Loaded 17635 instruments
+2026-08-16 01:56:13,106 [GCE] [-] [INFO] Loaded/fetched 3 prices in cache via PXFeeder
+2026-08-16 01:56:13,109 [GCE] [-] [INFO] Loaded 18 orders
+2026-08-16 01:56:13,109 [GCE] [-] [ERROR] Failed to load positions: CSV file not found: PositionsCache.csv
+2026-08-16 01:56:13,110 [GCE] [ORD123] [INFO] LMT_CHECK_START
+2026-08-16 01:56:13,110 [GCE] [ORD123] [INFO] LMT_CHECK_NEW B 0700.HK 500@LMT 200.0 HKD PAFTDACXUAT Equity||DMA|TRADER1||ACCT1||XHKG|0700||DAY
+2026-08-16 01:56:13,111 [GCE] [ORD123] [INFO] LMT_MKTDAT 0700.HK Last=110.0, Bid=100.0, Ask=120.0, Open=0.0, Close=105.0
+2026-08-16 01:56:13,113 [GCE] [ORD123] [INFO] [PASS] QtyControl: Control passed | LMT=1000, ORD=500 {test_parallel_logging.py:69 6400 nano seconds}
+2026-08-16 01:56:13,113 [GCE] [ORD123] [WARNING] [FAIL] PriceControl: Price Exceeds Limit | LMT=100.0, ORD=200.0 {test_parallel_logging.py:75 6500 nano seconds}
+2026-08-16 01:56:13,113 [GCE] [ORD123] [INFO] 2 controls validated, 1 passed, 1 failed
+2026-08-16 01:56:13,113 [GCE] [ORD123] [INFO] PriceControl: Price Exceeds Limit (LMT=100.0, ORD=200.0)
+2026-08-16 01:56:13,113 [GCE] [ORD123] [INFO] LMT_CHECK_OVER in 1.64ms
