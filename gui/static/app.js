@@ -1224,6 +1224,168 @@ async function loadPerformance() {
 }
 
 // ============================================================
+// Section: Place Order (Order Placement Ticket)
+// ============================================================
+let recentPlacedOrdersData = [];
+
+function autoFillOrderFieldsByRIC(inputRic) {
+  const cleanRic = (inputRic || '').trim();
+  if (!cleanRic) return;
+
+  const inst = (instrAllData || []).find(i => i.ric.toLowerCase() === cleanRic.toLowerCase());
+  if (inst) {
+    document.getElementById('order-field-product').value = inst.category || 'Equity';
+    document.getElementById('order-field-sectype').value = inst.security_type || inst.sub_category || 'Equity Securities';
+    document.getElementById('order-field-exchange').value = inst.exchange || 'XHKG';
+    document.getElementById('order-field-currency').value = inst.currency || 'HKD';
+  }
+
+  const px = (pricesAllData || []).find(p => p.ric.toLowerCase() === cleanRic.toLowerCase());
+  if (px && px.last) {
+    document.getElementById('order-field-price').value = px.last;
+  }
+}
+
+const orderRicInputEl = document.getElementById('order-field-ric');
+if (orderRicInputEl) {
+  orderRicInputEl.addEventListener('input', (e) => autoFillOrderFieldsByRIC(e.target.value));
+  orderRicInputEl.addEventListener('change', (e) => autoFillOrderFieldsByRIC(e.target.value));
+}
+
+function resetOrderPlacementForm() {
+  document.getElementById('order-placement-form').reset();
+  document.getElementById('order-field-qty').value = '100';
+  document.getElementById('order-field-price').value = '100.0';
+  document.getElementById('order-field-product').value = 'Equity';
+  document.getElementById('order-field-exchange').value = 'XHKG';
+  document.getElementById('order-field-currency').value = 'HKD';
+  document.getElementById('order-field-trader').value = 'TRADER1';
+  document.getElementById('order-field-account').value = 'ACC01';
+  document.getElementById('order-field-client').value = 'CLIENT_A';
+  document.getElementById('order-field-desk').value = 'HONGKONG_DESK';
+  document.getElementById('order-field-tif').value = 'DAY';
+  document.getElementById('order-field-app').value = 'AUTO_TRADER';
+  document.getElementById('order-field-flow').value = 'DMA';
+  document.getElementById('order-field-algo').value = 'VWAP';
+  const alertEl = document.getElementById('order-validation-alert');
+  if (alertEl) alertEl.style.display = 'none';
+}
+
+async function submitOrderPlacement() {
+  const alertEl = document.getElementById('order-validation-alert');
+  alertEl.style.display = 'none';
+
+  const ric = (document.getElementById('order-field-ric').value || '').trim();
+  const quantity = Number(document.getElementById('order-field-qty').value || 0);
+  const price = Number(document.getElementById('order-field-price').value || 0);
+
+  if (!ric) {
+    alert('Please enter a RIC symbol');
+    return;
+  }
+  if (quantity <= 0) {
+    alert('Quantity must be greater than 0');
+    return;
+  }
+  if (price <= 0) {
+    alert('Price must be greater than 0');
+    return;
+  }
+
+  const payload = {
+    ric,
+    order_id: (document.getElementById('order-field-id').value || '').trim(),
+    side: document.getElementById('order-field-side').value,
+    order_type: document.getElementById('order-field-type').value,
+    quantity,
+    price,
+    product: (document.getElementById('order-field-product').value || 'Equity').trim(),
+    security_type: (document.getElementById('order-field-sectype').value || '').trim(),
+    exchange: (document.getElementById('order-field-exchange').value || 'XHKG').trim(),
+    currency: (document.getElementById('order-field-currency').value || 'HKD').trim(),
+    trader: (document.getElementById('order-field-trader').value || 'TRADER1').trim(),
+    account: (document.getElementById('order-field-account').value || 'ACC01').trim(),
+    client: (document.getElementById('order-field-client').value || 'CLIENT_A').trim(),
+    desk: (document.getElementById('order-field-desk').value || 'HONGKONG_DESK').trim(),
+    tif: document.getElementById('order-field-tif').value,
+    application: (document.getElementById('order-field-app').value || 'AUTO_TRADER').trim(),
+    flow: (document.getElementById('order-field-flow').value || 'DMA').trim(),
+    algo_strategy: (document.getElementById('order-field-algo').value || 'VWAP').trim(),
+  };
+
+  try {
+    const res = await apiPost('/api/orders/place', payload);
+    if (!res) return;
+
+    if (res.ok) {
+      alertEl.style.display = 'block';
+      if (res.status === 'APPROVED') {
+        alertEl.style.background = 'rgba(34, 197, 94, 0.15)';
+        alertEl.style.border = '1px solid var(--pass-color)';
+        alertEl.style.color = '#4ade80';
+        alertEl.innerHTML = `🟢 <strong>APPROVED</strong> — Order ${res.order.order_id} (${res.order.side} ${res.order.quantity} @ ${res.order.price}) passed all pre-trade GCE risk controls!`;
+      } else {
+        alertEl.style.background = 'rgba(239, 68, 68, 0.15)';
+        alertEl.style.border = '1px solid var(--fail-color)';
+        alertEl.style.color = '#f87171';
+        const reasons = (res.rejections || []).join('<br>• ');
+        alertEl.innerHTML = `🔴 <strong>REJECTED</strong> — Order ${res.order.order_id} failed GCE pre-trade risk controls:<br>• ${reasons || res.order.rejection_reason || 'Pre-trade risk limit check failed'}`;
+      }
+
+      if (res.order) {
+        recentPlacedOrdersData.unshift(res.order);
+        renderRecentPlacedOrders();
+      }
+    } else {
+      alert(`Error submitting order: ${res.message}`);
+    }
+  } catch (e) {
+    alert(`Failed to submit order: ${e}`);
+  }
+}
+
+async function loadRecentPlacedOrders() {
+  const data = await api('/api/orders');
+  if (data) {
+    recentPlacedOrdersData = data.slice(-20).reverse();
+    renderRecentPlacedOrders();
+  }
+}
+
+function renderRecentPlacedOrders() {
+  const tbody = document.getElementById('recent-placed-orders-tbody');
+  const empty = document.getElementById('recent-placed-orders-empty');
+  if (!tbody) return;
+
+  if (recentPlacedOrdersData.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = recentPlacedOrdersData.map(o => {
+    const isLive = o.status === 'Live' || o.status === 'APPROVED';
+    const badgeClass = isLive ? 'badge-pass' : 'badge-fail';
+    const timeStr = o.timestamp ? new Date(o.timestamp).toLocaleTimeString() : '—';
+    const details = o.rejection_reason ? `<span style="color:#f87171">${o.rejection_reason}</span>` : 'Pre-trade risk validation passed';
+
+    return `<tr>
+      <td style="color:var(--text-bright);font-weight:500">${o.order_id}</td>
+      <td>${o.ric || o.symbol}</td>
+      <td><span class="badge ${o.side === 'B' ? 'badge-pass' : 'badge-fail'}">${o.side === 'B' ? 'BUY' : 'SELL'}</span></td>
+      <td>${(o.quantity || 0).toLocaleString()}</td>
+      <td>$${(o.price || 0).toFixed(2)}</td>
+      <td><span class="badge ${badgeClass}">${o.status}</span></td>
+      <td>${o.trader}</td>
+      <td>${o.account}</td>
+      <td>${timeStr}</td>
+      <td><small>${details}</small></td>
+    </tr>`;
+  }).join('');
+}
+
+// ============================================================
 // Refresh Logic
 // ============================================================
 function refreshCurrentSection() {
@@ -1231,6 +1393,7 @@ function refreshCurrentSection() {
   document.getElementById('last-refresh').textContent = ts;
   switch (currentSection) {
     case 'services': loadServices(); break;
+    case 'orders': loadRecentPlacedOrders(); break;
     case 'limits': loadLimits(); break;
     case 'oms': loadOrders(); break;
     case 'prices': loadPrices(); loadFX(); break;

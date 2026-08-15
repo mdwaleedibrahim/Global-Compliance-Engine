@@ -32,6 +32,11 @@
         <span class="nav-icon">📊</span> Performance
       </div>
 
+      <div class="nav-section-label">Trading</div>
+      <div class="nav-item" data-section="orders" id="nav-orders">
+        <span class="nav-icon">📝</span> Place Order
+      </div>
+
       <div class="nav-section-label">Data</div>
       <div class="nav-item" data-section="oms" id="nav-oms">
         <span class="nav-icon">📋</span> OMS Browser
@@ -176,6 +181,136 @@
           </div>
           <div class="empty-state" id="limits-empty" style="display:none">No RMS limit rules found</div>
           <div class="pagination-bar" id="limits-pagination" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- Section: Place Order -->
+      <div class="section-panel" id="panel-orders">
+        <div class="card" style="max-width:950px;margin-bottom:20px">
+          <div class="card-header" style="border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:16px">
+            <h3 style="margin:0;font-size:16px;font-weight:600;color:var(--text-bright)">🚀 Order Placement Ticket</h3>
+            <span style="font-size:12px;color:var(--text-muted)">Validate order against GCE pre-trade risk controls and submit to OMS</span>
+          </div>
+
+          <div id="order-validation-alert" style="display:none;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;font-weight:500"></div>
+
+          <form id="order-placement-form" onsubmit="event.preventDefault(); submitOrderPlacement();">
+            <div class="form-grid" style="grid-template-columns:repeat(3, 1fr);gap:16px">
+              <div class="form-group">
+                <label>Instrument RIC (Symbol)</label>
+                <input type="text" id="order-field-ric" list="price-ric-list" placeholder="e.g. 0700.HK or AAPL" required autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label>Order Side</label>
+                <select id="order-field-side">
+                  <option value="B">Buy (B)</option>
+                  <option value="S">Sell (S)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Order Type</label>
+                <select id="order-field-type">
+                  <option value="LMT">Limit (LMT)</option>
+                  <option value="MKT">Market (MKT)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Order Quantity</label>
+                <input type="number" id="order-field-qty" min="1" value="100" required>
+              </div>
+              <div class="form-group">
+                <label>Limit Price</label>
+                <input type="number" step="0.001" id="order-field-price" value="100.0" required>
+              </div>
+              <div class="form-group">
+                <label>Order ID (Optional)</label>
+                <input type="text" id="order-field-id" placeholder="Auto-generated if blank">
+              </div>
+
+              <div class="form-group">
+                <label>Product (Category)</label>
+                <input type="text" id="order-field-product" value="Equity">
+              </div>
+              <div class="form-group">
+                <label>SecurityType</label>
+                <input type="text" id="order-field-sectype" placeholder="e.g. Equity Securities">
+              </div>
+              <div class="form-group">
+                <label>Exchange</label>
+                <input type="text" id="order-field-exchange" value="XHKG">
+              </div>
+
+              <div class="form-group">
+                <label>Trading Currency</label>
+                <input type="text" id="order-field-currency" value="HKD">
+              </div>
+              <div class="form-group">
+                <label>Trader ID</label>
+                <input type="text" id="order-field-trader" value="TRADER1">
+              </div>
+              <div class="form-group">
+                <label>Account</label>
+                <input type="text" id="order-field-account" value="ACC01">
+              </div>
+
+              <div class="form-group">
+                <label>Client</label>
+                <input type="text" id="order-field-client" value="CLIENT_A">
+              </div>
+              <div class="form-group">
+                <label>Desk</label>
+                <input type="text" id="order-field-desk" value="HONGKONG_DESK">
+              </div>
+              <div class="form-group">
+                <label>Time In Force (TIF)</label>
+                <select id="order-field-tif">
+                  <option value="DAY">DAY</option>
+                  <option value="IOC">IOC</option>
+                  <option value="FOK">FOK</option>
+                  <option value="GTC">GTC</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Application</label>
+                <input type="text" id="order-field-app" value="AUTO_TRADER">
+              </div>
+              <div class="form-group">
+                <label>Flow</label>
+                <input type="text" id="order-field-flow" value="DMA">
+              </div>
+              <div class="form-group">
+                <label>Algo Strategy</label>
+                <input type="text" id="order-field-algo" value="VWAP">
+              </div>
+            </div>
+
+            <div style="margin-top:20px;display:flex;justify-content:flex-end;gap:12px">
+              <button type="button" class="btn btn-ghost" onclick="resetOrderPlacementForm()">Clear Form</button>
+              <button type="submit" class="btn btn-primary" style="padding:8px 24px;font-weight:600">🚀 Submit Order</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Recent Placed Orders Table -->
+        <div class="card" style="max-width:1100px">
+          <div class="card-header" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+            <h3 style="margin:0;font-size:15px;font-weight:600;color:var(--text-bright)">📋 Recent Placed Orders History</h3>
+            <button class="btn btn-ghost btn-sm" onclick="loadRecentPlacedOrders()">↻ Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Order ID</th><th>RIC</th><th>Side</th><th>Qty</th><th>Price</th>
+                  <th>Status</th><th>Trader</th><th>Account</th><th>Time</th><th>Details / Reason</th>
+                </tr>
+              </thead>
+              <tbody id="recent-placed-orders-tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state" id="recent-placed-orders-empty" style="display:none">No recent orders placed</div>
         </div>
       </div>
 

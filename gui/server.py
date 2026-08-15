@@ -367,8 +367,40 @@ def api_limits_import():
 
 
 # ---------------------------------------------------------------------------
-# Section 3 — OMS Browser (Orders)
+# Section 3 — OMS Browser & Order Placement
 # ---------------------------------------------------------------------------
+def _get_gce_engine():
+    if "gce" not in _state or _state["gce"] is None:
+        try:
+            from gce.engine import GCE
+            gce_inst = GCE(
+                instrument_csv=os.path.join(PROJECT_ROOT, "HK-ListOfSecurities.csv"),
+                price_csv=os.path.join(PROJECT_ROOT, "PriceCache.csv"),
+                order_csv=os.path.join(PROJECT_ROOT, "OrderCache.csv"),
+                position_csv=os.path.join(PROJECT_ROOT, "PositionsCache.csv"),
+                log_dir=os.path.join(PROJECT_ROOT, "logs")
+            )
+            from gce.controls.quantity_control import MaxOrderQuantity
+            from gce.controls.price_control import MaxOrderPrice
+            from gce.controls.max_order_consideration import MaxOrderConsideration
+            from gce.controls.bbo_price_tolerance import BBOPriceTolerance
+            from gce.controls.close_price_tolerance import ClosePriceTolerance
+            from gce.controls.last_price_tolerance import LastPriceTolerance
+
+            gce_inst.register_control("max_qty", MaxOrderQuantity(limit=1000000))
+            gce_inst.register_control("max_price", MaxOrderPrice(limit=1000000))
+            gce_inst.register_control("max_consideration", MaxOrderConsideration(limit=100000000.0))
+            gce_inst.register_control("bbo_tolerance", BBOPriceTolerance())
+            gce_inst.register_control("close_tolerance", ClosePriceTolerance())
+            gce_inst.register_control("last_tolerance", LastPriceTolerance())
+
+            _state["gce"] = gce_inst
+        except Exception as e:
+            print(f"[GUI] GCE engine init warning: {e}")
+            _state["gce"] = None
+    return _state.get("gce")
+
+
 @app.route("/api/orders")
 def api_orders():
     oc = _get("orders")
@@ -395,6 +427,141 @@ def api_orders():
             "rejection_reason": getattr(o, "rejection_reason", ""),
         })
     return jsonify(orders_list)
+
+
+@app.route("/api/orders/place", methods=["POST"])
+def api_orders_place():
+    orders_cache = _get("orders")
+    dm = _get("datamgr")
+    data = request.json or {}
+
+    ric = str(data.get("ric", "") or "").strip()
+    if not ric:
+        return jsonify({"ok": False, "message": "RIC/Symbol is required"}), 400
+
+    try:
+        qty = int(data.get("quantity", 0) or 0)
+        px = float(data.get("price", 0.0) or 0.0)
+        if qty <= 0:
+            return jsonify({"ok": False, "message": "Quantity must be > 0"}), 400
+        if px <= 0.0:
+            return jsonify({"ok": False, "message": "Price must be > 0"}), 400
+
+        order_id = str(data.get("order_id", "") or "").strip()
+        if not order_id:
+            order_id = f"ORD-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{int(time.time()*1000)%1000:03d}"
+
+        side = str(data.get("side", "B") or "B").strip().upper()
+        order_type = str(data.get("order_type", "LMT") or "LMT").strip().upper()
+        trader = str(data.get("trader", "*") or "*").strip()
+        account = str(data.get("account", "*") or "*").strip()
+        client = str(data.get("client", "*") or "*").strip()
+        desk = str(data.get("desk", "*") or "*").strip()
+        currency = str(data.get("currency", "HKD") or "HKD").strip()
+        product = str(data.get("product", "Equity") or "Equity").strip()
+        security_type = str(data.get("security_type", "") or "").strip()
+        exchange = str(data.get("exchange", "XHKG") or "XHKG").strip()
+        application = str(data.get("application", "*") or "*").strip()
+        flow = str(data.get("flow", "*") or "*").strip()
+        algo_strategy = str(data.get("algo_strategy", "*") or "*").strip()
+        tif = str(data.get("tif", "DAY") or "DAY").strip()
+
+        order = Order(
+            order_id=order_id,
+            ric=ric,
+            symbol=ric,
+            quantity=qty,
+            price=px,
+            side=side,
+            order_type=order_type,
+            trader=trader,
+            account=account,
+            client=client,
+            desk=desk,
+            currency=currency,
+            product=product,
+            security_type=security_type,
+            exchange=exchange,
+            application=application,
+            flow=flow,
+            algo_strategy=algo_strategy,
+            tif=tif,
+            timestamp=datetime.now().isoformat()
+        )
+
+        gce_engine = _get_gce_engine()
+        rejections = []
+
+        # 1. Evaluate against DataMgr SQLite RMS DB rules
+        if dm:
+            details = dm.lookup_order_details(order)
+            rule = details.get("rms_limits", {})
+            if isinstance(rule, dict) and rule:
+                if rule.get("Enabled") != "N":
+                    if rule.get("Restricted") == "Y":
+                        rejections.append(f"Restricted rule (ID {rule.get('DBId')}): Order is restricted for Trader '{order.trader}' / Symbol '{order.symbol}'")
+                    if order.side == "S" and rule.get("SSRestricted") == "Y" and not details.get("shortsell_eligible", False):
+                        rejections.append(f"Shortsell Restricted rule (ID {rule.get('DBId')}): Instrument '{order.symbol}' is not shortsell eligible")
+                    max_q = float(rule.get("MaxOrderQuantity", 0) or 0)
+                    if max_q > 0 and order.quantity > max_q:
+                        rejections.append(f"Order quantity {order.quantity} exceeds MaxOrderQuantity limit ({int(max_q)})")
+                    max_p = float(rule.get("MaxOrderPrice", 0) or 0)
+                    if max_p > 0 and order.price > max_p:
+                        rejections.append(f"Order price {order.price} exceeds MaxOrderPrice limit ({max_p})")
+
+        # 2. Evaluate against GCE Engine registered controls
+        if gce_engine and hasattr(gce_engine, "validate_order"):
+            gce_passed, gce_rejections = gce_engine.validate_order(order)
+            if not gce_passed:
+                rejections.extend(gce_rejections)
+
+        passed = (len(rejections) == 0)
+        if passed:
+            order.status = OrderStatus.LIVE
+        else:
+            order.status = OrderStatus.REJECTED
+            order.rejection_reason = "; ".join(rejections)
+
+        if orders_cache:
+            orders_cache.add_order(order)
+
+        # Persist orders cache
+        if orders_cache:
+            try:
+                orders_cache.save_to_csv(os.path.join(PROJECT_ROOT, "OrderCache.csv"))
+            except Exception as e:
+                print(f"Warning: Failed to save OrderCache.csv: {e}")
+
+        status_str = order.status.value if hasattr(order.status, "value") else str(order.status)
+        return jsonify({
+            "ok": True,
+            "status": "APPROVED" if passed else "REJECTED",
+            "message": f"Order {order.order_id} {'approved' if passed else 'rejected'}",
+            "rejections": rejections,
+            "order": {
+                "order_id": order.order_id,
+                "ric": order.ric,
+                "quantity": order.quantity,
+                "price": order.price,
+                "side": order.side,
+                "order_type": order.order_type,
+                "status": status_str,
+                "trader": order.trader,
+                "account": order.account,
+                "client": order.client,
+                "desk": order.desk,
+                "currency": order.currency,
+                "product": order.product,
+                "security_type": getattr(order, "security_type", getattr(order, "sub_category", "")),
+                "exchange": getattr(order, "exchange", "XHKG"),
+                "rejection_reason": getattr(order, "rejection_reason", ""),
+                "timestamp": order.timestamp,
+            }
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "message": str(e)}), 400
 
 
 # ---------------------------------------------------------------------------

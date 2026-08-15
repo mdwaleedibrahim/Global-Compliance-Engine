@@ -27,9 +27,11 @@ class MaxOrderQuantity(BaseControl):
         datamgr = context.get('datamgr') if context else None
         if datamgr and hasattr(datamgr, 'get_matching_limits'):
             matched = datamgr.get_matching_limits(order)
-            limit = int(matched.get('MaxOrderSize', 0) or 0)
+            limit = int(matched.get('MaxOrderQuantity', 0) or matched.get('MaxOrderSize', 0) or 0)
+            if limit == 0 and self.limit > 0:
+                limit = int(self.limit)
         else:
-            limit = self.limit
+            limit = int(self.limit)
 
         if limit == 0:
             return (True, "Control MaxOrderQuantity disabled (LMT=0)", 0, order_qty)

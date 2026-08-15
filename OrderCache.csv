@@ -1,0 +1,3 @@
+order id,DateTime,status,Product,Application,Flow,Trader,Desk,Account,Client,symbol,exchange,underlying,Algo Strategy,Currency,Side,Order Type,Quantity,Price,Tif,Filled,Open
+ORD-20260815-205510-289,2026-08-15T20:55:10.289343,Live,Equity,*,*,TRADER1,*,ACC01,*,0700.HK,XHKG,0700,*,HKD,B,LMT,100,350.0,DAY,0,100
+ORD-20260815-205510-569,2026-08-15T20:55:10.569821,Rejected,Equity,*,*,TRADER_BLOCKED,*,ACC01,*,0700.HK,XHKG,0700,*,HKD,B,LMT,100,350.0,DAY,0,100

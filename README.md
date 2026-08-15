@@ -46,6 +46,12 @@ python gui/server.py
 Access the dashboard in your web browser:
 👉 **[http://localhost:5050](http://localhost:5050)**
 
+### Order Placement Facility (`📝 Place Order`)
+- Interactive **Order Entry Ticket** to place pre-trade orders directly from the Web GUI.
+- Autocompletes RIC symbols and auto-populates `Product` (Category), `SecurityType`, `Exchange`, `Currency`, and current market price.
+- Executes full **GCE Pre-Trade Risk Control Validation** (`MaxOrderQuantity`, `MaxOrderPrice`, `MaxOrderConsideration`, `ClosePriceTolerance`, `LastPriceTolerance`, `BBOPriceTolerance`, `Restricted`, `SSRestricted`) before order acceptance.
+- Displays real-time pass (🟢 APPROVED -> Live in OMS) or failure (🔴 REJECTED with exact limit violation details) alerts and tracks recent order placement history.
+
 ### Pagination & Threshold Rules
 - Applicable to **OMS Browser**, **Prices**, and **Instruments**.
 - GCE Limits: Full CRUD manager for SQLite RMS limits (`rms_limits.db`) with linked instrument dropdowns (`Product`, `SecurityType`, `symbol`, `Currency`), **CSV Download**, **CSV Upload** (Replace/Append), and dynamic pagination (> 20 records threshold).
