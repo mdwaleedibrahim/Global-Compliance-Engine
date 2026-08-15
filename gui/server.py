@@ -569,6 +569,73 @@ def api_instruments():
     return jsonify(instruments_list)
 
 
+@app.route("/api/instruments", methods=["POST"])
+def api_instruments_create():
+    dm = _get("datamgr")
+    ic = _get("instruments")
+    data = request.json or {}
+    ric = str(data.get("ric", "") or "").strip()
+    if not ric:
+        return jsonify({"ok": False, "message": "RIC is required"}), 400
+
+    try:
+        inst_dict = {}
+        if dm and hasattr(dm, "add_or_update_instrument"):
+            inst_obj = dm.add_or_update_instrument(data)
+            inst_dict = inst_obj.to_dict()
+        if ic and hasattr(ic, "add_or_update_instrument"):
+            inst_obj2 = ic.add_or_update_instrument(data)
+            if not inst_dict:
+                inst_dict = inst_obj2.to_dict()
+
+        return jsonify({
+            "ok": True,
+            "message": f"Instrument {ric} updated successfully",
+            "instrument": inst_dict
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 400
+
+
+@app.route("/api/instruments/<path:ric>", methods=["PUT"])
+def api_instruments_update(ric):
+    dm = _get("datamgr")
+    ic = _get("instruments")
+    data = request.json or {}
+    data["ric"] = ric
+
+    try:
+        inst_dict = {}
+        if dm and hasattr(dm, "add_or_update_instrument"):
+            inst_obj = dm.add_or_update_instrument(data)
+            inst_dict = inst_obj.to_dict()
+        if ic and hasattr(ic, "add_or_update_instrument"):
+            inst_obj2 = ic.add_or_update_instrument(data)
+            if not inst_dict:
+                inst_dict = inst_obj2.to_dict()
+
+        return jsonify({
+            "ok": True,
+            "message": f"Instrument {ric} updated successfully",
+            "instrument": inst_dict
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 400
+
+
+@app.route("/api/instruments/<path:ric>", methods=["DELETE"])
+def api_instruments_delete(ric):
+    dm = _get("datamgr")
+    ic = _get("instruments")
+
+    found_dm = dm.delete_instrument(ric) if (dm and hasattr(dm, "delete_instrument")) else False
+    found_ic = ic.delete_instrument(ric) if (ic and hasattr(ic, "delete_instrument")) else False
+
+    if found_dm or found_ic:
+        return jsonify({"ok": True, "message": f"Instrument {ric} deleted successfully"})
+    return jsonify({"ok": False, "message": f"Instrument {ric} not found"}), 404
+
+
 # ---------------------------------------------------------------------------
 # Section 6 — Exchange Sessions
 # ---------------------------------------------------------------------------

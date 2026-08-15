@@ -130,3 +130,50 @@ class InstrumentCache:
     def count(self) -> int:
         """Total number of instruments"""
         return len(self.instruments)
+
+    def add_or_update_instrument(self, data: Dict[str, Any]) -> Instrument:
+        """Add or update an instrument entry in memory cache."""
+        ric = str(data.get('ric', '') or '').strip()
+        if not ric:
+            raise ValueError("RIC is required")
+            
+        stock_code = str(data.get('stock_code', '') or '').strip()
+        name = str(data.get('name', '') or '').strip()
+        board_lot = int(data.get('board_lot', 100) or 100)
+        isin = str(data.get('isin', '') or '').strip()
+        category = str(data.get('category', '') or '').strip()
+        security_type = str(data.get('security_type', data.get('sub_category', '')) or '').strip()
+        exchange = str(data.get('exchange', 'XHKG') or 'XHKG').strip()
+        
+        shortsell = 'Y' if data.get('shortsell') in (True, 'Y', 'y', 1, '1') else 'N'
+        cas = 'Y' if data.get('cas') in (True, 'Y', 'y', 1, '1') else 'N'
+        vcm = 'Y' if data.get('vcm') in (True, 'Y', 'y', 1, '1') else 'N'
+        currency = str(data.get('currency', 'HKD') or 'HKD').strip()
+
+        inst = Instrument(
+            ric=ric,
+            stock_code=stock_code,
+            name=name,
+            board_lot=board_lot,
+            isin=isin,
+            category=category,
+            security_type=security_type,
+            exchange=exchange,
+            shortsell_eligible=shortsell,
+            cas_eligible=cas,
+            vcm_eligible=vcm,
+            currency=currency
+        )
+        self.instruments[ric] = inst
+        if stock_code:
+            self.ric_to_code[ric] = stock_code
+        return inst
+
+    def delete_instrument(self, ric: str) -> bool:
+        """Delete instrument from memory cache by RIC."""
+        if ric in self.instruments:
+            inst = self.instruments.pop(ric)
+            if ric in self.ric_to_code:
+                del self.ric_to_code[ric]
+            return True
+        return False

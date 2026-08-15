@@ -245,6 +245,7 @@
       <div class="section-panel" id="panel-instruments">
         <div class="search-bar">
           <input type="text" class="search-input" id="instr-search" placeholder="Search RIC or name...">
+          <button class="btn btn-primary btn-sm" onclick="openAddInstrModal()">➕ Add Instrument</button>
           <button class="btn btn-ghost btn-sm" onclick="loadInstruments(true)" title="Reload instruments from CSV files">↻ Reload CSV</button>
         </div>
         <div class="card">
@@ -253,7 +254,7 @@
               <thead>
                 <tr>
                   <th>RIC</th><th>Code</th><th>Exchange</th><th>Name</th><th>Category</th><th>SecurityType</th>
-                  <th>Board Lot</th><th>Currency</th><th>SS</th><th>CAS</th><th>VCM</th>
+                  <th>Board Lot</th><th>Currency</th><th>SS</th><th>CAS</th><th>VCM</th><th>Actions</th>
                 </tr>
               </thead>
               <tbody id="instr-tbody"></tbody>
@@ -636,6 +637,76 @@
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="closePriceModal()">Cancel</button>
         <button class="btn btn-primary" onclick="savePrice()">💾 Save Price</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Instrument Add / Edit Modal -->
+  <div class="modal-overlay" id="instr-modal" style="display:none">
+    <div class="modal-card" style="max-width:650px">
+      <div class="modal-header">
+        <div class="modal-title" id="instr-modal-title">📑 Add / Edit Instrument</div>
+        <button class="modal-close" onclick="closeInstrModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="instr-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>RIC Masterkey</label>
+              <input type="text" id="instr-field-ric" placeholder="e.g. 0700.HK" required>
+            </div>
+            <div class="form-group">
+              <label>Stock Code</label>
+              <input type="text" id="instr-field-code" placeholder="e.g. 00700">
+            </div>
+            <div class="form-group">
+              <label>Exchange</label>
+              <input type="text" id="instr-field-exchange" value="XHKG" placeholder="e.g. XHKG">
+            </div>
+            <div class="form-group">
+              <label>Securities Name</label>
+              <input type="text" id="instr-field-name" placeholder="e.g. TENCENT">
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <input type="text" id="instr-field-category" placeholder="e.g. Equity">
+            </div>
+            <div class="form-group">
+              <label>SecurityType (Sub-Category)</label>
+              <input type="text" id="instr-field-sectype" placeholder="e.g. Equity Securities (Main Board)">
+            </div>
+            <div class="form-group">
+              <label>Board Lot</label>
+              <input type="number" id="instr-field-lot" value="100">
+            </div>
+            <div class="form-group">
+              <label>Trading Currency</label>
+              <input type="text" id="instr-field-currency" value="HKD">
+            </div>
+            <div class="form-group">
+              <label>ISIN Code</label>
+              <input type="text" id="instr-field-isin" placeholder="e.g. KYG875721634">
+            </div>
+          </div>
+          <div class="form-grid" style="grid-template-columns:repeat(3, 1fr);margin-top:12px">
+            <div class="form-group" style="flex-direction:row;align-items:center;gap:8px">
+              <input type="checkbox" id="instr-field-shortsell">
+              <label for="instr-field-shortsell" style="margin:0;cursor:pointer">Shortsell Eligible</label>
+            </div>
+            <div class="form-group" style="flex-direction:row;align-items:center;gap:8px">
+              <input type="checkbox" id="instr-field-cas">
+              <label for="instr-field-cas" style="margin:0;cursor:pointer">CAS Eligible</label>
+            </div>
+            <div class="form-group" style="flex-direction:row;align-items:center;gap:8px">
+              <input type="checkbox" id="instr-field-vcm">
+              <label for="instr-field-vcm" style="margin:0;cursor:pointer">VCM Eligible</label>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeInstrModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveInstrument()">💾 Save Instrument</button>
       </div>
     </div>
   </div>

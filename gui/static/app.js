@@ -848,12 +848,142 @@ function renderInstrTable() {
     <td>${i.shortsell ? '✅' : '—'}</td>
     <td>${i.cas ? '✅' : '—'}</td>
     <td>${i.vcm ? '✅' : '—'}</td>
+    <td>
+      <button class="btn btn-ghost btn-sm btn-icon-primary" onclick="openEditInstrModal('${i.ric}')">✏️ Edit</button>
+      <button class="btn btn-ghost btn-sm btn-icon-danger" onclick="deleteInstrument('${i.ric}')">🗑️</button>
+    </td>
   </tr>`).join('');
 
   renderPaginationBar('instr-pagination', total, instrPage, PAGE_SIZE, newPage => {
     instrPage = newPage;
     renderInstrTable();
   }, 'Total Instruments');
+}
+
+// Auto-populate instrument form fields if typed RIC exists in cache
+function checkAndPopulateInstrByRIC(ricInput) {
+  const cleanRic = (ricInput || '').trim();
+  if (!cleanRic) return;
+
+  const item = instrAllData.find(i => i.ric.toLowerCase() === cleanRic.toLowerCase());
+  if (item) {
+    document.getElementById('instr-field-code').value = item.stock_code || '';
+    document.getElementById('instr-field-exchange').value = item.exchange || 'XHKG';
+    document.getElementById('instr-field-name').value = item.name || '';
+    document.getElementById('instr-field-category').value = item.category || '';
+    document.getElementById('instr-field-sectype').value = item.security_type || item.sub_category || '';
+    document.getElementById('instr-field-lot').value = item.board_lot || 100;
+    document.getElementById('instr-field-currency').value = item.currency || 'HKD';
+    document.getElementById('instr-field-isin').value = item.isin || '';
+    document.getElementById('instr-field-shortsell').checked = !!item.shortsell;
+    document.getElementById('instr-field-cas').checked = !!item.cas;
+    document.getElementById('instr-field-vcm').checked = !!item.vcm;
+  }
+}
+
+const instrRicEl = document.getElementById('instr-field-ric');
+if (instrRicEl) {
+  instrRicEl.addEventListener('input', (e) => checkAndPopulateInstrByRIC(e.target.value));
+  instrRicEl.addEventListener('change', (e) => checkAndPopulateInstrByRIC(e.target.value));
+}
+
+// Instrument Modal Handlers
+function openAddInstrModal() {
+  document.getElementById('instr-modal-title').textContent = '➕ Add / Edit Instrument';
+  document.getElementById('instr-field-ric').value = '';
+  document.getElementById('instr-field-ric').disabled = false;
+  document.getElementById('instr-field-code').value = '';
+  document.getElementById('instr-field-exchange').value = 'XHKG';
+  document.getElementById('instr-field-name').value = '';
+  document.getElementById('instr-field-category').value = 'Equity';
+  document.getElementById('instr-field-sectype').value = 'Equity Securities (Main Board)';
+  document.getElementById('instr-field-lot').value = '100';
+  document.getElementById('instr-field-currency').value = 'HKD';
+  document.getElementById('instr-field-isin').value = '';
+  document.getElementById('instr-field-shortsell').checked = false;
+  document.getElementById('instr-field-cas').checked = false;
+  document.getElementById('instr-field-vcm').checked = false;
+  document.getElementById('instr-modal').style.display = 'flex';
+}
+
+function openEditInstrModal(ric) {
+  const item = instrAllData.find(i => i.ric === ric);
+  if (!item) return;
+
+  document.getElementById('instr-modal-title').textContent = `✏️ Edit Instrument (${ric})`;
+  document.getElementById('instr-field-ric').value = item.ric;
+  document.getElementById('instr-field-ric').disabled = true;
+  document.getElementById('instr-field-code').value = item.stock_code || '';
+  document.getElementById('instr-field-exchange').value = item.exchange || 'XHKG';
+  document.getElementById('instr-field-name').value = item.name || '';
+  document.getElementById('instr-field-category').value = item.category || '';
+  document.getElementById('instr-field-sectype').value = item.security_type || item.sub_category || '';
+  document.getElementById('instr-field-lot').value = item.board_lot || 100;
+  document.getElementById('instr-field-currency').value = item.currency || 'HKD';
+  document.getElementById('instr-field-isin').value = item.isin || '';
+  document.getElementById('instr-field-shortsell').checked = !!item.shortsell;
+  document.getElementById('instr-field-cas').checked = !!item.cas;
+  document.getElementById('instr-field-vcm').checked = !!item.vcm;
+  document.getElementById('instr-modal').style.display = 'flex';
+}
+
+function closeInstrModal() {
+  document.getElementById('instr-modal').style.display = 'none';
+}
+
+async function saveInstrument() {
+  const ric = (document.getElementById('instr-field-ric').value || '').trim();
+  if (!ric) {
+    alert('Please enter a RIC masterkey');
+    return;
+  }
+
+  const payload = {
+    ric,
+    stock_code: (document.getElementById('instr-field-code').value || '').trim(),
+    exchange: (document.getElementById('instr-field-exchange').value || 'XHKG').trim(),
+    name: (document.getElementById('instr-field-name').value || '').trim(),
+    category: (document.getElementById('instr-field-category').value || '').trim(),
+    security_type: (document.getElementById('instr-field-sectype').value || '').trim(),
+    board_lot: Number(document.getElementById('instr-field-lot').value || 100),
+    currency: (document.getElementById('instr-field-currency').value || 'HKD').trim(),
+    isin: (document.getElementById('instr-field-isin').value || '').trim(),
+    shortsell: document.getElementById('instr-field-shortsell').checked,
+    cas: document.getElementById('instr-field-cas').checked,
+    vcm: document.getElementById('instr-field-vcm').checked,
+  };
+
+  try {
+    const r = await fetch('/api/instruments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const res = await r.json();
+    if (res.ok) {
+      closeInstrModal();
+      loadInstruments();
+    } else {
+      alert(`Error saving instrument: ${res.message}`);
+    }
+  } catch (e) {
+    alert(`Failed to save instrument: ${e}`);
+  }
+}
+
+async function deleteInstrument(ric) {
+  if (!confirm(`Are you sure you want to delete instrument ${ric}?`)) return;
+  try {
+    const r = await fetch(`/api/instruments/${encodeURIComponent(ric)}`, { method: 'DELETE' });
+    const res = await r.json();
+    if (res.ok) {
+      loadInstruments();
+    } else {
+      alert(`Error deleting instrument: ${res.message}`);
+    }
+  } catch (e) {
+    alert(`Failed to delete instrument: ${e}`);
+  }
 }
 
 document.getElementById('instr-search').addEventListener('input', debounce(loadInstruments, 300));

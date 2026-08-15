@@ -737,7 +737,8 @@ class DataMgr:
                     stock_code=data.get('stock_code', ''),
                     name=data.get('name', ''),
                     category=data.get('category', ''),
-                    sub_category=data.get('sub_category', ''),
+                    sub_category=data.get('sub_category', data.get('security_type', '')),
+                    exchange=data.get('exchange', 'XHKG'),
                     board_lot=data.get('board_lot', 100),
                     isin=data.get('isin', ''),
                     stamp_duty=data.get('stamp_duty', True),
@@ -745,10 +746,6 @@ class DataMgr:
                     currency=data.get('currency', 'HKD'),
                     cas_eligible=data.get('cas_eligible', False),
                     vcm_eligible=data.get('vcm_eligible', False),
-                    ccass_admitted=data.get('ccass_admitted', False),
-                    pos_eligible=data.get('pos_eligible', False),
-                    spread_table=data.get('spread_table', ''),
-                    rmb_counter=data.get('rmb_counter', '')
                 )
                 self.instruments[ric] = inst
                 if inst.stock_code:
@@ -756,6 +753,72 @@ class DataMgr:
                 count += 1
 
         return count
+
+    def add_or_update_instrument(self, data: Dict[str, Any]) -> InstrumentStatic:
+        """Add or update an instrument entry in DataMgr and save snapshot to .dat file."""
+        ric = str(data.get('ric', '') or '').strip()
+        if not ric:
+            raise ValueError("RIC is required")
+
+        stock_code = str(data.get('stock_code', '') or '').strip()
+        name = str(data.get('name', '') or '').strip()
+        category = str(data.get('category', '') or '').strip()
+        sub_category = str(data.get('security_type', data.get('sub_category', '')) or '').strip()
+        exchange = str(data.get('exchange', 'XHKG') or 'XHKG').strip()
+        board_lot = int(data.get('board_lot', 100) or 100)
+        isin = str(data.get('isin', '') or '').strip()
+        stamp_duty = data.get('stamp_duty') in (True, 'Y', 'y', 1, '1')
+        shortsell = data.get('shortsell') in (True, 'Y', 'y', 1, '1') or data.get('shortsell_eligible') in (True, 'Y', 'y', 1, '1')
+        cas = data.get('cas') in (True, 'Y', 'y', 1, '1') or data.get('cas_eligible') in (True, 'Y', 'y', 1, '1')
+        vcm = data.get('vcm') in (True, 'Y', 'y', 1, '1') or data.get('vcm_eligible') in (True, 'Y', 'y', 1, '1')
+        currency = str(data.get('currency', 'HKD') or 'HKD').strip()
+
+        inst = InstrumentStatic(
+            ric=ric,
+            stock_code=stock_code,
+            name=name,
+            category=category,
+            sub_category=sub_category,
+            exchange=exchange,
+            board_lot=board_lot,
+            isin=isin,
+            stamp_duty=stamp_duty,
+            shortsell_eligible=shortsell,
+            currency=currency,
+            cas_eligible=cas,
+            vcm_eligible=vcm,
+        )
+
+        with self._lock:
+            self.instruments[ric] = inst
+            if stock_code:
+                self.code_to_ric[stock_code] = ric
+
+        try:
+            self.save_to_dat(self.dat_path)
+        except Exception as e:
+            self.logger.warning(f"Failed to auto-save InstrumentStatic.dat: {e}")
+
+        return inst
+
+    def delete_instrument(self, ric: str) -> bool:
+        """Delete an instrument entry from DataMgr and save snapshot to .dat file."""
+        found = False
+        with self._lock:
+            if ric in self.instruments:
+                inst = self.instruments.pop(ric)
+                code = getattr(inst, 'stock_code', '')
+                if code and code in self.code_to_ric:
+                    del self.code_to_ric[code]
+                found = True
+
+        if found:
+            try:
+                self.save_to_dat(self.dat_path)
+            except Exception as e:
+                self.logger.warning(f"Failed to auto-save InstrumentStatic.dat: {e}")
+
+        return found
 
     # ------------------------------------------------------------------
     # Lookup & Order Details Enrichment Utility
