@@ -448,3 +448,6 @@
 2026-08-16 02:06:10,549 [GCE] [ORD-20260816-020610-006] [INFO] 6 controls validated, 3 passed, 3 failed
 2026-08-16 02:06:10,550 [GCE] [ORD-20260816-020610-006] [INFO] BBOPriceTolerance: BBO Price Tolerance exceeds limit, LMT=20.0, ORD=250.00 (LMT=20.0, ORD=250.0), ClosePriceTolerance: Close Price Tolerance exceeds limit, LMT=20.0, ORD=250.00 (LMT=20.0, ORD=250.0), LastPriceTolerance: Last Price Tolerance exceeds limit, LMT=20.0, ORD=75.00 (LMT=20.0, ORD=75.0)
 2026-08-16 02:06:10,550 [GCE] [ORD-20260816-020610-006] [INFO] LMT_CHECK_OVER in 4.79ms
+2026-08-16 16:48:50,900 [GCE] [-] [INFO] GCE Control Center GUI started
+2026-08-16 16:48:51,270 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from config\Datamgr.ini
+2026-08-16 16:48:51,272 [GCE] [-] [INFO] Loaded session timings for 2 exchanges from D:\Github\projects\config\Datamgr.ini
