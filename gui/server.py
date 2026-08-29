@@ -35,6 +35,13 @@ from gui.log_parser import LogParser
 # ---------------------------------------------------------------------------
 app = Flask(__name__, static_folder="static", static_url_path="")
 
+@app.after_request
+def add_no_cache_headers(response):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 # ---------------------------------------------------------------------------
 # GCE State — Lazy-initialized singletons
 # ---------------------------------------------------------------------------
@@ -49,7 +56,7 @@ _state = {
     "positions": None,
     "log_parser": None,
 }
-_lock = threading.Lock()
+_lock = threading.RLock()
 _initialized = False
 
 
@@ -303,15 +310,13 @@ def api_get_config():
         config_dir = Path(PROJECT_ROOT) / "config"
         results = []
         for ini_path in sorted(config_dir.glob("*.ini")):
-            parser = configparser.ConfigParser(optionxform=str)
+            parser = configparser.ConfigParser()
+            parser.optionxform = str
             raw_text = ini_path.read_text(encoding="utf-8")
             
-            has_section = any(
-                line.strip().startswith("[") 
-                for line in raw_text.splitlines() 
-                if line.strip() and not line.strip().startswith(";")
-            )
-            parsed_text = raw_text if has_section else "[General]\n" + raw_text
+            lines = raw_text.splitlines()
+            first_code_line = next((l.strip() for l in lines if l.strip() and not l.strip().startswith(";") and not l.strip().startswith("#")), "")
+            parsed_text = raw_text if first_code_line.startswith("[") else "[General]\n" + raw_text
 
             parser.read_string(parsed_text)
             
