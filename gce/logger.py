@@ -66,7 +66,7 @@ class RejectionFormatter:
         Task 1: Include DBid of rule before status e.g. [123456] [PASS] QtyControl
         """
         status = "PASS" if passed else "FAIL"
-        rule_tag = f"[{rule_id}] " if rule_id is not None and str(rule_id).strip() != "" else ""
+        rule_tag = f"[rule={rule_id}] " if rule_id is not None and str(rule_id).strip() != "" else ""
         return f"{rule_tag}[{status}] {control_name}: {message} | LMT={limit_value}, ORD={order_value}"
 
 
