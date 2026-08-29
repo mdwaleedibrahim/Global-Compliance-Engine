@@ -40,9 +40,20 @@ function showAlert(message, title = 'Notification', type = 'info') {
     const closeBtn = document.getElementById('gce-dialog-close-btn');
 
     const msgStr = typeof message === 'object' ? JSON.stringify(message, null, 2) : String(message || '');
-    const isError = type === 'error' || /error|failed|invalid|reject|cannot|fail/i.test(title + ' ' + msgStr);
-    const isSuccess = type === 'success' || /success|saved|copied|completed|uploaded|imported/i.test(title + ' ' + msgStr);
-    const isWarning = type === 'warning' || /warning|caution|required|select/i.test(title + ' ' + msgStr);
+    
+    let isSuccess = type === 'success';
+    let isError = type === 'error';
+    let isWarning = type === 'warning';
+
+    if (type === 'info' || !type) {
+      if (/error|failed\b|fatal\b/i.test(title + ' ' + msgStr) && !/success|updated successfully/i.test(msgStr)) {
+        isError = true;
+      } else if (/success|saved|copied|completed|uploaded|imported/i.test(title + ' ' + msgStr)) {
+        isSuccess = true;
+      } else if (/warning|caution|required/i.test(title + ' ' + msgStr)) {
+        isWarning = true;
+      }
+    }
 
     if (isError) {
       iconEl.textContent = '❌';
