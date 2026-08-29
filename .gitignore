@@ -1,6 +1,3 @@
-# Office lock/temporary files
-~$*
-*.tmp
 
 # Python
 __pycache__/
@@ -10,6 +7,9 @@ __pycache__/
 build/
 dist/
 *.egg-info/
+
+# Logs
+test_logs/
 
 # Virtual environments
 .venv/
