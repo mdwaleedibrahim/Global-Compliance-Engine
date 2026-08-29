@@ -13,8 +13,8 @@ Multi-rule execution:
 
 $ scope:
   Per-column. A rule may contain at most 1 $ across all its key columns.
-  A $ column matches only when no other rule produces a non-$ match on that same column
-  for the given order.
+  A $ column matches only when no other rule produces an exact-match on that same column
+  for the given order. Wildcards (*) do NOT count as overrides of $.
 """
 
 from typing import Any, Dict, List, Optional, Tuple
@@ -235,13 +235,14 @@ class RuleEngine:
         if not candidates:
             return []
 
-        # Phase 2: for each $ column, determine if a non-$ alternative exists
-        # Build set of columns that have at least one non-$ match
+        # Phase 2: for each $ column, determine if a non-$ *exact-match* alternative exists
+        # Only exact (specific) matches override $. Wildcards (*) do NOT count as overrides
+        # because * rules are catch-all defaults that should always apply.
         non_override_covered: Dict[str, bool] = {}
         for mr in candidates:
             for col in TEXT_KEY_COLUMNS:
                 rule_val = _normalise(mr.rule.keys.get(col, WILDCARD_ALL))
-                if rule_val != WILDCARD_OVERRIDE and col not in non_override_covered:
+                if rule_val not in (WILDCARD_OVERRIDE, WILDCARD_ALL) and col not in non_override_covered:
                     non_override_covered[col] = True
 
         # Phase 3: filter — keep a rule only if all its $ columns lack non-$ alternatives

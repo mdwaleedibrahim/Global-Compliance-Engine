@@ -96,8 +96,8 @@ class TestParallelLogging(unittest.TestCase):
         
         # Verify critical path result immediately returned
         self.assertFalse(passed, "Order should fail validation")
-        self.assertEqual(len(rejections), 1)
-        self.assertIn("Price Exceeds Limit", rejections[0])
+        self.assertGreaterEqual(len(rejections), 1)
+        self.assertTrue(any("Price Exceeds Limit" in r for r in rejections))
         self.assertEqual(order.status, OrderStatus.REJECTED)
         
         # Flush logger worker thread
