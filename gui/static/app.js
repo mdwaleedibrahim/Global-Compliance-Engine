@@ -10,6 +10,16 @@ let rmsChart = null;
 let perfOrderChart = null;
 let perfControlChart = null;
 
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // ============================================================
 // Custom Dialog Modal System (Replaces native alert/confirm)
 // Suppresses browser origin headers (e.g. "localhost:5050 says")
@@ -222,8 +232,6 @@ async function loadServices() {
   grid.innerHTML = data.map(s => {
     const icon = icons[s.name] || '🔧';
     const label = labels[s.name] || s.name;
-    const st = (s.status === 'running' || s.status === 'ready') ? 'running' : 'stopped';
-    const displayStatus = s.status;
     const canStop = s.name !== 'engine' && s.name !== 'datamgr';
     return `
       <div class="card service-card">
@@ -236,7 +244,7 @@ async function loadServices() {
         <div class="service-actions">
           ${st === 'stopped' ? `<button class="btn btn-success btn-sm" onclick="svcAction('${s.name}','start')">Start</button>` : ''}
           ${st === 'running' && canStop ? `<button class="btn btn-danger btn-sm" onclick="svcAction('${s.name}','stop')">Stop</button>` : ''}
-          ${canStop ? `<button class="btn btn-ghost btn-sm" onclick="svcAction('${s.name}','restart')">↻</button>` : ''}
+          <button class="btn btn-ghost btn-sm" onclick="svcAction('${s.name}','restart')" title="Restart ${label}">↻ Restart</button>
         </div>
       </div>`;
   }).join('');
