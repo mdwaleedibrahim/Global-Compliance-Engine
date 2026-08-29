@@ -323,6 +323,16 @@ class GCE:
             self.logger.error(f"Failed to load positions: {e}")
             self.positions = PositionCache()
         
+        # OMS-driven subscription: subscribe all RICs with active orders to PXFeeder
+        try:
+            live_orders = self.orders.get_open_orders()
+            live_rics = list({o.ric for o in live_orders if o.ric})
+            if live_rics and hasattr(self, 'pxfeeder') and self.pxfeeder:
+                added = self.pxfeeder.subscribe_many(live_rics, fetch_now=False)
+                self.logger.info(f"Subscribed {added} new RICs from {len(live_rics)} active OMS orders to PXFeeder")
+        except Exception as e:
+            self.logger.error(f"Failed to subscribe OMS active order RICs: {e}")
+
         self.controls: Dict[str, callable] = {}
         self.rejection_messages: List[str] = []
     
@@ -388,6 +398,15 @@ class GCE:
 
         start_time = time.time()
         self.rejection_messages = []
+
+        # --- On-demand price subscription ---
+        # If the order's RIC has no cached price, subscribe and fetch it now
+        ric = getattr(order, 'ric', getattr(order, 'symbol', '')) or ''
+        if ric and hasattr(self, 'pxfeeder') and self.pxfeeder:
+            px = self.pxfeeder.get_price(ric)
+            if not px:
+                self.pxfeeder.subscribe(ric, fetch_now=True)
+                self.logger.info(f"On-demand price subscription for {ric}")
 
         # --- Rule Engine: select matched rules ---
         rule_engine = RuleEngine()

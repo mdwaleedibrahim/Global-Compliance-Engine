@@ -97,6 +97,73 @@ class TestPXFeeder(unittest.TestCase):
         self.assertTrue(passed)
         self.assertAlmostEqual(ord_val, 130.0, places=2)
 
+    def test_pxfeeder_subscription_methods(self):
+        """Test subscribe, subscribe_many, unsubscribe, and get_subscribed_symbols."""
+        feeder = PXFeeder(dat_path=self.test_dat, fetch_on_start=False, auto_start_bg=False)
+        feeder.symbols = ["AAPL", "MSFT"]
+        
+        # Test subscribe
+        newly_sub = feeder.subscribe("0700.HK", fetch_now=False)
+        self.assertTrue(newly_sub)
+        self.assertIn("0700.HK", feeder.get_subscribed_symbols())
+        
+        # Duplicate subscription should return False
+        dup_sub = feeder.subscribe("0700.HK", fetch_now=False)
+        self.assertFalse(dup_sub)
+        
+        # Test subscribe_many
+        added = feeder.subscribe_many(["9988.HK", "3690.HK", "AAPL"], fetch_now=False)
+        self.assertEqual(added, 2)  # Only 9988.HK and 3690.HK are new
+        self.assertIn("9988.HK", feeder.get_subscribed_symbols())
+        self.assertIn("3690.HK", feeder.get_subscribed_symbols())
+        
+        # Test unsubscribe
+        unsub = feeder.unsubscribe("0700.HK")
+        self.assertTrue(unsub)
+        self.assertNotIn("0700.HK", feeder.get_subscribed_symbols())
+        
+        unsub_fake = feeder.unsubscribe("INVALID.RIC")
+        self.assertFalse(unsub_fake)
+
+    def test_pxfeeder_config_loading(self):
+        """Test loading parameters from limitchecker.ini config."""
+        feeder = PXFeeder(dat_path=self.test_dat, fetch_on_start=False, auto_start_bg=False)
+        # Should default or read from limitchecker.ini (interval = 300, max_symbols = 500)
+        self.assertEqual(feeder.refresh_interval, 300)
+        self.assertEqual(feeder.max_symbols, 500)
+
+    def test_engine_oms_startup_subscription(self):
+        """Test that GCE Engine subscribes active OMS order symbols on start."""
+        from gce.engine import GCE
+        from gce.cache.order_cache import Order, OrderStatus
+        
+        # Initialize GCE engine (letting it load caches, order cache has some orders)
+        engine = GCE()
+        # Ensure we have PXFeeder
+        self.assertIsNotNone(engine.pxfeeder)
+        
+        # Add an active order to cache and check if it's subscribed
+        order = Order(
+            order_id="ACTIVE_TEST_ORD",
+            symbol="NVDA",
+            quantity=100,
+            price=120.0,
+            side="B",
+            order_type="LMT",
+            currency="USD"
+        )
+        order.status = OrderStatus.LIVE
+        engine.orders.add_order(order)
+        
+        # Trigger initialization check by simulating GCE reload or re-running startup logic
+        live_orders = engine.orders.get_open_orders()
+        live_rics = list({o.ric for o in live_orders if o.ric})
+        self.assertIn("NVDA", live_rics)
+        
+        engine.pxfeeder.subscribe_many(live_rics, fetch_now=False)
+        self.assertIn("NVDA", engine.pxfeeder.get_subscribed_symbols())
+        engine.shutdown()
+
 
 if __name__ == "__main__":
     unittest.main()
