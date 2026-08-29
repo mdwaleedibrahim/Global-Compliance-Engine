@@ -106,7 +106,6 @@ GCE (Global Compliance Engine)
 ├── gui/
 │   ├── server.py (Flask API server for Control Center GUI)
 │   ├── log_parser.py (GCE.log parser for RMS summary & performance timing)
-│   ├── requirements.txt (GUI dependencies: Flask >= 3.0)
 │   └── static/
 │       ├── index.html (Single-page dashboard HTML)
 │       ├── styles.css (Dark-mode glassmorphism CSS design system)

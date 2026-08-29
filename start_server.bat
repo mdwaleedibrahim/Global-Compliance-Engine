@@ -20,7 +20,7 @@ if exist "%USERPROFILE%\.local\bin\uv.exe" (
     echo [INFO] Found uv package manager.
     set "PYTHON_CMD=%USERPROFILE%\.local\bin\uv.exe run python"
     echo [INFO] Verifying dependencies...
-    "%USERPROFILE%\.local\bin\uv.exe" pip install -r gui\requirements.txt >nul 2>&1
+    "%USERPROFILE%\.local\bin\uv.exe" pip install -r requirements.txt >nul 2>&1
 ) else if exist "%USERPROFILE%\.local\bin\python3.14.exe" (
     set "PYTHON_CMD=%USERPROFILE%\.local\bin\python3.14.exe"
 ) else if exist "%PROJECT_ROOT%\.venv\Scripts\python.exe" (

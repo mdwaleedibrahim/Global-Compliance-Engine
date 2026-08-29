@@ -13,7 +13,7 @@ $PythonCmd = $null
 
 if (Test-Path "$LocalBin\uv.exe") {
     Write-Host "[INFO] Found uv package manager." -ForegroundColor Green
-    & "$LocalBin\uv.exe" pip install -r gui\requirements.txt | Out-Null
+    & "$LocalBin\uv.exe" pip install -r requirements.txt | Out-Null
     $PythonCmd = { & "$LocalBin\uv.exe" run python gui/server.py }
 } elseif (Test-Path "$LocalBin\python3.14.exe") {
     $PythonCmd = { & "$LocalBin\python3.14.exe" gui/server.py }
