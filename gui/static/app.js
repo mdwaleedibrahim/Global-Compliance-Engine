@@ -600,6 +600,24 @@ async function saveLimitRule() {
     if (res.ok) {
       closeLimitModal();
       loadLimits();
+      const opTitle = isEdit ? `RMS Limit Rule #${dbId} Updated` : `RMS Limit Rule Added (DBId: #${res.db_id || 'New'})`;
+      const opDetails = [
+        `Operation: ${isEdit ? 'UPDATE' : 'CREATE'} RMS Limit Rule`,
+        `DBId: ${isEdit ? dbId : (res.db_id || 'New')}`,
+        `Product: ${payload.Product}`,
+        `SecurityType: ${payload.SecurityType}`,
+        `Trader: ${payload.Trader}`,
+        `Desk: ${payload.Desk}`,
+        `Account: ${payload.Account}`,
+        `Client: ${payload.Client}`,
+        `Symbol: ${payload.symbol}`,
+        `Exchange: ${payload.exchange}`,
+        `MaxOrderSize: ${payload.MaxOrderSize}`,
+        `MaxOrderPrice: $${payload.MaxOrderPrice}`,
+        `MaxOrderValue: $${payload.MaxOrderValue}`,
+        `Enabled: ${payload.Enabled}`
+      ].join('\n');
+      showAlert(opDetails, opTitle, 'success');
     } else {
       showAlert(`Error saving rule: ${res.message}`, 'Save Error', 'error');
     }
@@ -616,6 +634,7 @@ async function deleteLimitRule(dbId) {
     const res = await r.json();
     if (res.ok) {
       loadLimits();
+      showAlert(`Operation: DELETE RMS Limit Rule\n\nRule #${dbId} has been successfully deleted from GCE RMS database.`, 'RMS Limit Rule Deleted', 'success');
     } else {
       showAlert(`Error deleting rule: ${res.message}`, 'Delete Error', 'error');
     }
@@ -941,6 +960,16 @@ async function savePrice() {
     if (res.ok) {
       closePriceModal();
       loadPrices();
+      const opDetails = [
+        `Operation: SAVE Market Price`,
+        `RIC Symbol: ${payload.ric}`,
+        `Bid: ${payload.bid}`,
+        `Ask: ${payload.ask}`,
+        `Last: ${payload.last}`,
+        `Close: ${payload.close}`,
+        `Open: ${payload.open}`
+      ].join('\n');
+      showAlert(opDetails, `Market Price Saved (${payload.ric})`, 'success');
     } else {
       showAlert(`Error saving price: ${res.message}`, 'Save Error', 'error');
     }
@@ -957,6 +986,7 @@ async function deletePrice(ric) {
     const res = await r.json();
     if (res.ok) {
       loadPrices();
+      showAlert(`Operation: DELETE Market Price\n\nMarket price records for RIC ${ric} have been successfully deleted.`, 'Market Price Deleted', 'success');
     } else {
       showAlert(`Error deleting price: ${res.message}`, 'Delete Error', 'error');
     }
@@ -1152,6 +1182,18 @@ async function saveInstrument() {
     if (res.ok) {
       closeInstrModal();
       loadInstruments();
+      const opDetails = [
+        `Operation: SAVE Instrument`,
+        `RIC Masterkey: ${payload.ric}`,
+        `Stock Code: ${payload.stock_code}`,
+        `Name: ${payload.name}`,
+        `Exchange: ${payload.exchange}`,
+        `Currency: ${payload.currency}`,
+        `Category/Product: ${payload.category}`,
+        `SecurityType: ${payload.security_type}`,
+        `Board Lot: ${payload.board_lot}`
+      ].join('\n');
+      showAlert(opDetails, `Instrument Saved (${payload.ric})`, 'success');
     } else {
       showAlert(`Error saving instrument: ${res.message}`, 'Save Error', 'error');
     }
@@ -1168,6 +1210,7 @@ async function deleteInstrument(ric) {
     const res = await r.json();
     if (res.ok) {
       loadInstruments();
+      showAlert(`Operation: DELETE Instrument\n\nInstrument masterkey ${ric} has been successfully deleted.`, 'Instrument Deleted', 'success');
     } else {
       showAlert(`Error deleting instrument: ${res.message}`, 'Delete Error', 'error');
     }
@@ -1555,6 +1598,25 @@ async function submitOrderPlacement() {
         recentPlacedOrdersData.unshift(res.order);
         renderRecentPlacedOrders();
       }
+
+      // Task 4: Show popup acknowledgement window for order entry
+      const isApproved = res.status === 'APPROVED';
+      const ordDetails = [
+        `Operation: ORDER ENTRY (${res.status})`,
+        `Order ID: ${res.order ? res.order.order_id : payload.order_id}`,
+        `Status: ${res.status}`,
+        `Side: ${payload.side}`,
+        `Symbol: ${payload.ric}`,
+        `Quantity: ${payload.quantity}`,
+        `Price: ${payload.order_type === 'MKT' ? 'MKT' : payload.price}`,
+        `Trader: ${payload.trader}`,
+        `Account: ${payload.account}`,
+        `Desk: ${payload.desk}`,
+        `Client: ${payload.client}`,
+        `Exchange: ${payload.exchange}`,
+        isApproved ? `Result: Passed all pre-trade GCE risk controls` : `Rejection Reasons:\n• ${(res.rejections || []).join('\n• ')}`
+      ].join('\n');
+      showAlert(ordDetails, `Order Entry Acknowledgement: ${res.status}`, isApproved ? 'success' : 'error');
     } else {
       showAlert(`Error submitting order: ${res.message}`, 'Order Submission Error', 'error');
     }

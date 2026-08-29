@@ -5,14 +5,14 @@ import sys
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from logging.handlers import RotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler
 import time
 import queue
 import threading
 
 
 class GCEFormatter(logging.Formatter):
-    """Custom formatter for GCE logs with nanosecond precision and Order ID tracking."""
+    """Custom formatter for GCE logs with nanosecond precision and conditional Order ID tracking."""
     
     LOG_FORMAT = "%(asctime)s [GCE] [%(order_id)s] [%(levelname)s] %(message)s"
     
@@ -20,8 +20,7 @@ class GCEFormatter(logging.Formatter):
         super().__init__(fmt=fmt or self.LOG_FORMAT, datefmt=datefmt, style=style)
     
     def format(self, record):
-        """Format log record with nanosecond precision timestamp and order_id."""
-        # Get nanosecond timestamp
+        """Format log record with nanosecond precision timestamp and conditional order_id."""
         timestamp_ns = int(time.time_ns())
         seconds = timestamp_ns // 1_000_000_000
         nanoseconds = timestamp_ns % 1_000_000_000
@@ -31,8 +30,15 @@ class GCEFormatter(logging.Formatter):
         timestamp = f"{timestamp}.{nanoseconds:09d}"
         
         record.asctime = timestamp
-        if not hasattr(record, 'order_id') or not record.order_id:
-            record.order_id = "-"
+        order_id = getattr(record, 'order_id', None)
+        
+        # Task 2: Show Order ID details in order logs only; remove [-] from non-order logs
+        if order_id and order_id != "-":
+            fmt = f"%(asctime)s [GCE] [{order_id}] [%(levelname)s] %(message)s"
+        else:
+            fmt = "%(asctime)s [GCE] [%(levelname)s] %(message)s"
+            
+        self._style._fmt = fmt
         return super().format(record)
 
 
@@ -42,52 +48,26 @@ class RejectionFormatter:
     @staticmethod
     def format_rejection(control_name: str, limit_value: Any, 
                         order_value: Any, reason: str) -> str:
-        """
-        Format rejection message.
-        
-        Args:
-            control_name: Name of the control that rejected
-            limit_value: The limit value
-            order_value: The order value that violated limit
-            reason: Rejection reason
-            
-        Returns:
-            Formatted rejection message
-        """
+        """Format rejection message."""
         return f"{control_name}: {reason} (LMT={limit_value}, ORD={order_value})"
     
     @staticmethod
     def format_rejection_summary(rejections: List[str]) -> str:
-        """
-        Format summary of all rejections.
-        
-        Args:
-            rejections: List of rejection messages
-            
-        Returns:
-            Comma-separated rejection summary
-        """
+        """Format summary of all rejections."""
         return ", ".join(rejections)
     
     @staticmethod
     def format_control_result(control_name: str, passed: bool, 
                              limit_value: Any, order_value: Any,
-                             message: str) -> str:
+                             message: str, rule_id: Optional[Any] = None) -> str:
         """
         Format control validation result.
         
-        Args:
-            control_name: Control name
-            passed: Whether control passed
-            limit_value: Limit value
-            order_value: Order value
-            message: Result message
-            
-        Returns:
-            Formatted result message
+        Task 1: Include DBid of rule before status e.g. [123456] [PASS] QtyControl
         """
         status = "PASS" if passed else "FAIL"
-        return f"[{status}] {control_name}: {message} | LMT={limit_value}, ORD={order_value}"
+        rule_tag = f"[{rule_id}] " if rule_id is not None and str(rule_id).strip() != "" else ""
+        return f"{rule_tag}[{status}] {control_name}: {message} | LMT={limit_value}, ORD={order_value}"
 
 
 class GCELogger:
@@ -95,19 +75,10 @@ class GCELogger:
     
     def __init__(self, name: str = "GCE", log_dir: str = "logs", 
                  console: bool = True, file: bool = True,
-                 max_bytes: int = 10_485_760, backup_count: int = 5,
+                 max_bytes: int = 10_485_760, backup_count: int = 30,
                  async_logging: bool = True):
         """
         Initialize GCE Logger.
-        
-        Args:
-            name: Logger name
-            log_dir: Directory for log files
-            console: Enable console logging
-            file: Enable file logging
-            max_bytes: Max file size before rotation (default 10MB)
-            backup_count: Number of backup files to keep
-            async_logging: Enable parallel background thread logging off critical path
         """
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.DEBUG)
@@ -119,7 +90,7 @@ class GCELogger:
         self.async_logging = async_logging
         self.current_order_id = "-"
         
-        formatter = GCEFormatter(GCEFormatter.LOG_FORMAT)
+        formatter = GCEFormatter()
         
         # Console handler
         if console:
@@ -128,17 +99,20 @@ class GCELogger:
             console_handler.setFormatter(formatter)
             self.logger.addHandler(console_handler)
         
-        # File handler with rotation
+        # File handler with daily rotation (Task 3)
         if file:
             log_path = Path(log_dir)
             log_path.mkdir(parents=True, exist_ok=True)
             
             log_file = log_path / "GCE.log"
-            file_handler = RotatingFileHandler(
+            file_handler = TimedRotatingFileHandler(
                 log_file,
-                maxBytes=max_bytes,
-                backupCount=backup_count
+                when='midnight',
+                interval=1,
+                backupCount=backup_count,
+                encoding='utf-8'
             )
+            file_handler.suffix = "%Y-%m-%d"
             file_handler.setLevel(logging.DEBUG)
             file_handler.setFormatter(formatter)
             self.logger.addHandler(file_handler)
@@ -263,23 +237,24 @@ class GCELogger:
         """
         if elapsed_ns >= 1_000_000_000:
             val = elapsed_ns / 1_000_000_000.0
-            return f"{val:.2f}s"
+            return f"{val:.2f} s"
         elif elapsed_ns >= 1_000_000:
             val = elapsed_ns / 1_000_000.0
-            return f"{val:.2f}ms"
+            return f"{val:.2f} ms"
         elif elapsed_ns >= 1_000:
             val = elapsed_ns / 1000.0
-            return f"{val:.2f}μs"
+            return f"{val:.2f} μs"
         else:
-            return f"{int(elapsed_ns)}ns"
+            return f"{int(elapsed_ns)} ns"
 
     def control_passed(self, control_name: str, limit_value: Any,
                       order_value: Any, caller_location: str = "",
-                      elapsed_ns: Optional[Any] = None):
-        """Log control pass with limit, order values, caller location, and elapsed time."""
+                      elapsed_ns: Optional[Any] = None,
+                      rule_id: Optional[Any] = None):
+        """Log control pass with limit, order values, caller location, elapsed time, and rule DBId."""
         msg = self.rejection_formatter.format_control_result(
             control_name, True, limit_value, order_value,
-            "Control passed"
+            "Control passed", rule_id=rule_id
         )
         if caller_location or elapsed_ns is not None:
             if isinstance(elapsed_ns, (int, float)):
@@ -294,10 +269,11 @@ class GCELogger:
     
     def control_failed(self, control_name: str, limit_value: Any,
                       order_value: Any, reason: str, caller_location: str = "",
-                      elapsed_ns: Optional[Any] = None):
-        """Log control failure with details, caller location, and elapsed time."""
+                      elapsed_ns: Optional[Any] = None,
+                      rule_id: Optional[Any] = None):
+        """Log control failure with details, caller location, elapsed time, and rule DBId."""
         msg = self.rejection_formatter.format_control_result(
-            control_name, False, limit_value, order_value, reason
+            control_name, False, limit_value, order_value, reason, rule_id=rule_id
         )
         if caller_location or elapsed_ns is not None:
             if isinstance(elapsed_ns, (int, float)):
