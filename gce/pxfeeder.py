@@ -20,6 +20,35 @@ class PXFeeder:
     MAJOR_CURRENCIES = ["USD", "EUR", "GBP", "JPY", "HKD", "AUD", "SGD", "CNH", "CAD", "CHF"]
     DEFAULT_SYMBOLS = ["0700.HK", "9988.HK", "3690.HK", "AAPL", "MSFT", "GOOGL", "NVDA", "AMZN"]
 
+    # Liquid currency tickers against USD on Yahoo Finance
+    # True if quoted directly as 1 CURR = X USD (e.g. EURUSD=X)
+    # False if quoted indirectly as 1 USD = X CURR (e.g. JPY=X)
+    FX_USD_CONFIG: Dict[str, Tuple[str, bool]] = {
+        "EUR": ("EURUSD=X", True),
+        "GBP": ("GBPUSD=X", True),
+        "AUD": ("AUDUSD=X", True),
+        "JPY": ("JPY=X", False),
+        "HKD": ("HKD=X", False),
+        "SGD": ("SGD=X", False),
+        "CAD": ("CAD=X", False),
+        "CHF": ("CHF=X", False),
+        "CNH": ("CNH=X", False),
+    }
+
+    # Baseline default FX rates (Currency -> USD) for graceful offline / fallback operation
+    DEFAULT_FX_TO_USD: Dict[str, float] = {
+        "USD": 1.0,
+        "EUR": 1.08,
+        "GBP": 1.28,
+        "AUD": 0.65,
+        "JPY": 0.0067,
+        "HKD": 0.128,
+        "SGD": 0.75,
+        "CAD": 0.74,
+        "CHF": 1.13,
+        "CNH": 0.138,
+    }
+
     def __init__(
         self,
         dat_path: str = "PriceCache.dat",
@@ -50,6 +79,9 @@ class PXFeeder:
         self._stop_event = threading.Event()
         self._bg_thread: Optional[threading.Thread] = None
 
+        # Pre-seed baseline FX rates so controls always have valid rates immediately
+        self._init_default_fx_rates()
+
         loaded = False
         if fetch_on_start:
             try:
@@ -66,6 +98,53 @@ class PXFeeder:
 
         if auto_start_bg and self.refresh_interval > 0:
             self.start()
+
+    def _init_default_fx_rates(self):
+        """Populate initial baseline FX cross rates from default values."""
+        currs = self.MAJOR_CURRENCIES
+        for c1 in currs:
+            rate_c1_usd = self.DEFAULT_FX_TO_USD.get(c1, 1.0)
+            for c2 in currs:
+                rate_c2_usd = self.DEFAULT_FX_TO_USD.get(c2, 1.0)
+                rate = (rate_c1_usd / rate_c2_usd) if rate_c2_usd > 0 else 1.0
+                self._fx_rates[f"{c1}/{c2}"] = rate
+                self._fx_rates[f"{c1}{c2}"] = rate
+
+    @staticmethod
+    def _fetch_ticker_price(symbol: str) -> Optional[float]:
+        """Safely fetch latest price for a symbol using fast_info or info without noisy errors."""
+        try:
+            import yfinance as yf
+            ticker = yf.Ticker(symbol)
+
+            # 1. Try fast_info (fast and direct in modern yfinance)
+            try:
+                fast = getattr(ticker, 'fast_info', None)
+                if fast:
+                    price = fast.get('last_price') or fast.get('regular_market_previous_close')
+                    if price is not None and float(price) > 0:
+                        return float(price)
+            except Exception:
+                pass
+
+            # 2. Try info dictionary
+            try:
+                info = ticker.info or {}
+                price = (
+                    info.get('regularMarketPrice')
+                    or info.get('currentPrice')
+                    or info.get('previousClose')
+                    or info.get('ask')
+                    or info.get('bid')
+                )
+                if price is not None and float(price) > 0:
+                    return float(price)
+            except Exception:
+                pass
+
+            return None
+        except Exception:
+            return None
 
     # ------------------------------------------------------------------
     # Data Fetching & Refresh Logic
@@ -93,83 +172,47 @@ class PXFeeder:
         p_count = 0
         for symbol in self.symbols:
             try:
-                ticker = yf.Ticker(symbol)
-                info = ticker.info or {}
-
-                last = float(info.get('currentPrice') or info.get('regularMarketPrice') or info.get('previousClose') or 0.0)
-                bid = float(info.get('bid') or info.get('regularMarketBid') or last)
-                ask = float(info.get('ask') or info.get('regularMarketAsk') or last)
-                close = float(info.get('previousClose') or info.get('regularMarketPreviousClose') or last)
-                open_price = float(info.get('open') or info.get('regularMarketOpen') or last)
-
-                if last == 0.0 and close != 0.0:
-                    last = close
-                if bid == 0.0:
-                    bid = last
-                if ask == 0.0:
-                    ask = last
-
-                new_prices[symbol] = {
-                    'ric': symbol,
-                    'bid': bid,
-                    'ask': ask,
-                    'last': last,
-                    'close': close,
-                    'open': open_price,
-                    'timestamp': timestamp,
-                }
-                p_count += 1
+                price = self._fetch_ticker_price(symbol)
+                if price is not None:
+                    new_prices[symbol] = {
+                        'ric': symbol,
+                        'bid': price,
+                        'ask': price,
+                        'last': price,
+                        'close': price,
+                        'open': price,
+                        'timestamp': timestamp,
+                    }
+                    p_count += 1
+                elif symbol in self._prices:
+                    new_prices[symbol] = self._prices[symbol]
             except Exception as e:
                 print(f"Warning: PXFeeder failed to fetch price for {symbol}: {e}")
 
-        # 2. Fetch Major Currency FX Rates (US, EU, APAC)
+        # 2. Fetch Major Currency FX Rates (against USD) and compute cross rates
+        curr_to_usd: Dict[str, float] = dict(self.DEFAULT_FX_TO_USD)
+        for curr, (ticker_symbol, is_direct) in self.FX_USD_CONFIG.items():
+            try:
+                rate = self._fetch_ticker_price(ticker_symbol)
+                if rate and rate > 0:
+                    if is_direct:
+                        curr_to_usd[curr] = float(rate)
+                    else:
+                        curr_to_usd[curr] = 1.0 / float(rate)
+            except Exception:
+                pass
+
+        # Triangulate all cross pairs
         fx_count = 0
         currs = self.MAJOR_CURRENCIES
-        for i in range(len(currs)):
-            for j in range(len(currs)):
-                if i == j:
-                    continue
-                c1, c2 = currs[i], currs[j]
-                if c1 == "USD":
-                    ticker_symbol = f"{c2}=X"
-                elif c2 == "USD":
-                    ticker_symbol = f"{c1}=X"
-                else:
-                    ticker_symbol = f"{c1}{c2}=X"
-
-                pair_key = f"{c1}/{c2}"
-                if pair_key in new_fx:
-                    continue
-
-                try:
-                    ticker = yf.Ticker(ticker_symbol)
-                    info = ticker.info or {}
-                    rate = float(info.get('regularMarketPrice') or info.get('currentPrice') or info.get('previousClose') or 0.0)
-
-                    if rate > 0.0:
-                        if c2 == "USD" and ticker_symbol == f"{c1}=X":
-                            # e.g., HKD=X gives HKD per 1 USD (7.8), so HKD/USD rate = 1 / 7.8 = 0.128
-                            # Or if EUR=X gives EUR/USD rate directly (1.08)
-                            if rate > 2.0 and c1 in ("HKD", "JPY", "CNH", "SGD"):
-                                direct_c1_usd = 1.0 / rate
-                                inverse_usd_c1 = rate
-                            else:
-                                direct_c1_usd = rate
-                                inverse_usd_c1 = 1.0 / rate if rate > 0 else 1.0
-
-                            new_fx[f"{c1}/USD"] = direct_c1_usd
-                            new_fx[f"USD/{c1}"] = inverse_usd_c1
-                            fx_count += 2
-                        else:
-                            new_fx[pair_key] = rate
-                            new_fx[f"{c2}/{c1}"] = 1.0 / rate
-                            fx_count += 2
-                except Exception:
-                    pass
-
-        # Ensure base identities
-        for c in currs:
-            new_fx[f"{c}/{c}"] = 1.0
+        for c1 in currs:
+            rate_c1_usd = curr_to_usd.get(c1, self.DEFAULT_FX_TO_USD.get(c1, 1.0))
+            for c2 in currs:
+                rate_c2_usd = curr_to_usd.get(c2, self.DEFAULT_FX_TO_USD.get(c2, 1.0))
+                cross_rate = (rate_c1_usd / rate_c2_usd) if rate_c2_usd > 0 else 1.0
+                new_fx[f"{c1}/{c2}"] = cross_rate
+                new_fx[f"{c1}{c2}"] = cross_rate
+                fx_count += 1
 
         # Update in-memory state atomically
         with self._lock:
@@ -179,7 +222,10 @@ class PXFeeder:
 
         # Dump binary .dat snapshot
         if self.dat_path:
-            self.save_to_dat(self.dat_path)
+            try:
+                self.save_to_dat(self.dat_path)
+            except Exception as e:
+                print(f"Warning: Failed to save .dat snapshot: {e}")
 
         return p_count, fx_count
 
