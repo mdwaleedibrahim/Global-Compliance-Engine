@@ -115,6 +115,34 @@ class TestParallelLogging(unittest.TestCase):
         self.assertIn("Price Exceeds Limit", content)
         self.assertIn("LMT_CHECK_OVER", content)
 
+    def test_startup_log_rotation(self):
+        """Verify GCELogger rotates existing GCE.log from an earlier date at system startup."""
+        log_file = Path(self.log_dir) / "GCE.log"
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Write dummy past log file
+        with open(log_file, "w", encoding="utf-8") as f:
+            f.write("Past log entry from yesterday\n")
+            
+        # Set mtime to 1 day ago (86400s)
+        yesterday_mtime = time.time() - 86400
+        os.utime(log_file, (yesterday_mtime, yesterday_mtime))
+        
+        from datetime import datetime
+        yesterday_str = datetime.fromtimestamp(yesterday_mtime).strftime("%Y-%m-%d")
+        expected_rotated_file = log_file.parent / f"GCE.log.{yesterday_str}"
+        if expected_rotated_file.exists():
+            os.remove(expected_rotated_file)
+            
+        # Instantiate GCELogger (triggers _rotate_existing_log_if_needed)
+        logger = GCELogger(log_dir=self.log_dir, console=False, file=True, async_logging=True)
+        logger.shutdown()
+        
+        self.assertTrue(expected_rotated_file.exists(), f"Rotated log file {expected_rotated_file} should exist")
+        with open(expected_rotated_file, "r", encoding="utf-8") as f:
+            rotated_content = f.read()
+        self.assertIn("Past log entry from yesterday", rotated_content)
+
 
 if __name__ == "__main__":
     unittest.main()

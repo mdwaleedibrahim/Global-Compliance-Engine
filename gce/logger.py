@@ -105,6 +105,8 @@ class GCELogger:
             log_path.mkdir(parents=True, exist_ok=True)
             
             log_file = log_path / "GCE.log"
+            self._rotate_existing_log_if_needed(log_file)
+
             file_handler = TimedRotatingFileHandler(
                 log_file,
                 when='midnight',
@@ -127,6 +129,28 @@ class GCELogger:
                 daemon=True
             )
             self.worker_thread.start()
+
+    def _rotate_existing_log_if_needed(self, log_file: Path):
+        """
+        At system startup, check if GCE.log exists from a previous date.
+        If it exists and no rotated file for its last modified date exists,
+        rotate it to GCE.log.YYYY-MM-DD before opening a new GCE.log for today.
+        """
+        if not log_file.exists():
+            return
+        
+        try:
+            mtime = log_file.stat().st_mtime
+            log_date_str = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d")
+            today_str = datetime.now().strftime("%Y-%m-%d")
+
+            # Rotate if the log file is from an earlier date
+            if log_date_str != today_str:
+                rotated_file = log_file.parent / f"{log_file.name}.{log_date_str}"
+                if not rotated_file.exists():
+                    log_file.rename(rotated_file)
+        except Exception as e:
+            sys.stderr.write(f"Warning: Failed to rotate existing log file at startup: {e}\n")
 
     def _log_worker(self):
         """Background worker thread to format and write logs off critical path."""
