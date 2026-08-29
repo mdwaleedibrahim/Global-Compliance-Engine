@@ -356,7 +356,7 @@ def api_update_config():
         lines = raw_text.splitlines()
 
         updated = False
-        current_section = "General" if not any(l.strip().startswith("[") for l in lines if l.strip() and not l.strip().startswith(";")) else None
+        current_section = "General"
         
         new_lines = []
         for line in lines:
@@ -370,13 +370,25 @@ def api_update_config():
                 if "=" in line:
                     k, _ = line.split("=", 1)
                     if k.strip() == key:
-                        new_lines.append(f"{k.split('=')[0].rstrip()} = {val}")
+                        new_lines.append(f"{key}={val}" if "=" not in line or " " not in line.split("=")[0] else f"{key} = {val}")
                         updated = True
                         continue
             new_lines.append(line)
 
         if not updated:
-            new_lines.append(f"{key} = {val}")
+            target_sec_header = f"[{section}]"
+            sec_idx = None
+            for idx, l in enumerate(new_lines):
+                if l.strip() == target_sec_header:
+                    sec_idx = idx
+                    break
+            
+            if sec_idx is not None:
+                new_lines.insert(sec_idx + 1, f"{key} = {val}")
+            else:
+                if section != "General":
+                    new_lines.append(f"\n[{section}]")
+                new_lines.append(f"{key} = {val}")
 
         config_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
 
