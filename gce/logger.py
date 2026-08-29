@@ -147,6 +147,10 @@ class GCELogger:
                 ord_id = getattr(self, 'current_order_id', '-')
 
             extra = {'order_id': ord_id or '-'}
+    def _write_batch(self, batch: List[Tuple[str, str, str]]):
+        """Write a batch of log records sequentially."""
+        for level, msg, ord_id in batch:
+            extra = {'order_id': ord_id or '-'}
             try:
                 if level == "INFO":
                     self.logger.info(msg, extra=extra)
@@ -157,9 +161,52 @@ class GCELogger:
                 elif level == "DEBUG":
                     self.logger.debug(msg, extra=extra)
             except Exception as e:
+                sys.stderr.write(f"Logger worker write error: {e}\n")
+
+    def _log_worker(self):
+        """Background worker thread to format and write logs off critical path."""
+        while not self._stop_event.is_set() or not self.log_queue.empty():
+            try:
+                item = self.log_queue.get(timeout=0.1)
+            except queue.Empty:
+                continue
+            
+            if item is None:
+                self.log_queue.task_done()
+                break
+                
+            try:
+                if isinstance(item, list):
+                    # Atomic batch of log lines for an order
+                    self._write_batch(item)
+                elif isinstance(item, tuple):
+                    if len(item) == 3:
+                        level, msg, ord_id = item
+                    else:
+                        level, msg = item
+                        ord_id = getattr(self, 'current_order_id', '-')
+                    self._write_batch([(level, msg, ord_id or '-')])
+            except Exception as e:
                 sys.stderr.write(f"Logger worker error: {e}\n")
             finally:
                 self.log_queue.task_done()
+
+    def log_order_batch(self, order_id: str, entries: List[Tuple[str, str]]):
+        """
+        Atomically enqueue the entire log sequence for an order validation as a single batch,
+        guaranteeing off-critical-path async logging without mixing lines from concurrent orders.
+
+        Args:
+            order_id: The order ID string
+            entries: List of (level, message) tuples representing the complete validation lifecycle
+        """
+        if not entries:
+            return
+        batch = [(level, msg, order_id or '-') for level, msg in entries]
+        if self.async_logging:
+            self.log_queue.put(batch)
+        else:
+            self._write_batch(batch)
 
     def _enqueue_log(self, level: str, msg: str, order_id: Optional[str] = None):
         """Enqueue log message for parallel background processing."""
@@ -167,15 +214,7 @@ class GCELogger:
         if self.async_logging:
             self.log_queue.put((level, msg, target_ord_id))
         else:
-            extra = {'order_id': target_ord_id}
-            if level == "INFO":
-                self.logger.info(msg, extra=extra)
-            elif level == "WARNING":
-                self.logger.warning(msg, extra=extra)
-            elif level == "ERROR":
-                self.logger.error(msg, extra=extra)
-            elif level == "DEBUG":
-                self.logger.debug(msg, extra=extra)
+            self._write_batch([(level, msg, target_ord_id)])
     
     def lmt_check_start(self, order_id: str = ""):
         """Log limit check start."""

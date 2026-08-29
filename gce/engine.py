@@ -501,15 +501,16 @@ class GCE:
             order.rejection_reason = "; ".join(self.rejection_messages)
             self.orders.add_order(order)
 
-        # --- LOGGING PATH ---
+        # --- ATOMIC ASYNC LOGGING BATCH ---
+        # Collect all validation log entries into an atomic batch so concurrent order logs never mix
         order_id_val = getattr(order, 'order_id', '') or getattr(order, 'ric', '') or ''
-        self.logger.lmt_check_start(order_id_val)
-        if is_new:
-            self.logger.lmt_check_new(order)
-        else:
-            self.logger.lmt_check_amend(order)
+        log_batch: List[Tuple[str, str]] = []
 
-        # Log Market Data Prices
+        log_batch.append(("INFO", "LMT_CHECK_START"))
+
+        check_type = "LMT_CHECK_NEW" if is_new else "LMT_CHECK_AMEND"
+        log_batch.append(("INFO", self.logger._format_order_check_line(check_type, order)))
+
         px_obj = None
         ric = getattr(order, 'ric', getattr(order, 'symbol', '')) or ''
         if ric:
@@ -518,28 +519,44 @@ class GCE:
             if not px_obj and hasattr(self, 'pxfeeder') and self.pxfeeder:
                 px_obj = self.pxfeeder.get_price(ric)
 
-        self.logger.lmt_mktdat(
-            ric=ric,
-            last=getattr(px_obj, 'last', 0.0) if px_obj else 0.0,
-            bid=getattr(px_obj, 'bid', 0.0) if px_obj else 0.0,
-            ask=getattr(px_obj, 'ask', 0.0) if px_obj else 0.0,
-            open_px=getattr(px_obj, 'open_price', getattr(px_obj, 'open', 0.0)) if px_obj else 0.0,
-            close=getattr(px_obj, 'close', 0.0) if px_obj else 0.0,
-            order_id=order_id_val
-        )
+        last_px = getattr(px_obj, 'last', 0.0) if px_obj else 0.0
+        bid_px = getattr(px_obj, 'bid', 0.0) if px_obj else 0.0
+        ask_px = getattr(px_obj, 'ask', 0.0) if px_obj else 0.0
+        open_px = getattr(px_obj, 'open_price', getattr(px_obj, 'open', 0.0)) if px_obj else 0.0
+        close_px = getattr(px_obj, 'close', 0.0) if px_obj else 0.0
+        log_batch.append(("INFO", f"LMT_MKTDAT {ric} Last={last_px}, Bid={bid_px}, Ask={ask_px}, Open={open_px}, Close={close_px}"))
 
         for rule_id, c_name, passed, msg, limit, value, err, caller_loc, elapsed_ns in all_control_results:
             if err is not None:
-                self.logger.error(f"[Rule {rule_id}] Error in control {c_name}: {err}")
-            elif passed:
-                self.logger.control_passed(c_name, limit, value, caller_location=caller_loc, elapsed_ns=elapsed_ns)
+                log_batch.append(("ERROR", f"[rule={rule_id}] Error in control {c_name}: {err}"))
             else:
-                self.logger.control_failed(c_name, limit, value, msg, caller_location=caller_loc, elapsed_ns=elapsed_ns)
+                formatted_msg = self.logger.rejection_formatter.format_control_result(
+                    c_name, passed, limit, value,
+                    "Control passed" if passed else msg,
+                    rule_id=rule_id
+                )
+                if caller_loc or elapsed_ns is not None:
+                    if isinstance(elapsed_ns, (int, float)):
+                        timing = self.logger._format_duration(float(elapsed_ns))
+                    elif elapsed_ns:
+                        timing = str(elapsed_ns)
+                    else:
+                        timing = ""
+                    suffix = f"{caller_loc} {timing}".strip()
+                    formatted_msg = f"{formatted_msg} {{{suffix}}}"
+                log_batch.append(("INFO", formatted_msg))
 
-        num_rules = len(rule_contexts)
-        self.logger.lmt_check_summary(total_passed + total_failed, total_passed, total_failed)
-        self.logger.log_rejections()
-        self.logger.lmt_check_over(elapsed_time)
+        log_batch.append(("INFO", f"{total_passed + total_failed} controls validated, {total_passed} passed, {total_failed} failed"))
+
+        if self.rejection_messages:
+            summary = self.logger.rejection_formatter.format_rejection_summary(self.rejection_messages)
+            log_batch.append(("INFO", summary))
+
+        formatted_total = self.logger._format_duration(elapsed_time * 1_000_000_000.0)
+        log_batch.append(("INFO", f"LMT_CHECK_OVER in {formatted_total}"))
+
+        # Enqueue the complete order batch atomically to parallel async queue off critical path
+        self.logger.log_order_batch(order_id_val, log_batch)
 
         return order_passed, self.rejection_messages
 
