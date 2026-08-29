@@ -86,7 +86,54 @@
 
       <!-- Section 1: Services -->
       <div class="section-panel active" id="panel-services">
-        <div class="card-grid" id="services-grid"></div>
+        <div class="card-grid" id="services-grid">
+          <div class="card service-card">
+            <div class="service-icon running">⚙️</div>
+            <div class="service-info">
+              <div class="service-name">GCE Engine</div>
+              <div class="service-detail">Core risk compliance engine</div>
+            </div>
+            <span class="service-status-badge badge-running">running</span>
+            <div class="service-actions">
+              <button class="btn btn-ghost btn-sm" onclick="svcAction('engine','restart')">↻</button>
+            </div>
+          </div>
+          <div class="card service-card">
+            <div class="service-icon running">📡</div>
+            <div class="service-info">
+              <div class="service-name">PX Feeder</div>
+              <div class="service-detail">Market data & FX rate feed</div>
+            </div>
+            <span class="service-status-badge badge-running">running</span>
+            <div class="service-actions">
+              <button class="btn btn-danger btn-sm" onclick="svcAction('pxfeeder','stop')">Stop</button>
+              <button class="btn btn-ghost btn-sm" onclick="svcAction('pxfeeder','restart')">↻</button>
+            </div>
+          </div>
+          <div class="card service-card">
+            <div class="service-icon running">📝</div>
+            <div class="service-info">
+              <div class="service-name">Log Worker</div>
+              <div class="service-detail">Async compliance logging</div>
+            </div>
+            <span class="service-status-badge badge-running">running</span>
+            <div class="service-actions">
+              <button class="btn btn-danger btn-sm" onclick="svcAction('logger','stop')">Stop</button>
+              <button class="btn btn-ghost btn-sm" onclick="svcAction('logger','restart')">↻</button>
+            </div>
+          </div>
+          <div class="card service-card">
+            <div class="service-icon running">🗄️</div>
+            <div class="service-info">
+              <div class="service-name">Data Manager</div>
+              <div class="service-detail">Instrument static cache</div>
+            </div>
+            <span class="service-status-badge badge-running">running</span>
+            <div class="service-actions">
+              <button class="btn btn-ghost btn-sm" onclick="svcAction('datamgr','start')">↻</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Section 2: GCE Limits -->
@@ -900,6 +947,29 @@
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="copyOrderLogs()">📋 Copy Logs</button>
         <button class="btn btn-primary" onclick="closeOrderLogModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Dialog Modal (Replaces browser native alerts/confirms to suppress origin headers) -->
+  <div class="gce-dialog-overlay" id="gce-dialog-modal" style="display:none">
+    <div class="gce-dialog-box">
+      <div class="gce-dialog-header">
+        <div class="gce-dialog-title" id="gce-dialog-title">🔔 Notification</div>
+        <button class="modal-close" id="gce-dialog-close-btn">✕</button>
+      </div>
+      <div class="gce-dialog-body">
+        <div class="gce-dialog-icon" id="gce-dialog-icon">ℹ️</div>
+        <div class="gce-dialog-message-wrap">
+          <div class="gce-dialog-message" id="gce-dialog-message"></div>
+          <div id="gce-dialog-input-container" style="display:none;margin-top:12px">
+            <input type="text" id="gce-dialog-input" class="search-input" style="width:100%">
+          </div>
+        </div>
+      </div>
+      <div class="gce-dialog-footer" id="gce-dialog-footer">
+        <button class="btn btn-ghost" id="gce-dialog-cancel-btn" style="display:none">Cancel</button>
+        <button class="btn btn-primary" id="gce-dialog-ok-btn">OK</button>
       </div>
     </div>
   </div>

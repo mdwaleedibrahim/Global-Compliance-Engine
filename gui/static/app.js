@@ -11,6 +11,153 @@ let perfOrderChart = null;
 let perfControlChart = null;
 
 // ============================================================
+// Custom Dialog Modal System (Replaces native alert/confirm)
+// Suppresses browser origin headers (e.g. "localhost:5050 says")
+// ============================================================
+function showAlert(message, title = 'Notification', type = 'info') {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('gce-dialog-modal');
+    if (!modal) {
+      console.log(`[Alert] ${title}:`, message);
+      return resolve(true);
+    }
+    const titleEl = document.getElementById('gce-dialog-title');
+    const msgEl = document.getElementById('gce-dialog-message');
+    const iconEl = document.getElementById('gce-dialog-icon');
+    const inputContainer = document.getElementById('gce-dialog-input-container');
+    const cancelBtn = document.getElementById('gce-dialog-cancel-btn');
+    const okBtn = document.getElementById('gce-dialog-ok-btn');
+    const closeBtn = document.getElementById('gce-dialog-close-btn');
+
+    const msgStr = typeof message === 'object' ? JSON.stringify(message, null, 2) : String(message || '');
+    const isError = type === 'error' || /error|failed|invalid|reject|cannot|fail/i.test(title + ' ' + msgStr);
+    const isSuccess = type === 'success' || /success|saved|copied|completed|uploaded|imported/i.test(title + ' ' + msgStr);
+    const isWarning = type === 'warning' || /warning|caution|required|select/i.test(title + ' ' + msgStr);
+
+    if (isError) {
+      iconEl.textContent = '❌';
+      titleEl.innerHTML = `<span style="color:#f87171">⚠️ ${title || 'Error'}</span>`;
+    } else if (isSuccess) {
+      iconEl.textContent = '✅';
+      titleEl.innerHTML = `<span style="color:#4ade80">✓ ${title || 'Success'}</span>`;
+    } else if (isWarning) {
+      iconEl.textContent = '⚠️';
+      titleEl.innerHTML = `<span style="color:#fbbf24">⚠️ ${title || 'Notice'}</span>`;
+    } else {
+      iconEl.textContent = 'ℹ️';
+      titleEl.innerHTML = `<span style="color:#38bdf8">ℹ️ ${title || 'Notification'}</span>`;
+    }
+
+    msgEl.innerHTML = msgStr.replace(/\n/g, '<br>');
+    if (inputContainer) inputContainer.style.display = 'none';
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    if (okBtn) {
+      okBtn.textContent = 'OK';
+      okBtn.className = isError ? 'btn btn-danger' : 'btn btn-primary';
+    }
+
+    const cleanup = () => {
+      okBtn.removeEventListener('click', closeHandler);
+      closeBtn.removeEventListener('click', closeHandler);
+      document.removeEventListener('keydown', keyHandler);
+    };
+
+    const closeHandler = () => {
+      modal.style.display = 'none';
+      cleanup();
+      resolve(true);
+    };
+
+    const keyHandler = (e) => {
+      if (e.key === 'Enter' || e.key === 'Escape') {
+        e.preventDefault();
+        closeHandler();
+      }
+    };
+
+    okBtn.addEventListener('click', closeHandler);
+    closeBtn.addEventListener('click', closeHandler);
+    document.addEventListener('keydown', keyHandler);
+
+    modal.style.display = 'flex';
+    setTimeout(() => { if (okBtn) okBtn.focus(); }, 50);
+  });
+}
+
+function showConfirm(message, title = 'Confirm Action', options = {}) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('gce-dialog-modal');
+    if (!modal) return resolve(true);
+
+    const titleEl = document.getElementById('gce-dialog-title');
+    const msgEl = document.getElementById('gce-dialog-message');
+    const iconEl = document.getElementById('gce-dialog-icon');
+    const inputContainer = document.getElementById('gce-dialog-input-container');
+    const cancelBtn = document.getElementById('gce-dialog-cancel-btn');
+    const okBtn = document.getElementById('gce-dialog-ok-btn');
+    const closeBtn = document.getElementById('gce-dialog-close-btn');
+
+    const msgStr = typeof message === 'object' ? JSON.stringify(message, null, 2) : String(message || '');
+    const isDanger = options.danger || /delete|remove|stop|discard/i.test(title + ' ' + msgStr);
+
+    iconEl.textContent = isDanger ? '🗑️' : '❓';
+    titleEl.innerHTML = `<span style="color:${isDanger ? '#f87171' : '#38bdf8'}">${isDanger ? '⚠️' : '❓'} ${title}</span>`;
+    msgEl.innerHTML = msgStr.replace(/\n/g, '<br>');
+
+    if (inputContainer) inputContainer.style.display = 'none';
+    if (cancelBtn) {
+      cancelBtn.style.display = 'inline-flex';
+      cancelBtn.textContent = options.cancelText || 'Cancel';
+    }
+    if (okBtn) {
+      okBtn.textContent = options.confirmText || (isDanger ? 'Delete' : 'Confirm');
+      okBtn.className = isDanger ? 'btn btn-danger' : 'btn btn-primary';
+    }
+
+    const cleanup = () => {
+      okBtn.removeEventListener('click', confirmHandler);
+      cancelBtn.removeEventListener('click', cancelHandler);
+      closeBtn.removeEventListener('click', cancelHandler);
+      document.removeEventListener('keydown', keyHandler);
+    };
+
+    const confirmHandler = () => {
+      modal.style.display = 'none';
+      cleanup();
+      resolve(true);
+    };
+
+    const cancelHandler = () => {
+      modal.style.display = 'none';
+      cleanup();
+      resolve(false);
+    };
+
+    const keyHandler = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        confirmHandler();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelHandler();
+      }
+    };
+
+    okBtn.addEventListener('click', confirmHandler);
+    cancelBtn.addEventListener('click', cancelHandler);
+    closeBtn.addEventListener('click', cancelHandler);
+    document.addEventListener('keydown', keyHandler);
+
+    modal.style.display = 'flex';
+    setTimeout(() => { if (okBtn) okBtn.focus(); }, 50);
+  });
+}
+
+// Global browser popup interception to eliminate browser origin headers
+window.alert = (msg, title, type) => showAlert(msg, title, type);
+window.confirm = (msg, title, options) => showConfirm(msg, title, options);
+
+// ============================================================
 // Navigation
 // ============================================================
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -66,16 +213,17 @@ async function apiPost(path, body = null) {
 // Section 1: Services
 // ============================================================
 async function loadServices() {
-  const data = await api('/api/status');
-  if (!data) return;
   const grid = document.getElementById('services-grid');
+  const data = await api('/api/status');
+  if (!data || !grid) return;
   const icons = { engine: '⚙️', pxfeeder: '📡', logger: '📝', datamgr: '🗄️' };
   const labels = { engine: 'GCE Engine', pxfeeder: 'PX Feeder', logger: 'Log Worker', datamgr: 'Data Manager' };
 
   grid.innerHTML = data.map(s => {
     const icon = icons[s.name] || '🔧';
     const label = labels[s.name] || s.name;
-    const st = s.status;
+    const st = (s.status === 'running' || s.status === 'ready') ? 'running' : 'stopped';
+    const displayStatus = s.status;
     const canStop = s.name !== 'engine' && s.name !== 'datamgr';
     return `
       <div class="card service-card">
@@ -84,7 +232,7 @@ async function loadServices() {
           <div class="service-name">${label}</div>
           <div class="service-detail">${s.detail || ''}</div>
         </div>
-        <span class="service-status-badge badge-${st}">${st}</span>
+        <span class="service-status-badge badge-${st}">${displayStatus}</span>
         <div class="service-actions">
           ${st === 'stopped' ? `<button class="btn btn-success btn-sm" onclick="svcAction('${s.name}','start')">Start</button>` : ''}
           ${st === 'running' && canStop ? `<button class="btn btn-danger btn-sm" onclick="svcAction('${s.name}','stop')">Stop</button>` : ''}
@@ -97,9 +245,11 @@ async function loadServices() {
   const eng = data.find(s => s.name === 'engine');
   if (eng) {
     const dot = document.getElementById('engine-dot');
-    dot.className = 'status-dot ' + (eng.status === 'running' ? 'green pulse' : 'red');
-    document.getElementById('engine-status-text').textContent = eng.status === 'running' ? 'Running' : 'Stopped';
-    document.getElementById('status-uptime').textContent = eng.detail || '';
+    if (dot) dot.className = 'status-dot ' + (eng.status === 'running' ? 'green pulse' : 'red');
+    const engStatusEl = document.getElementById('engine-status-text');
+    if (engStatusEl) engStatusEl.textContent = eng.status === 'running' ? 'Running' : 'Stopped';
+    const uptimeEl = document.getElementById('status-uptime');
+    if (uptimeEl) uptimeEl.textContent = eng.detail || '';
   }
 }
 
@@ -420,25 +570,26 @@ async function saveLimitRule() {
       closeLimitModal();
       loadLimits();
     } else {
-      alert(`Error saving rule: ${res.message}`);
+      showAlert(`Error saving rule: ${res.message}`, 'Save Error', 'error');
     }
   } catch (e) {
-    alert(`Failed to save rule: ${e}`);
+    showAlert(`Failed to save rule: ${e}`, 'Save Failed', 'error');
   }
 }
 
 async function deleteLimitRule(dbId) {
-  if (!confirm(`Are you sure you want to delete RMS limit rule #${dbId}?`)) return;
+  const confirmed = await showConfirm(`Are you sure you want to delete RMS limit rule #${dbId}?`, 'Delete RMS Limit Rule', { danger: true });
+  if (!confirmed) return;
   try {
     const r = await fetch(`/api/limits/${dbId}`, { method: 'DELETE' });
     const res = await r.json();
     if (res.ok) {
       loadLimits();
     } else {
-      alert(`Error deleting rule: ${res.message}`);
+      showAlert(`Error deleting rule: ${res.message}`, 'Delete Error', 'error');
     }
   } catch (e) {
-    alert(`Failed to delete rule: ${e}`);
+    showAlert(`Failed to delete rule: ${e}`, 'Delete Failed', 'error');
   }
 }
 
@@ -457,7 +608,7 @@ function closeImportModal() {
 async function importLimitsCSV() {
   const fileInput = document.getElementById('import-file-input');
   if (!fileInput.files || fileInput.files.length === 0) {
-    alert('Please select a CSV file to upload');
+    showAlert('Please select a CSV file to upload', 'File Required', 'warning');
     return;
   }
 
@@ -472,14 +623,14 @@ async function importLimitsCSV() {
     });
     const res = await r.json();
     if (res.ok) {
-      alert(res.message);
+      showAlert(res.message, 'Import Successful', 'success');
       closeImportModal();
       loadLimits();
     } else {
-      alert(`Import failed: ${res.message}`);
+      showAlert(`Import failed: ${res.message}`, 'Import Failed', 'error');
     }
   } catch (e) {
-    alert(`Failed to upload CSV: ${e}`);
+    showAlert(`Failed to upload CSV: ${e}`, 'Upload Failed', 'error');
   }
 }
 
@@ -736,7 +887,7 @@ function closePriceModal() {
 async function savePrice() {
   const ric = (document.getElementById('price-field-ric').value || '').trim();
   if (!ric) {
-    alert('Please enter a RIC symbol');
+    showAlert('Please enter a RIC symbol', 'Input Required', 'warning');
     return;
   }
 
@@ -760,25 +911,26 @@ async function savePrice() {
       closePriceModal();
       loadPrices();
     } else {
-      alert(`Error saving price: ${res.message}`);
+      showAlert(`Error saving price: ${res.message}`, 'Save Error', 'error');
     }
   } catch (e) {
-    alert(`Failed to save price: ${e}`);
+    showAlert(`Failed to save price: ${e}`, 'Save Failed', 'error');
   }
 }
 
 async function deletePrice(ric) {
-  if (!confirm(`Are you sure you want to delete price data for ${ric}?`)) return;
+  const confirmed = await showConfirm(`Are you sure you want to delete price data for ${ric}?`, 'Delete Price Data', { danger: true });
+  if (!confirmed) return;
   try {
     const r = await fetch(`/api/prices/${encodeURIComponent(ric)}`, { method: 'DELETE' });
     const res = await r.json();
     if (res.ok) {
       loadPrices();
     } else {
-      alert(`Error deleting price: ${res.message}`);
+      showAlert(`Error deleting price: ${res.message}`, 'Delete Error', 'error');
     }
   } catch (e) {
-    alert(`Failed to delete price: ${e}`);
+    showAlert(`Failed to delete price: ${e}`, 'Delete Failed', 'error');
   }
 }
 
@@ -940,7 +1092,7 @@ function closeInstrModal() {
 async function saveInstrument() {
   const ric = (document.getElementById('instr-field-ric').value || '').trim();
   if (!ric) {
-    alert('Please enter a RIC masterkey');
+    showAlert('Please enter a RIC masterkey', 'Input Required', 'warning');
     return;
   }
 
@@ -970,25 +1122,26 @@ async function saveInstrument() {
       closeInstrModal();
       loadInstruments();
     } else {
-      alert(`Error saving instrument: ${res.message}`);
+      showAlert(`Error saving instrument: ${res.message}`, 'Save Error', 'error');
     }
   } catch (e) {
-    alert(`Failed to save instrument: ${e}`);
+    showAlert(`Failed to save instrument: ${e}`, 'Save Failed', 'error');
   }
 }
 
 async function deleteInstrument(ric) {
-  if (!confirm(`Are you sure you want to delete instrument ${ric}?`)) return;
+  const confirmed = await showConfirm(`Are you sure you want to delete instrument ${ric}?`, 'Delete Instrument', { danger: true });
+  if (!confirmed) return;
   try {
     const r = await fetch(`/api/instruments/${encodeURIComponent(ric)}`, { method: 'DELETE' });
     const res = await r.json();
     if (res.ok) {
       loadInstruments();
     } else {
-      alert(`Error deleting instrument: ${res.message}`);
+      showAlert(`Error deleting instrument: ${res.message}`, 'Delete Error', 'error');
     }
   } catch (e) {
-    alert(`Failed to delete instrument: ${e}`);
+    showAlert(`Failed to delete instrument: ${e}`, 'Delete Failed', 'error');
   }
 }
 
@@ -1315,15 +1468,15 @@ async function submitOrderPlacement() {
   const price = orderType === 'MKT' ? 0.0 : Number(document.getElementById('order-field-price').value || 0);
 
   if (!ric) {
-    alert('Please enter a RIC symbol');
+    showAlert('Please enter a RIC symbol', 'Input Required', 'warning');
     return;
   }
   if (quantity <= 0) {
-    alert('Quantity must be greater than 0');
+    showAlert('Quantity must be greater than 0', 'Invalid Quantity', 'warning');
     return;
   }
   if (orderType === 'LMT' && price <= 0) {
-    alert('Price must be greater than 0 for Limit orders');
+    showAlert('Price must be greater than 0 for Limit orders', 'Invalid Price', 'warning');
     return;
   }
 
@@ -1372,10 +1525,10 @@ async function submitOrderPlacement() {
         renderRecentPlacedOrders();
       }
     } else {
-      alert(`Error submitting order: ${res.message}`);
+      showAlert(`Error submitting order: ${res.message}`, 'Order Submission Error', 'error');
     }
   } catch (e) {
-    alert(`Failed to submit order: ${e}`);
+    showAlert(`Failed to submit order: ${e}`, 'Submission Failed', 'error');
   }
 }
 
@@ -1482,8 +1635,8 @@ function copyConsoleLogs() {
   const consoleEl = document.getElementById('log-console-content');
   if (!consoleEl) return;
   navigator.clipboard.writeText(consoleEl.textContent || '')
-    .then(() => alert('Log content copied to clipboard!'))
-    .catch(e => alert(`Copy failed: ${e}`));
+    .then(() => showAlert('Log content copied to clipboard!', 'Copied', 'success'))
+    .catch(e => showAlert(`Copy failed: ${e}`, 'Copy Error', 'error'));
 }
 
 // Order-specific Floating Log Modal
@@ -1528,8 +1681,8 @@ function copyOrderLogs() {
   const contentEl = document.getElementById('order-log-modal-content');
   if (!contentEl) return;
   navigator.clipboard.writeText(contentEl.textContent || '')
-    .then(() => alert('Order log records copied to clipboard!'))
-    .catch(e => alert(`Copy failed: ${e}`));
+    .then(() => showAlert('Order log records copied to clipboard!', 'Copied', 'success'))
+    .catch(e => showAlert(`Copy failed: ${e}`, 'Copy Error', 'error'));
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1549,6 +1702,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (logLimitSelect) {
     logLimitSelect.addEventListener('change', loadLogsSection);
   }
+
+  // Ensure services load immediately when DOM is ready
+  loadServices();
 });
 
 // ============================================================
@@ -1594,3 +1750,4 @@ function debounce(fn, ms) {
 // Initial Load
 // ============================================================
 loadServices();
+window.addEventListener('load', loadServices);

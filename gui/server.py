@@ -50,12 +50,14 @@ _state = {
     "log_parser": None,
 }
 _lock = threading.Lock()
+_initialized = False
 
 
 def _init_components():
-    """Initialize GCE components lazily on first API call."""
+    """Initialize GCE components."""
+    global _initialized
     with _lock:
-        if _state["logger"] is not None:
+        if _initialized:
             return  # already initialized
 
         log_dir = os.path.join(PROJECT_ROOT, "logs")
@@ -94,7 +96,8 @@ def _init_components():
             _state["pxfeeder"] = PXFeeder(
                 dat_path=os.path.join(PROJECT_ROOT, "PriceCache.dat"),
                 symbols=symbols,
-                fetch_on_start=True,
+                fetch_on_start=False,
+                auto_start_bg=True,
             )
         except Exception as e:
             print(f"[GUI] PXFeeder init warning: {e}")
@@ -131,11 +134,17 @@ def _init_components():
         # Log parser
         _state["log_parser"] = LogParser(os.path.join(log_dir, "GCE.log"))
 
+        _initialized = True
+
+
+# Start background initialization immediately on module load so services are pre-warmed
+threading.Thread(target=_init_components, name="GCEPreWarmThread", daemon=True).start()
+
 
 def _get(key):
-    if _state["logger"] is None:
+    if not _initialized:
         _init_components()
-    return _state[key]
+    return _state.get(key)
 
 
 # ---------------------------------------------------------------------------
@@ -155,25 +164,31 @@ def _service_info(name):
     try:
         if name == "pxfeeder":
             px = _get("pxfeeder")
-            if px and hasattr(px, "_bg_thread") and px._bg_thread and px._bg_thread.is_alive():
-                info["status"] = "running"
-                info["detail"] = f"{len(px._prices)} prices cached"
+            if px:
+                is_running = hasattr(px, "_bg_thread") and px._bg_thread and px._bg_thread.is_alive()
+                info["status"] = "running" if is_running else "ready"
+                info["detail"] = f"{len(px._prices)} prices, {len(px._fx_rates)} FX rates cached"
             else:
                 info["status"] = "stopped"
-                info["detail"] = "Background thread not running"
+                info["detail"] = "Not initialized"
         elif name == "logger":
             lg = _get("logger")
-            if lg and hasattr(lg, "worker_thread") and lg.worker_thread.is_alive():
-                info["status"] = "running"
-                info["detail"] = "Async log worker active"
+            if lg:
+                is_running = hasattr(lg, "worker_thread") and lg.worker_thread and lg.worker_thread.is_alive()
+                info["status"] = "running" if is_running else "stopped"
+                info["detail"] = "Async log worker active" if is_running else "Log worker idle"
             else:
                 info["status"] = "stopped"
+                info["detail"] = "Not initialized"
         elif name == "datamgr":
             dm = _get("datamgr")
             if dm:
                 cnt = dm.count()
-                info["status"] = "running" if cnt > 0 else "stopped"
+                info["status"] = "running" if cnt > 0 else "ready"
                 info["detail"] = f"{cnt} instruments loaded"
+            else:
+                info["status"] = "stopped"
+                info["detail"] = "Not initialized"
         elif name == "engine":
             info["status"] = "running"
             uptime = int(time.time() - _state["start_time"])
