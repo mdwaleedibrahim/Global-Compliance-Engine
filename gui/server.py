@@ -76,7 +76,7 @@ def _init_components():
         try:
             _state["datamgr"] = DataMgr(
                 static_dir=os.path.join(PROJECT_ROOT, "Instrument Static"),
-                dat_path=os.path.join(PROJECT_ROOT, "InstrumentStatic.dat"),
+                dat_path=os.path.join(PROJECT_ROOT, "cache", "InstrumentStatic.dat"),
             )
             _state["datamgr"].load_session_config(
                 os.path.join(PROJECT_ROOT, "config", "Datamgr.ini")
@@ -101,7 +101,7 @@ def _init_components():
                 else None
             )
             _state["pxfeeder"] = PXFeeder(
-                dat_path=os.path.join(PROJECT_ROOT, "PriceCache.dat"),
+                dat_path=os.path.join(PROJECT_ROOT, "cache", "PriceCache.dat"),
                 symbols=symbols,
                 fetch_on_start=False,
                 auto_start_bg=True,
@@ -113,8 +113,8 @@ def _init_components():
         # PriceCache
         try:
             _state["prices"] = PriceCache(
-                dat_path=os.path.join(PROJECT_ROOT, "PriceCache.dat"),
-                csv_path=os.path.join(PROJECT_ROOT, "PriceCache.csv"),
+                dat_path=os.path.join(PROJECT_ROOT, "cache", "PriceCache.dat"),
+                csv_path=os.path.join(PROJECT_ROOT, "cache", "PriceCache.csv"),
                 fetch_yfinance=False,
                 auto_save=False,
             )
@@ -133,7 +133,8 @@ def _init_components():
         # PositionCache
         try:
             _state["positions"] = PositionCache(
-                os.path.join(PROJECT_ROOT, "PositionsCache.csv")
+                csv_path=os.path.join(PROJECT_ROOT, "cache", "PositionsCache.csv"),
+                dat_path=os.path.join(PROJECT_ROOT, "cache", "PositionsCache.dat"),
             )
         except Exception:
             _state["positions"] = PositionCache()
@@ -562,7 +563,7 @@ def _get_gce_engine():
                 instrument_csv=os.path.join(PROJECT_ROOT, "HK-ListOfSecurities.csv"),
                 price_csv=os.path.join(PROJECT_ROOT, "PriceCache.csv"),
                 order_csv=os.path.join(PROJECT_ROOT, "OrderCache.csv"),
-                position_csv=os.path.join(PROJECT_ROOT, "PositionsCache.csv"),
+                position_csv=os.path.join(PROJECT_ROOT, "cache", "PositionsCache.csv"),
                 log_dir=os.path.join(PROJECT_ROOT, "logs")
             )
             from gce.controls.quantity_control import MaxOrderQuantity

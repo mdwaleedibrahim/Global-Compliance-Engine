@@ -1,6 +1,7 @@
 """PositionCache - Manage rule-pattern based position and turnover data for GCE."""
 
 import csv
+import pickle
 from pathlib import Path
 from typing import Dict, Optional, Any, List
 from datetime import datetime
@@ -188,7 +189,11 @@ class Position:
 
 class PositionCache:
     """Cache for position and turnover data indexed by rule pattern."""
-    
+
+    CACHE_DIR = Path(__file__).resolve().parents[2] / "cache"
+    DEFAULT_DAT_PATH = str(CACHE_DIR / "PositionsCache.dat")
+    DEFAULT_CSV_PATH = str(CACHE_DIR / "PositionsCache.csv")
+
     CSV_FIELDNAMES = [
         'Product', 'Application', 'Flow', 'Trader', 'Desk', 'Account', 'Client',
         'symbol', 'exchange', 'underlying', 'Algo Strategy', 'Currency', 'Order Type', 'Tif',
@@ -197,15 +202,32 @@ class PositionCache:
         'svol', 'sval', 'sval_usd', 'sfill', 'sfillval', 'sfillval_usd',
         'sopen', 'sopenval', 'sopenval_usd', 'Sexposure', 'Ssexposure'
     ]
-    
-    def __init__(self, csv_path: Optional[str] = None):
+
+    def __init__(self, csv_path: Optional[str] = None, dat_path: Optional[str] = None):
         self.positions: Dict[str, Position] = {}
-        self.csv_path = csv_path
-        
-        if csv_path:
+        self.csv_path = csv_path or self.DEFAULT_CSV_PATH
+        self.dat_path = dat_path or self.DEFAULT_DAT_PATH
+
+        self.CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+        if dat_path and Path(dat_path).exists():
+            try:
+                self.load_from_dat(dat_path)
+                return
+            except Exception:
+                pass
+
+        if csv_path and Path(csv_path).exists():
             try:
                 self.load_from_csv(csv_path)
+                return
             except FileNotFoundError:
+                pass
+
+        if Path(self.dat_path).exists():
+            try:
+                self.load_from_dat(self.dat_path)
+            except Exception:
                 pass
     
     def add_position(self, symbol_or_position: Any, position: Optional[Position] = None) -> None:
@@ -271,16 +293,20 @@ class PositionCache:
         if rule_keys:
             keys.update(rule_keys)
         
-        # If rule specified wildcard or missing, fill from order
+        # If rule specified wildcard or missing, fill from order. A $ override resolves to the
+        # concrete order value, while * must stay wildcard in the rule pattern.
         def oget(attr: str, default: str = '*') -> str:
             val = getattr(order, attr, None)
             if val is None and isinstance(order, dict):
                 val = order.get(attr)
-            return str(val).strip() if val is not None else default
-        
+            if val is None:
+                return default
+            return str(val).strip()
+
         for col in PATTERN_KEY_COLUMNS:
             curr = keys.get(col, '*')
-            if curr == '*' or not curr:
+            current_value = str(curr).strip() if curr is not None else ''
+            if current_value == '$':
                 if col == 'Product': keys[col] = oget('product', '*')
                 elif col == 'Application': keys[col] = oget('application', '*')
                 elif col == 'Flow': keys[col] = oget('flow', '*')
@@ -295,7 +321,12 @@ class PositionCache:
                 elif col == 'Currency': keys[col] = oget('currency', 'HKD')
                 elif col == 'Order Type': keys[col] = oget('order_type', '*')
                 elif col == 'Tif': keys[col] = oget('tif', '*')
-        
+            elif current_value in ('*', ''):
+                # '*' and blank values remain wildcard placeholders in storage and matching.
+                keys[col] = '*'
+            elif current_value:
+                keys[col] = current_value
+
         pos = self.get_or_create_position(keys, xr=xr_rate)
         
         side = oget('side', 'B')
@@ -306,13 +337,39 @@ class PositionCache:
         pos.update_from_order(side=side, quantity=qty, price=px, consideration=cond, xr_rate=xr_rate)
         return pos
     
+    def load_from_dat(self, dat_path: str) -> int:
+        """Load positions from a binary .dat snapshot."""
+        path = Path(dat_path)
+        if not path.exists():
+            raise FileNotFoundError(f".dat file not found: {dat_path}")
+
+        with open(path, 'rb') as f:
+            payload = pickle.load(f)
+
+        count = 0
+        if isinstance(payload, dict):
+            items = payload.items()
+        elif isinstance(payload, list):
+            items = [(item.get('pattern_key') or item.get('symbol') or str(idx), item) for idx, item in enumerate(payload)]
+        else:
+            return 0
+
+        for _, row in items:
+            try:
+                pos = Position(keys=row, **row)
+                self.positions[pos.pattern_key] = pos
+                count += 1
+            except Exception:
+                continue
+        return count
+
     def get_turnover_for_pattern(self, pattern_keys: Dict[str, Any], currency: str = "HKD") -> float:
         """Calculate existing gross turnover for a given rule pattern."""
         pos = self.get_position(pattern_keys)
         if not pos:
             return 0.0
         return pos.gross_turnover()
-    
+
     def get_all_positions(self) -> List[Dict[str, Any]]:
         """Return all positions as a list of dicts for UI/API."""
         return [p.to_dict() for p in self.positions.values()]
@@ -321,16 +378,29 @@ class PositionCache:
         """Get all positions with net quantities"""
         return {k: v for k, v in self.positions.items() if v.net_quantity() != 0}
     
-    def save_to_csv(self, csv_path: Optional[str] = None) -> int:
-        """Save all positions to CSV file."""
-        target_path = csv_path or self.csv_path or "PositionsCache.csv"
+    def save_to_dat(self, dat_path: Optional[str] = None) -> int:
+        """Save all positions to a binary .dat snapshot for recovery."""
+        target_path = dat_path or self.dat_path or self.DEFAULT_DAT_PATH
         path = Path(target_path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        
+
+        payload = {k: pos.to_dict() for k, pos in self.positions.items()}
+        with open(path, 'wb') as f:
+            pickle.dump(payload, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+        return len(self.positions)
+
+    def save_to_csv(self, csv_path: Optional[str] = None) -> int:
+        """Save all positions to CSV file."""
+        target_path = csv_path or self.csv_path or self.DEFAULT_CSV_PATH
+        self.csv_path = target_path
+        path = Path(target_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
         with open(path, 'w', newline='', encoding='utf-8') as f:
             writer = csv.DictWriter(f, fieldnames=self.CSV_FIELDNAMES)
             writer.writeheader()
-            
+
             for pos in self.positions.values():
                 row = {}
                 for col in self.CSV_FIELDNAMES:
@@ -360,7 +430,8 @@ class PositionCache:
                     elif col == 'Ssexposure': row['Ssexposure'] = pos.short_sell_exposure
                     else: row[col] = ''
                 writer.writerow(row)
-        
+
+        self.save_to_dat(self.dat_path)
         return len(self.positions)
     
     def count(self) -> int:

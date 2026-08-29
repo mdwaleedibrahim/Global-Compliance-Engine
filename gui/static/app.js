@@ -1936,22 +1936,93 @@ async function updateConfigItem(filename, section, key, inputId) {
 
 // ============================================================
 // ============================================================
-// Section: Positions & Turnover Dashboard
+// Section: Positions Dashboard
 // ============================================================
 let allPositionsList = [];
+let positionsSortState = { key: 'symbol', dir: 'asc' };
+
+const POSITION_COLUMNS = [
+  { key: 'Product', label: 'Product' },
+  { key: 'Application', label: 'Application' },
+  { key: 'Flow', label: 'Flow' },
+  { key: 'Trader', label: 'Trader' },
+  { key: 'Desk', label: 'Desk' },
+  { key: 'Account', label: 'Account' },
+  { key: 'Client', label: 'Client' },
+  { key: 'symbol', label: 'Symbol' },
+  { key: 'exchange', label: 'Exchange' },
+  { key: 'underlying', label: 'Underlying' },
+  { key: 'Algo Strategy', label: 'Algo' },
+  { key: 'Currency', label: 'Currency' },
+  { key: 'Order Type', label: 'Order Type' },
+  { key: 'Tif', label: 'TIF' },
+  { key: 'bvol', label: 'Buy Vol' },
+  { key: 'bval', label: 'Buy Value' },
+  { key: 'svol', label: 'Sell Vol' },
+  { key: 'sval', label: 'Sell Value' },
+  { key: 'Turnover', label: 'Turnover' },
+  { key: 'NetValue', label: 'Net Value' },
+  { key: 'Timestamp', label: 'Timestamp' }
+];
 
 function formatMoney(val) {
   const n = parseFloat(val) || 0;
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+function getPositionsValue(row, key) {
+  if (row == null) return '';
+  if (Object.prototype.hasOwnProperty.call(row, key)) return row[key];
+  const normalizedKey = key.replace(/ /g, '').toLowerCase();
+  const alt = row[normalizedKey] ?? row[key.toLowerCase()] ?? row[key.toUpperCase()];
+  if (alt !== undefined) return alt;
+  return '';
+}
+
+function buildPositionsHeader() {
+  const head = document.getElementById('positions-table-head');
+  if (!head) return;
+
+  head.innerHTML = POSITION_COLUMNS.map(col => `
+    <th data-key="${col.key}" class="sortable" style="white-space:nowrap; cursor:pointer; vertical-align:top;">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <span>${escapeHtml(col.label)}</span>
+        <input class="col-filter" data-col="${col.key}" type="text" placeholder="Filter" style="width:90px; font-size:11px;">
+      </div>
+    </th>
+  `).join('');
+
+  head.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', (event) => {
+      const key = th.dataset.key;
+      if (!key) return;
+      if (positionsSortState.key === key) {
+        positionsSortState.dir = positionsSortState.dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        positionsSortState.key = key;
+        positionsSortState.dir = 'asc';
+      }
+      renderPositionsTable(allPositionsList);
+    });
+  });
+
+  head.querySelectorAll('input.col-filter').forEach(input => {
+    input.addEventListener('input', () => renderPositionsTable(allPositionsList));
+  });
+}
+
 async function loadPositions() {
   const tbody = document.getElementById('positions-tbody');
   if (!tbody) return;
+  buildPositionsHeader();
 
   const data = await api('/api/positions');
   if (!data || !Array.isArray(data)) {
-    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--text-muted);">Failed to load positions data.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="22" style="text-align:center; color:var(--text-muted);">Failed to load positions data.</td></tr>';
     return;
   }
 
@@ -1963,9 +2034,6 @@ function renderPositionsTable(list) {
   const tbody = document.getElementById('positions-tbody');
   if (!tbody) return;
 
-  const badgeCount = document.getElementById('position-count-badge');
-  if (badgeCount) badgeCount.textContent = list.length;
-
   const statCount = document.getElementById('pos-stat-count');
   if (statCount) statCount.textContent = list.length;
 
@@ -1974,9 +2042,9 @@ function renderPositionsTable(list) {
   let totalSell = 0;
 
   list.forEach(p => {
-    const bval = parseFloat(p.bval) || 0;
-    const sval = parseFloat(p.sval) || 0;
-    const to = parseFloat(p.Turnover) || (bval + sval);
+    const bval = parseFloat(getPositionsValue(p, 'bval')) || 0;
+    const sval = parseFloat(getPositionsValue(p, 'sval')) || 0;
+    const to = parseFloat(getPositionsValue(p, 'Turnover')) || (bval + sval);
     totalTurnover += to;
     totalBuy += bval;
     totalSell += sval;
@@ -1984,72 +2052,84 @@ function renderPositionsTable(list) {
 
   const statTurnover = document.getElementById('pos-stat-turnover');
   if (statTurnover) statTurnover.textContent = formatMoney(totalTurnover);
-
   const statBuy = document.getElementById('pos-stat-buy');
   if (statBuy) statBuy.textContent = formatMoney(totalBuy);
-
   const statSell = document.getElementById('pos-stat-sell');
   if (statSell) statSell.textContent = formatMoney(totalSell);
 
-  if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:20px;">No position or turnover records found.</td></tr>';
-    return;
-  }
+  const filterInputs = Array.from(document.querySelectorAll('#positions-table-head .col-filter'));
+  const filters = {};
+  filterInputs.forEach(input => {
+    const key = input.dataset.col;
+    filters[key] = (input.value || '').trim().toLowerCase();
+  });
 
   const queryEl = document.getElementById('positions-search');
   const query = queryEl ? queryEl.value.trim().toLowerCase() : '';
 
-  const filtered = list.filter(p => {
+  let filtered = list.filter(p => {
+    let matches = true;
+    for (const [key, value] of Object.entries(filters)) {
+      if (!value) continue;
+      const actual = String(getPositionsValue(p, key) ?? '').toLowerCase();
+      if (!actual.includes(value)) {
+        matches = false;
+        break;
+      }
+    }
+    if (!matches) return false;
     if (!query) return true;
-    const str = `${p.symbol || ''} ${p.Trader || ''} ${p.Desk || ''} ${p.Account || ''} ${p.Client || ''} ${p.Product || ''} ${p.Currency || ''}`.toLowerCase();
-    return str.includes(query);
+    const haystack = Object.values(p).map(v => String(v ?? '')).join(' ').toLowerCase();
+    return haystack.includes(query);
   });
 
+  if (positionsSortState && positionsSortState.key) {
+    filtered = filtered.slice().sort((a, b) => {
+      const aVal = getPositionsValue(a, positionsSortState.key);
+      const bVal = getPositionsValue(b, positionsSortState.key);
+      const aNum = Number(aVal);
+      const bNum = Number(bVal);
+      const isNumeric = !Number.isNaN(aNum) && !Number.isNaN(bNum);
+      let comparison = 0;
+      if (isNumeric) {
+        comparison = aNum - bNum;
+      } else {
+        comparison = String(aVal ?? '').localeCompare(String(bVal ?? ''));
+      }
+      return positionsSortState.dir === 'asc' ? comparison : -comparison;
+    });
+  }
+
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:20px;">No matching position records found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="22" style="text-align:center; color:var(--text-muted); padding:20px;">No matching position records found.</td></tr>';
     return;
   }
 
   tbody.innerHTML = filtered.map(p => {
-    const symPattern = escapeHtml(p.symbol || p.ric || '*');
-    const trader = escapeHtml(p.Trader || '*');
-    const desk = escapeHtml(p.Desk || '*');
-    const account = escapeHtml(p.Account || '*');
-    const client = escapeHtml(p.Client || '*');
-
-    const bvol = parseInt(p.bvol) || 0;
-    const bval = parseFloat(p.bval) || 0;
-    const svol = parseInt(p.svol) || 0;
-    const sval = parseFloat(p.sval) || 0;
-
-    const turnover = parseFloat(p.Turnover) || (bval + sval);
-    const netVal = parseFloat(p.NetValue) || (bval - sval);
-    const curr = escapeHtml(p.Currency || 'HKD');
-    const ts = p.Timestamp ? p.Timestamp.replace('T', ' ').substring(0, 19) : '--';
-
-    const netStyle = netVal > 0 ? 'color:#4ade80' : (netVal < 0 ? 'color:#f87171' : 'color:var(--text-bright)');
-
-    return `
-      <tr>
-        <td style="font-weight:600; color:var(--accent-blue);">${symPattern}</td>
-        <td>${trader}</td>
-        <td>${desk}</td>
-        <td>${account}</td>
-        <td>${client}</td>
-        <td><span style="color:#4ade80">+${bvol}</span> (${formatMoney(bval)})</td>
-        <td><span style="color:#f87171">-${svol}</span> (${formatMoney(sval)})</td>
-        <td style="font-weight:600;">${formatMoney(turnover)} ${curr}</td>
-        <td style="font-weight:600; ${netStyle}">${formatMoney(netVal)} ${curr}</td>
-        <td><span class="badge">${curr}</span></td>
-        <td style="font-size:11px; color:var(--text-muted);">${ts}</td>
-      </tr>`;
+    const cells = POSITION_COLUMNS.map(col => {
+      const value = getPositionsValue(p, col.key);
+      const text = value === '' || value === null || value === undefined ? '&mdash;' : escapeHtml(String(value));
+      const num = Number(value);
+      if (typeof value === 'number' || (!Number.isNaN(num) && String(value).trim() !== '')) {
+        return `<td>${formatMoney(num)}</td>`;
+      }
+      return `<td>${text}</td>`;
+    }).join('');
+    return `<tr>${cells}</tr>`;
   }).join('');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   const posSearch = document.getElementById('positions-search');
   if (posSearch) {
-    posSearch.addEventListener('input', () => renderPositionsTable(allPositionsList));
+    posSearch.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') renderPositionsTable(allPositionsList);
+    });
+  }
+
+  const posSearchBtn = document.getElementById('positions-search-btn');
+  if (posSearchBtn) {
+    posSearchBtn.addEventListener('click', () => renderPositionsTable(allPositionsList));
   }
 });
 

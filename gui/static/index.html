@@ -42,10 +42,6 @@
         <span class="nav-icon">📋</span> OMS Browser
         <span class="nav-badge" id="order-count-badge">0</span>
       </div>
-      <div class="nav-item" data-section="positions" id="nav-positions">
-        <span class="nav-icon">💼</span> Positions & Turnover
-        <span class="nav-badge" id="position-count-badge">0</span>
-      </div>
       <div class="nav-item" data-section="prices" id="nav-prices">
         <span class="nav-icon">💹</span> Prices
       </div>
@@ -520,11 +516,20 @@
 
       <!-- Section 8: Positions Dashboard -->
       <div class="section-panel" id="panel-positions">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+          <div>
+            <h2 style="margin:0; font-size:18px;">Positions</h2>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <input id="positions-search" type="text" placeholder="Search symbol / trader / desk / client" style="min-width:250px;">
+            <button class="btn btn-primary btn-sm" id="positions-search-btn" type="button">Search</button>
+          </div>
+        </div>
+
         <div class="card-grid-4" style="margin-bottom:16px;">
           <div class="card stat-card">
-            <div class="stat-label">Total Rule Patterns</div>
+            <div class="stat-label">Total Positions</div>
             <div class="stat-value" id="pos-stat-count">0</div>
-            <div class="stat-sub">Active Position Records</div>
           </div>
           <div class="card stat-card">
             <div class="stat-label">Gross Turnover (HKD)</div>
@@ -532,74 +537,24 @@
             <div class="stat-sub">Total Traded Value</div>
           </div>
           <div class="card stat-card">
-            <div class="stat-label">Total Buy Consideration</div>
+            <div class="stat-label">Buy Value</div>
             <div class="stat-value" id="pos-stat-buy">0.00</div>
-            <div class="stat-sub">Cumulative Buy Value</div>
+            <div class="stat-sub">Total Buy</div>
           </div>
           <div class="card stat-card">
-            <div class="stat-label">Total Sell Consideration</div>
+            <div class="stat-label">Sell Value</div>
             <div class="stat-value" id="pos-stat-sell">0.00</div>
-            <div class="stat-sub">Cumulative Sell Value</div>
+            <div class="stat-sub">Total Sell</div>
           </div>
         </div>
 
         <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
-            <div class="card-title" style="margin:0;">💼 Live Position & Daily Turnover Cache (PositionsCache.csv)</div>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <input type="text" id="positions-search" class="search-input" placeholder="Search symbol, trader, desk, account..." style="width:240px; font-size:12px; padding:6px 10px;">
-              <button class="btn btn-ghost btn-sm" onclick="loadPositions()">↻ Refresh</button>
-            </div>
-          </div>
-          <div class="table-container">
-            <table class="data-table" id="positions-table">
-              <thead>
-                <tr>
-                  <th>Pattern / Symbol</th>
-                  <th>Trader</th>
-                  <th>Desk</th>
-                  <th>Account</th>
-                  <th>Client</th>
-                  <th>Buy (Vol / Val)</th>
-                  <th>Sell (Vol / Val)</th>
-                  <th>Gross Turnover</th>
-                  <th>Net Value</th>
-                  <th>Currency</th>
-                  <th>Last Updated</th>
-                </tr>
-              </thead>
-              <tbody id="positions-tbody">
-                <!-- Loaded dynamically -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Section 9: RMS Controls Summary -->
-      <div class="section-panel" id="panel-rms">
-        <div class="card-grid-3" id="rms-stats-cards" style="margin-bottom:16px"></div>
-        <div class="card-grid-2">
-          <div class="card">
-            <div class="card-title">📊 Control Pass/Fail Breakdown</div>
-            <div class="chart-container"><canvas id="rms-chart"></canvas></div>
-          </div>
-          <div class="card">
-            <div class="card-title">📋 Control Summary Table</div>
-            <div class="table-wrapper">
-              <table>
-                <thead><tr><th>Control</th><th>Pass</th><th>Fail</th><th>Total</th><th>Rate</th></tr></thead>
-                <tbody id="rms-tbody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        <div id="rms-drilldown" class="drill-down" style="display:none;margin-top:16px">
-          <div class="drill-down-title" id="rms-drilldown-title"></div>
           <div class="table-wrapper">
             <table>
-              <thead><tr><th>Time</th><th>Control</th><th>Status</th><th>Message</th><th>LMT</th><th>ORD</th><th>Source</th><th>Elapsed</th></tr></thead>
-              <tbody id="rms-drilldown-tbody"></tbody>
+              <thead>
+                <tr id="positions-table-head"></tr>
+              </thead>
+              <tbody id="positions-tbody"></tbody>
             </table>
           </div>
         </div>

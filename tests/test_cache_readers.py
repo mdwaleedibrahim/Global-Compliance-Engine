@@ -2,6 +2,7 @@
 
 import os
 import unittest
+from types import SimpleNamespace
 from gce.cache.order_cache import OrderCache, Order, OrderStatus
 from gce.cache.position_cache import PositionCache, Position
 from gce.pxfeeder import PXFeeder
@@ -92,6 +93,68 @@ class TestCacheReaders(unittest.TestCase):
         self.assertIn('orders', gce_summary)
         self.assertIn('market_data', gce_summary)
         self.assertIn('positions', gce_summary)
+
+    def test_position_cache_override_resolution_and_dat_persistence(self):
+        """$ values should resolve from the live order while * remains wildcard."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            dat_path = os.path.join(tmpdir, 'cache', 'PositionsCache.dat')
+            os.makedirs(os.path.dirname(dat_path), exist_ok=True)
+
+            pos_cache = PositionCache(dat_path=dat_path)
+            order = SimpleNamespace(
+                product='Equity',
+                application='*',
+                flow='DMA',
+                trader='TRADER_A',
+                desk='*',
+                account='ACC-1',
+                client='CLIENT-1',
+                ric='0700.HK',
+                symbol='0700.HK',
+                exchange='XHKG',
+                underlying='0700',
+                algo='STRAT-1',
+                currency='HKD',
+                order_type='LMT',
+                tif='DAY',
+                side='B',
+                quantity=100,
+                price=10.0,
+            )
+
+            rule_keys = {
+                'Product': '*',
+                'Application': '*',
+                'Flow': 'DMA',
+                'Trader': '$',
+                'Desk': '*',
+                'Account': 'ACC-1',
+                'Client': 'CLIENT-1',
+                'symbol': '0700.HK',
+                'exchange': 'XHKG',
+                'underlying': '0700',
+                'Algo Strategy': 'STRAT-1',
+                'Currency': 'HKD',
+                'Order Type': 'LMT',
+                'Tif': 'DAY',
+            }
+
+            pos = pos_cache.update_position_from_order(
+                order=order,
+                rule_keys=rule_keys,
+                consideration=1000.0,
+                xr_rate=1.0,
+            )
+
+            self.assertEqual(pos.keys['Product'], '*')
+            self.assertEqual(pos.keys['Trader'], 'TRADER_A')
+            self.assertEqual(pos.keys['Desk'], '*')
+
+            pos_cache.save_to_dat(dat_path)
+            restored = PositionCache(dat_path=dat_path)
+            self.assertIn(pos.pattern_key, restored.positions)
+            self.assertEqual(restored.positions[pos.pattern_key].keys['Trader'], 'TRADER_A')
 
 
 if __name__ == "__main__":

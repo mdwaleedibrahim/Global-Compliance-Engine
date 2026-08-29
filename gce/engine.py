@@ -273,9 +273,9 @@ class GCE:
     """Global Compliance Engine - Pre-trade order control system with parallel control execution."""
     
     def __init__(self, instrument_csv: str = "HK-ListOfSecurities.csv",
-                 price_csv: str = "PriceCache.csv",
-                 order_csv: str = "OrderCache.csv",
-                 position_csv: str = "PositionsCache.csv",
+                 price_csv: str = "cache/PriceCache.csv",
+                 order_csv: str = "cache/OrderCache.csv",
+                 position_csv: str = "cache/PositionsCache.csv",
                  log_dir: str = "logs",
                  max_workers: int = 8):
         """
@@ -286,7 +286,7 @@ class GCE:
         
         # Load caches
         try:
-            self.datamgr = DataMgr(static_dir="Instrument Static", dat_path="InstrumentStatic.dat")
+            self.datamgr = DataMgr(static_dir="Instrument Static", dat_path="cache/InstrumentStatic.dat")
             self.logger.info(f"Loaded {self.datamgr.count()} static instruments in DataMgr")
         except Exception as e:
             self.logger.error(f"Failed to initialize DataMgr: {e}")
@@ -298,30 +298,30 @@ class GCE:
         except FileNotFoundError as e:
             self.logger.error(f"Failed to load instruments: {e}")
             self.instruments = InstrumentCache()
-        
+
         try:
             symbols = list(self.instruments.instruments.keys())[:10] if self.instruments.count() > 0 else None
-            self.pxfeeder = PXFeeder(dat_path="PriceCache.dat", symbols=symbols, fetch_on_start=True)
-            self.prices = PriceCache(dat_path="PriceCache.dat", csv_path=price_csv, fetch_yfinance=False, symbols=symbols, auto_save=True)
+            self.pxfeeder = PXFeeder(dat_path="cache/PriceCache.dat", symbols=symbols, fetch_on_start=True)
+            self.prices = PriceCache(dat_path="cache/PriceCache.dat", csv_path=price_csv, fetch_yfinance=False, symbols=symbols, auto_save=True)
             self.logger.info(f"Loaded/fetched {self.prices.count()} prices in cache via PXFeeder")
         except Exception as e:
             self.logger.error(f"Failed to initialize price cache / PXFeeder: {e}")
-            self.pxfeeder = PXFeeder(fetch_on_start=False, auto_start_bg=False)
-            self.prices = PriceCache()
-        
+            self.pxfeeder = PXFeeder(dat_path="cache/PriceCache.dat", fetch_on_start=False, auto_start_bg=False)
+            self.prices = PriceCache(dat_path="cache/PriceCache.dat")
+
         try:
             self.orders = OrderCache(csv_path=order_csv, instrument_cache=self.instruments)
             self.logger.info(f"Loaded {self.orders.count()} orders")
         except FileNotFoundError as e:
             self.logger.error(f"Failed to load orders: {e}")
             self.orders = OrderCache()
-        
+
         try:
-            self.positions = PositionCache(position_csv)
+            self.positions = PositionCache(csv_path=position_csv, dat_path="cache/PositionsCache.dat")
             self.logger.info(f"Loaded {self.positions.count()} positions")
         except FileNotFoundError as e:
             self.logger.error(f"Failed to load positions: {e}")
-            self.positions = PositionCache()
+            self.positions = PositionCache(dat_path="cache/PositionsCache.dat")
         
         # OMS-driven subscription: subscribe all RICs with active orders to PXFeeder
         try:
@@ -515,9 +515,10 @@ class GCE:
                         xr_rate=1.0
                     )
                 try:
-                    self.positions.save_to_csv("PositionsCache.csv")
+                    self.positions.save_to_csv("cache/PositionsCache.csv")
+                    self.positions.save_to_dat("cache/PositionsCache.dat")
                 except Exception as e:
-                    self.logger.error(f"Failed to auto-save PositionsCache.csv: {e}")
+                    self.logger.error(f"Failed to auto-save position cache: {e}")
         else:
             order.status = OrderStatus.REJECTED
             order.rejection_reason = "; ".join(self.rejection_messages)
