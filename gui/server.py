@@ -571,6 +571,7 @@ def _get_gce_engine():
             from gce.controls.bbo_price_tolerance import BBOPriceTolerance
             from gce.controls.close_price_tolerance import ClosePriceTolerance
             from gce.controls.last_price_tolerance import LastPriceTolerance
+            from gce.controls.max_daily_turnover import MaxDailyTurnover
 
             gce_inst.register_control("MaxOrderQuantity", MaxOrderQuantity())
             gce_inst.register_control("MaxOrderPrice", MaxOrderPrice())
@@ -578,6 +579,7 @@ def _get_gce_engine():
             gce_inst.register_control("BBOPriceTolerance", BBOPriceTolerance())
             gce_inst.register_control("ClosePriceTolerance", ClosePriceTolerance())
             gce_inst.register_control("LastPriceTolerance", LastPriceTolerance())
+            gce_inst.register_control("MaxDailyTurnover", MaxDailyTurnover())
 
             _state["gce"] = gce_inst
         except Exception as e:
@@ -621,6 +623,35 @@ def api_orders():
             "rejection_reason": getattr(o, "rejection_reason", ""),
         })
     return jsonify(orders_list)
+
+
+@app.route("/api/positions")
+def api_positions():
+    pc = _get("positions")
+    if not pc:
+        return jsonify([])
+    if hasattr(pc, "get_all_positions"):
+        positions_list = pc.get_all_positions()
+    else:
+        positions_list = []
+        for p in pc.positions.values():
+            if hasattr(p, "to_dict"):
+                positions_list.append(p.to_dict())
+            else:
+                positions_list.append({
+                    "symbol": getattr(p, "symbol", ""),
+                    "Trader": getattr(p, "trader", ""),
+                    "Account": getattr(p, "account", ""),
+                    "Client": getattr(p, "client", ""),
+                    "Desk": getattr(p, "desk", ""),
+                    "bvol": getattr(p, "buy_volume", 0),
+                    "bval": getattr(p, "buy_value", 0.0),
+                    "svol": getattr(p, "sell_volume", 0),
+                    "sval": getattr(p, "sell_value", 0.0),
+                    "Turnover": getattr(p, "buy_value", 0.0) + getattr(p, "sell_value", 0.0),
+                    "NetValue": getattr(p, "buy_value", 0.0) - getattr(p, "sell_value", 0.0),
+                })
+    return jsonify(positions_list)
 
 
 @app.route("/api/orders/place", methods=["POST"])

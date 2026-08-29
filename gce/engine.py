@@ -496,6 +496,28 @@ class GCE:
         if order_passed:
             order.status = OrderStatus.LIVE
             self.orders.add_order(order)
+            
+            # Update PositionCache for each matched rule pattern
+            ref_px = float(getattr(order, 'price', 0.0) or 0.0)
+            if not ref_px and ric:
+                if hasattr(self, 'prices') and self.prices:
+                    px_item = self.prices.get_price(ric)
+                    if px_item:
+                        ref_px = float(getattr(px_item, 'last', 0.0) or getattr(px_item, 'close', 0.0) or 0.0)
+            order_cond = float(getattr(order, 'quantity', 0) or 0) * ref_px
+            if hasattr(self, 'positions') and self.positions:
+                for rule_ctx in rule_contexts:
+                    rule_keys = rule_ctx.get('rule_limits')
+                    self.positions.update_position_from_order(
+                        order=order,
+                        rule_keys=rule_keys,
+                        consideration=order_cond,
+                        xr_rate=1.0
+                    )
+                try:
+                    self.positions.save_to_csv("PositionsCache.csv")
+                except Exception as e:
+                    self.logger.error(f"Failed to auto-save PositionsCache.csv: {e}")
         else:
             order.status = OrderStatus.REJECTED
             order.rejection_reason = "; ".join(self.rejection_messages)
@@ -566,8 +588,10 @@ class GCE:
         return {
             'MaxOrderQuantity', 'MaxOrderPrice', 'MaxOrderConsideration',
             'BBOPriceTolerance', 'ClosePriceTolerance', 'LastPriceTolerance',
+            'MaxDailyTurnover',
             'max_qty', 'max_price', 'max_consideration',
             'bbo_tolerance', 'close_tolerance', 'last_tolerance',
+            'max_turnover',
         }
     
     def save_state(self, order_csv: str = "OrderCache.csv", 

@@ -1935,6 +1935,125 @@ async function updateConfigItem(filename, section, key, inputId) {
 }
 
 // ============================================================
+// ============================================================
+// Section: Positions & Turnover Dashboard
+// ============================================================
+let allPositionsList = [];
+
+function formatMoney(val) {
+  const n = parseFloat(val) || 0;
+  return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+async function loadPositions() {
+  const tbody = document.getElementById('positions-tbody');
+  if (!tbody) return;
+
+  const data = await api('/api/positions');
+  if (!data || !Array.isArray(data)) {
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--text-muted);">Failed to load positions data.</td></tr>';
+    return;
+  }
+
+  allPositionsList = data;
+  renderPositionsTable(data);
+}
+
+function renderPositionsTable(list) {
+  const tbody = document.getElementById('positions-tbody');
+  if (!tbody) return;
+
+  const badgeCount = document.getElementById('position-count-badge');
+  if (badgeCount) badgeCount.textContent = list.length;
+
+  const statCount = document.getElementById('pos-stat-count');
+  if (statCount) statCount.textContent = list.length;
+
+  let totalTurnover = 0;
+  let totalBuy = 0;
+  let totalSell = 0;
+
+  list.forEach(p => {
+    const bval = parseFloat(p.bval) || 0;
+    const sval = parseFloat(p.sval) || 0;
+    const to = parseFloat(p.Turnover) || (bval + sval);
+    totalTurnover += to;
+    totalBuy += bval;
+    totalSell += sval;
+  });
+
+  const statTurnover = document.getElementById('pos-stat-turnover');
+  if (statTurnover) statTurnover.textContent = formatMoney(totalTurnover);
+
+  const statBuy = document.getElementById('pos-stat-buy');
+  if (statBuy) statBuy.textContent = formatMoney(totalBuy);
+
+  const statSell = document.getElementById('pos-stat-sell');
+  if (statSell) statSell.textContent = formatMoney(totalSell);
+
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:20px;">No position or turnover records found.</td></tr>';
+    return;
+  }
+
+  const queryEl = document.getElementById('positions-search');
+  const query = queryEl ? queryEl.value.trim().toLowerCase() : '';
+
+  const filtered = list.filter(p => {
+    if (!query) return true;
+    const str = `${p.symbol || ''} ${p.Trader || ''} ${p.Desk || ''} ${p.Account || ''} ${p.Client || ''} ${p.Product || ''} ${p.Currency || ''}`.toLowerCase();
+    return str.includes(query);
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:20px;">No matching position records found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(p => {
+    const symPattern = escapeHtml(p.symbol || p.ric || '*');
+    const trader = escapeHtml(p.Trader || '*');
+    const desk = escapeHtml(p.Desk || '*');
+    const account = escapeHtml(p.Account || '*');
+    const client = escapeHtml(p.Client || '*');
+
+    const bvol = parseInt(p.bvol) || 0;
+    const bval = parseFloat(p.bval) || 0;
+    const svol = parseInt(p.svol) || 0;
+    const sval = parseFloat(p.sval) || 0;
+
+    const turnover = parseFloat(p.Turnover) || (bval + sval);
+    const netVal = parseFloat(p.NetValue) || (bval - sval);
+    const curr = escapeHtml(p.Currency || 'HKD');
+    const ts = p.Timestamp ? p.Timestamp.replace('T', ' ').substring(0, 19) : '--';
+
+    const netStyle = netVal > 0 ? 'color:#4ade80' : (netVal < 0 ? 'color:#f87171' : 'color:var(--text-bright)');
+
+    return `
+      <tr>
+        <td style="font-weight:600; color:var(--accent-blue);">${symPattern}</td>
+        <td>${trader}</td>
+        <td>${desk}</td>
+        <td>${account}</td>
+        <td>${client}</td>
+        <td><span style="color:#4ade80">+${bvol}</span> (${formatMoney(bval)})</td>
+        <td><span style="color:#f87171">-${svol}</span> (${formatMoney(sval)})</td>
+        <td style="font-weight:600;">${formatMoney(turnover)} ${curr}</td>
+        <td style="font-weight:600; ${netStyle}">${formatMoney(netVal)} ${curr}</td>
+        <td><span class="badge">${curr}</span></td>
+        <td style="font-size:11px; color:var(--text-muted);">${ts}</td>
+      </tr>`;
+  }).join('');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const posSearch = document.getElementById('positions-search');
+  if (posSearch) {
+    posSearch.addEventListener('input', () => renderPositionsTable(allPositionsList));
+  }
+});
+
+// ============================================================
 // Refresh Logic
 // ============================================================
 function refreshCurrentSection() {
@@ -1946,6 +2065,7 @@ function refreshCurrentSection() {
     case 'limits': loadLimits(); break;
     case 'config': loadConfig(); break;
     case 'oms': loadOrders(); break;
+    case 'positions': loadPositions(); break;
     case 'prices': loadPrices(); loadFX(); break;
     case 'instruments': loadInstruments(); break;
     case 'sessions': loadSessions(); break;
@@ -1956,10 +2076,11 @@ function refreshCurrentSection() {
   }
 }
 
-// Auto-refresh for services and prices
+// Auto-refresh for services, prices, and positions
 setInterval(() => {
   if (currentSection === 'services') loadServices();
   if (currentSection === 'prices') { loadPrices(); loadFX(); }
+  if (currentSection === 'positions') loadPositions();
   if (currentSection === 'logs') loadLogsSection();
 }, REFRESH_INTERVAL);
 

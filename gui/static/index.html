@@ -42,6 +42,10 @@
         <span class="nav-icon">📋</span> OMS Browser
         <span class="nav-badge" id="order-count-badge">0</span>
       </div>
+      <div class="nav-item" data-section="positions" id="nav-positions">
+        <span class="nav-icon">💼</span> Positions & Turnover
+        <span class="nav-badge" id="position-count-badge">0</span>
+      </div>
       <div class="nav-item" data-section="prices" id="nav-prices">
         <span class="nav-icon">💹</span> Prices
       </div>
@@ -64,11 +68,6 @@
       </div>
       <div class="nav-item" data-section="logs" id="nav-logs">
         <span class="nav-icon">📜</span> Log Viewer
-      </div>
-
-      <div class="nav-section-label">Coming Soon</div>
-      <div class="nav-item" data-section="positions" id="nav-positions">
-        <span class="nav-icon">🔒</span> Positions
       </div>
     </nav>
   </aside>
@@ -519,12 +518,61 @@
         </div>
       </div>
 
-      <!-- Section 8: Positions Placeholder -->
+      <!-- Section 8: Positions Dashboard -->
       <div class="section-panel" id="panel-positions">
-        <div class="card placeholder-card">
-          <div class="placeholder-icon">🔒</div>
-          <div class="placeholder-text">Positions Management</div>
-          <div class="placeholder-sub">Coming Soon — Positions dashboard will be available in a future release</div>
+        <div class="card-grid-4" style="margin-bottom:16px;">
+          <div class="card stat-card">
+            <div class="stat-label">Total Rule Patterns</div>
+            <div class="stat-value" id="pos-stat-count">0</div>
+            <div class="stat-sub">Active Position Records</div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-label">Gross Turnover (HKD)</div>
+            <div class="stat-value" id="pos-stat-turnover">0.00</div>
+            <div class="stat-sub">Total Traded Value</div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-label">Total Buy Consideration</div>
+            <div class="stat-value" id="pos-stat-buy">0.00</div>
+            <div class="stat-sub">Cumulative Buy Value</div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-label">Total Sell Consideration</div>
+            <div class="stat-value" id="pos-stat-sell">0.00</div>
+            <div class="stat-sub">Cumulative Sell Value</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+            <div class="card-title" style="margin:0;">💼 Live Position & Daily Turnover Cache (PositionsCache.csv)</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input type="text" id="positions-search" class="search-input" placeholder="Search symbol, trader, desk, account..." style="width:240px; font-size:12px; padding:6px 10px;">
+              <button class="btn btn-ghost btn-sm" onclick="loadPositions()">↻ Refresh</button>
+            </div>
+          </div>
+          <div class="table-container">
+            <table class="data-table" id="positions-table">
+              <thead>
+                <tr>
+                  <th>Pattern / Symbol</th>
+                  <th>Trader</th>
+                  <th>Desk</th>
+                  <th>Account</th>
+                  <th>Client</th>
+                  <th>Buy (Vol / Val)</th>
+                  <th>Sell (Vol / Val)</th>
+                  <th>Gross Turnover</th>
+                  <th>Net Value</th>
+                  <th>Currency</th>
+                  <th>Last Updated</th>
+                </tr>
+              </thead>
+              <tbody id="positions-tbody">
+                <!-- Loaded dynamically -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

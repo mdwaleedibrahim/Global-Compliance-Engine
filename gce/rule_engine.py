@@ -421,12 +421,14 @@ class RuleEngine:
             'BBOPriceTolerance':    ['BBOPriceTolerance'],
             'ClosePriceTolerance':  ['ClosePriceTolerance'],
             'LastPriceTolerance':   ['LastPriceTolerance'],
+            'MaxDailyTurnover':     ['MaxDailyTurnover'],
             'max_qty':              ['MaxOrderSize', 'MaxOrderQuantity'],
             'max_price':            ['MaxOrderPrice'],
             'max_consideration':    ['MaxOrderValue'],
             'bbo_tolerance':        ['BBOPriceTolerance'],
             'close_tolerance':      ['ClosePriceTolerance'],
             'last_tolerance':       ['LastPriceTolerance'],
+            'max_turnover':         ['MaxDailyTurnover'],
         }
 
         active: Dict[str, float] = {}
