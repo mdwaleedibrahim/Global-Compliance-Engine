@@ -16,20 +16,35 @@ if command -v uv >/dev/null 2>&1; then
     exec uv run --with-requirements requirements.txt python gui/server.py
 fi
 
+if [ -x "$PROJECT_ROOT/.venv_gce/bin/python" ]; then
+    echo "[INFO] Found virtual environment at .venv_gce."
+    exec "$PROJECT_ROOT/.venv_gce/bin/python" gui/server.py
+fi
+
 if [ -x "$PROJECT_ROOT/.venv/bin/python" ]; then
-    echo "[INFO] Found project virtual environment."
+    echo "[INFO] Found virtual environment at .venv."
     exec "$PROJECT_ROOT/.venv/bin/python" gui/server.py
 fi
 
+PYTHON_BIN=""
 if command -v python3 >/dev/null 2>&1; then
-    echo "[INFO] Using Python 3 from system PATH."
-    exec python3 gui/server.py
+    PYTHON_BIN="python3"
+elif command -v python >/dev/null 2>&1; then
+    PYTHON_BIN="python"
 fi
 
-if command -v python >/dev/null 2>&1; then
-    echo "[INFO] Using Python from system PATH."
-    exec python gui/server.py
+if [ -n "$PYTHON_BIN" ]; then
+    if "$PYTHON_BIN" -c "import flask" >/dev/null 2>&1; then
+        echo "[INFO] Using $PYTHON_BIN from system PATH."
+        exec "$PYTHON_BIN" gui/server.py
+    else
+        echo "[INFO] Flask not found in system $PYTHON_BIN. Initializing .venv_gce virtual environment..."
+        "$PYTHON_BIN" -m venv "$PROJECT_ROOT/.venv_gce"
+        "$PROJECT_ROOT/.venv_gce/bin/python" -m pip install -r requirements.txt
+        exec "$PROJECT_ROOT/.venv_gce/bin/python" gui/server.py
+    fi
 fi
 
 echo "[ERROR] Python environment not found! Please ensure Python or uv is installed."
 exit 1
+
