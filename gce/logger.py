@@ -253,6 +253,26 @@ class GCELogger:
         msg = f"LMT_MKTDAT {ric} Last={last}, Bid={bid}, Ask={ask}, Open={open_px}, Close={close}"
         self._enqueue_log("INFO", msg, order_id=order_id or self.current_order_id)
     
+    def _format_duration(self, elapsed_ns: float) -> str:
+        """
+        Format elapsed nanoseconds dynamically:
+        - If >= 1 second (1,000,000,000 ns) -> show in seconds (s)
+        - If < 1 second and >= 1 millisecond (1,000,000 ns) -> show in milliseconds (ms)
+        - If < 1 millisecond and >= 1 microsecond (1,000 ns) -> show in microseconds (μs)
+        - If < 1 microsecond -> show in nanoseconds (ns)
+        """
+        if elapsed_ns >= 1_000_000_000:
+            val = elapsed_ns / 1_000_000_000.0
+            return f"{val:.2f}s"
+        elif elapsed_ns >= 1_000_000:
+            val = elapsed_ns / 1_000_000.0
+            return f"{val:.2f}ms"
+        elif elapsed_ns >= 1_000:
+            val = elapsed_ns / 1000.0
+            return f"{val:.2f}μs"
+        else:
+            return f"{int(elapsed_ns)}ns"
+
     def control_passed(self, control_name: str, limit_value: Any,
                       order_value: Any, caller_location: str = "",
                       elapsed_ns: Optional[Any] = None):
@@ -263,7 +283,7 @@ class GCELogger:
         )
         if caller_location or elapsed_ns is not None:
             if isinstance(elapsed_ns, (int, float)):
-                timing = f"{int(elapsed_ns)} nano seconds"
+                timing = self._format_duration(float(elapsed_ns))
             elif elapsed_ns:
                 timing = str(elapsed_ns)
             else:
@@ -281,14 +301,15 @@ class GCELogger:
         )
         if caller_location or elapsed_ns is not None:
             if isinstance(elapsed_ns, (int, float)):
-                timing = f"{int(elapsed_ns)} nano seconds"
+                timing = self._format_duration(float(elapsed_ns))
             elif elapsed_ns:
                 timing = str(elapsed_ns)
             else:
                 timing = ""
             suffix = f"{caller_location} {timing}".strip()
             msg = f"{msg} {{{suffix}}}"
-        self._enqueue_log("WARNING", msg)
+        # Logged as INFO to remove [WARNING] before [FAIL]
+        self._enqueue_log("INFO", msg)
 
         # Track rejection for summary
         rejection = self.rejection_formatter.format_rejection(
@@ -302,7 +323,8 @@ class GCELogger:
     
     def lmt_check_over(self, elapsed_time: float):
         """Log limit check completion with elapsed time."""
-        self._enqueue_log("INFO", f"LMT_CHECK_OVER in {elapsed_time*1000:.2f}ms")
+        formatted = self._format_duration(elapsed_time * 1_000_000_000.0)
+        self._enqueue_log("INFO", f"LMT_CHECK_OVER in {formatted}")
         self.current_order_id = "-"
     
     def log_rejections(self):
