@@ -244,6 +244,8 @@ async function loadServices() {
     const icon = icons[s.name] || '🔧';
     const label = labels[s.name] || s.name;
     const canStop = s.name !== 'engine' && s.name !== 'datamgr';
+    const st = (s.status || '').toLowerCase();
+    const displayStatus = st === 'running' ? 'running' : st === 'stopped' ? 'stopped' : (s.status || 'unknown');
     return `
       <div class="card service-card">
         <div class="service-icon ${st}">${icon}</div>
@@ -1956,10 +1958,28 @@ const POSITION_COLUMNS = [
   { key: 'Currency', label: 'Currency' },
   { key: 'Order Type', label: 'Order Type' },
   { key: 'Tif', label: 'TIF' },
+  { key: 'xr', label: 'XR' },
   { key: 'bvol', label: 'Buy Vol' },
   { key: 'bval', label: 'Buy Value' },
+  { key: 'bval_usd', label: 'Buy Value USD' },
+  { key: 'bfill', label: 'Buy Fill' },
+  { key: 'bfillval', label: 'Buy Fill Value' },
+  { key: 'bfillval_usd', label: 'Buy Fill USD' },
+  { key: 'bopen', label: 'Buy Open' },
+  { key: 'bopenval', label: 'Buy Open Value' },
+  { key: 'bopenval_usd', label: 'Buy Open USD' },
+  { key: 'Bexposure', label: 'Buy Exposure' },
   { key: 'svol', label: 'Sell Vol' },
   { key: 'sval', label: 'Sell Value' },
+  { key: 'sval_usd', label: 'Sell Value USD' },
+  { key: 'sfill', label: 'Sell Fill' },
+  { key: 'sfillval', label: 'Sell Fill Value' },
+  { key: 'sfillval_usd', label: 'Sell Fill USD' },
+  { key: 'sopen', label: 'Sell Open' },
+  { key: 'sopenval', label: 'Sell Open Value' },
+  { key: 'sopenval_usd', label: 'Sell Open USD' },
+  { key: 'Sexposure', label: 'Sell Exposure' },
+  { key: 'Ssexposure', label: 'Short Sell Exposure' },
   { key: 'Turnover', label: 'Turnover' },
   { key: 'NetValue', label: 'Net Value' },
   { key: 'Timestamp', label: 'Timestamp' }
@@ -1988,17 +2008,22 @@ function buildPositionsHeader() {
   if (!head) return;
 
   head.innerHTML = POSITION_COLUMNS.map(col => `
-    <th data-key="${col.key}" class="sortable" style="white-space:nowrap; cursor:pointer; vertical-align:top;">
+    <th data-key="${col.key}" class="sortable" style="white-space:nowrap; vertical-align:top; min-width:140px;">
       <div style="display:flex; flex-direction:column; gap:6px;">
-        <span>${escapeHtml(col.label)}</span>
-        <input class="col-filter" data-col="${col.key}" type="text" placeholder="Filter" style="width:90px; font-size:11px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+          <span>${escapeHtml(col.label)}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <input class="col-filter" data-col="${col.key}" type="text" placeholder="Filter" style="flex:1; width:90px; min-width:0; font-size:11px;">
+          <button type="button" class="sort-btn btn btn-ghost btn-sm" data-sort-key="${col.key}" title="Sort ${escapeHtml(col.label)}" aria-label="Sort ${escapeHtml(col.label)}" style="padding:4px 6px; min-width:28px; width:28px; height:24px; font-size:12px; line-height:1; display:inline-flex; align-items:center; justify-content:center;">⇅</button>
+        </div>
       </div>
     </th>
   `).join('');
 
-  head.querySelectorAll('th.sortable').forEach(th => {
-    th.addEventListener('click', (event) => {
-      const key = th.dataset.key;
+  head.querySelectorAll('.sort-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      const key = button.dataset.sortKey;
       if (!key) return;
       if (positionsSortState.key === key) {
         positionsSortState.dir = positionsSortState.dir === 'asc' ? 'desc' : 'asc';

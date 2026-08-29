@@ -125,10 +125,11 @@ def _init_components():
         try:
             _state["orders"] = OrderCache(
                 csv_path=os.path.join(PROJECT_ROOT, "OrderCache.csv"),
+                dat_path=os.path.join(PROJECT_ROOT, "cache", "OrderCache.dat"),
                 instrument_cache=_state["instruments"],
             )
         except Exception:
-            _state["orders"] = OrderCache()
+            _state["orders"] = OrderCache(dat_path=os.path.join(PROJECT_ROOT, "cache", "OrderCache.dat"))
 
         # PositionCache
         try:
@@ -756,6 +757,10 @@ def api_orders_place():
                 orders_cache.save_to_csv(os.path.join(PROJECT_ROOT, "OrderCache.csv"))
             except Exception as e:
                 print(f"Warning: Failed to save OrderCache.csv: {e}")
+            try:
+                orders_cache.save_to_dat(os.path.join(PROJECT_ROOT, "cache", "OrderCache.dat"))
+            except Exception as e:
+                print(f"Warning: Failed to save OrderCache.dat: {e}")
 
         status_str = order.status.value if hasattr(order.status, "value") else str(order.status)
         return jsonify({

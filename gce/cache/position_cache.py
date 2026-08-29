@@ -200,7 +200,8 @@ class PositionCache:
         'xr', 'bvol', 'bval', 'bval_usd', 'bfill', 'bfillval', 'bfillval_usd',
         'bopen', 'bopenval', 'bopenval_usd', 'Bexposure',
         'svol', 'sval', 'sval_usd', 'sfill', 'sfillval', 'sfillval_usd',
-        'sopen', 'sopenval', 'sopenval_usd', 'Sexposure', 'Ssexposure'
+        'sopen', 'sopenval', 'sopenval_usd', 'Sexposure', 'Ssexposure',
+        'Turnover', 'NetValue', 'Timestamp'
     ]
 
     def __init__(self, csv_path: Optional[str] = None, dat_path: Optional[str] = None):
@@ -283,18 +284,12 @@ class PositionCache:
             self.positions[key] = Position(keys=pattern_keys, xr=xr)
         return self.positions[key]
     
-    def update_position_from_order(self, order: Any, rule_keys: Optional[Dict[str, Any]] = None,
-                                   consideration: Optional[float] = None, xr_rate: float = 1.0) -> Position:
-        """
-        Update position and turnover for a matched rule pattern from an accepted order.
-        """
+    def _resolve_rule_pattern_keys(self, order: Any, rule_keys: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Resolve the canonical pattern keys for an order, honoring $ override semantics."""
         keys: Dict[str, Any] = {}
-        # Base keys from rule pattern
         if rule_keys:
             keys.update(rule_keys)
-        
-        # If rule specified wildcard or missing, fill from order. A $ override resolves to the
-        # concrete order value, while * must stay wildcard in the rule pattern.
+
         def oget(attr: str, default: str = '*') -> str:
             val = getattr(order, attr, None)
             if val is None and isinstance(order, dict):
@@ -322,20 +317,52 @@ class PositionCache:
                 elif col == 'Order Type': keys[col] = oget('order_type', '*')
                 elif col == 'Tif': keys[col] = oget('tif', '*')
             elif current_value in ('*', ''):
-                # '*' and blank values remain wildcard placeholders in storage and matching.
                 keys[col] = '*'
             elif current_value:
                 keys[col] = current_value
+        return keys
 
+    def _apply_order_delta(self, order: Any, rule_keys: Optional[Dict[str, Any]] = None,
+                          consideration: Optional[float] = None, xr_rate: float = 1.0,
+                          delta_multiplier: int = 1) -> Position:
+        """Apply a signed delta to the matching position. Positive = add, negative = remove."""
+        keys = self._resolve_rule_pattern_keys(order, rule_keys)
         pos = self.get_or_create_position(keys, xr=xr_rate)
-        
-        side = oget('side', 'B')
-        qty = int(getattr(order, 'quantity', 0) or 0)
+
+        side = str(getattr(order, 'side', '') or '').strip().upper() or 'B'
+        qty = int(getattr(order, 'quantity', 0) or 0) * delta_multiplier
         px = float(getattr(order, 'price', 0.0) or 0.0)
         cond = consideration if consideration is not None else (qty * px)
-        
+
         pos.update_from_order(side=side, quantity=qty, price=px, consideration=cond, xr_rate=xr_rate)
         return pos
+
+    def update_position_from_order(self, order: Any, rule_keys: Optional[Dict[str, Any]] = None,
+                                   consideration: Optional[float] = None, xr_rate: float = 1.0) -> Position:
+        """
+        Update position and turnover for a matched rule pattern from an accepted order.
+        """
+        return self._apply_order_delta(order, rule_keys=rule_keys, consideration=consideration, xr_rate=xr_rate, delta_multiplier=1)
+
+    def replace_position_from_order(self, old_order: Any, new_order: Any,
+                                   rule_keys: Optional[Dict[str, Any]] = None,
+                                   xr_rate: float = 1.0) -> Position:
+        """Amend an existing position by removing the old order delta and adding the new one."""
+        old_side = str(getattr(old_order, 'side', '') or '').strip().upper() or 'B'
+        old_qty = int(getattr(old_order, 'quantity', 0) or 0)
+        old_px = float(getattr(old_order, 'price', 0.0) or 0.0)
+        old_consideration = old_qty * old_px
+        self._apply_order_delta(old_order, rule_keys=rule_keys, consideration=-old_consideration, xr_rate=xr_rate, delta_multiplier=-1)
+
+        new_consideration = (int(getattr(new_order, 'quantity', 0) or 0) * float(getattr(new_order, 'price', 0.0) or 0.0))
+        return self._apply_order_delta(new_order, rule_keys=rule_keys, consideration=new_consideration, xr_rate=xr_rate, delta_multiplier=1)
+
+    def cancel_position_from_order(self, order: Any, rule_keys: Optional[Dict[str, Any]] = None,
+                                  xr_rate: float = 1.0) -> Position:
+        """Replenish the position by reversing the live order delta for a cancelled order."""
+        qty = int(getattr(order, 'quantity', 0) or 0)
+        px = float(getattr(order, 'price', 0.0) or 0.0)
+        return self._apply_order_delta(order, rule_keys=rule_keys, consideration=-(qty * px), xr_rate=xr_rate, delta_multiplier=-1)
     
     def load_from_dat(self, dat_path: str) -> int:
         """Load positions from a binary .dat snapshot."""

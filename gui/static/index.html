@@ -38,6 +38,9 @@
       </div>
 
       <div class="nav-section-label">Data</div>
+      <div class="nav-item" data-section="positions" id="nav-positions">
+        <span class="nav-icon">📍</span> Positions
+      </div>
       <div class="nav-item" data-section="oms" id="nav-oms">
         <span class="nav-icon">📋</span> OMS Browser
         <span class="nav-badge" id="order-count-badge">0</span>
@@ -514,7 +517,35 @@
         </div>
       </div>
 
-      <!-- Section 8: Positions Dashboard -->
+      <!-- Section 8: RMS Controls Summary -->
+      <div class="section-panel" id="panel-rms">
+        <div class="card-grid" id="rms-stats-cards" style="margin-bottom:16px"></div>
+        <div class="card">
+          <div class="card-title">🛡️ RMS Controls Summary</div>
+          <div class="chart-container" style="height:260px; margin-top:12px;">
+            <canvas id="rms-chart"></canvas>
+          </div>
+          <div class="table-wrapper" style="margin-top:16px;">
+            <table>
+              <thead>
+                <tr><th>Control</th><th>Pass</th><th>Fail</th><th>Total</th><th>Rate</th></tr>
+              </thead>
+              <tbody id="rms-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="rms-drilldown" class="drill-down" style="display:none;margin-top:16px">
+          <div class="drill-down-title" id="rms-drilldown-title"></div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Time</th><th>Control</th><th>Status</th><th>Message</th><th>LMT</th><th>ORD</th><th>Source</th><th>Elapsed</th></tr></thead>
+              <tbody id="rms-drilldown-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 9: Positions Dashboard -->
       <div class="section-panel" id="panel-positions">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
           <div>
@@ -549,8 +580,8 @@
         </div>
 
         <div class="card">
-          <div class="table-wrapper">
-            <table>
+          <div class="table-wrapper" style="overflow-x:auto;">
+            <table style="min-width:2200px; table-layout:auto;">
               <thead>
                 <tr id="positions-table-head"></tr>
               </thead>

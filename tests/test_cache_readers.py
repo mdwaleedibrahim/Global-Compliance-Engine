@@ -68,18 +68,22 @@ class TestCacheReaders(unittest.TestCase):
 
     def test_position_cache_reader(self):
         """Test PositionCacheReader position filtering and portfolio summary."""
-        pos_cache = PositionCache()
-        p1 = Position(symbol="0700.HK", ric="0700.HK", trader="TRADER_A", bvol=100, bval=38000.0, svol=0)
-        pos_cache.add_position("0700.HK", p1)
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = os.path.join(tmpdir, 'PositionsCache.csv')
+            dat_path = os.path.join(tmpdir, 'PositionsCache.dat')
+            pos_cache = PositionCache(csv_path=csv_path, dat_path=dat_path)
+            p1 = Position(symbol="0700.HK", ric="0700.HK", trader="TRADER_A", bvol=100, bval=38000.0, svol=0)
+            pos_cache.add_position("0700.HK", p1)
 
-        reader = PositionCacheReader(position_cache=pos_cache)
-        p_retrieved = reader.get_position("0700.HK")
-        self.assertIsNotNone(p_retrieved)
-        self.assertEqual(p_retrieved.net_quantity(), 100)
+            reader = PositionCacheReader(position_cache=pos_cache)
+            p_retrieved = reader.get_position("0700.HK")
+            self.assertIsNotNone(p_retrieved)
+            self.assertEqual(p_retrieved.net_quantity(), 100)
 
-        summary = reader.get_summary()
-        self.assertEqual(summary['total_positions'], 1)
-        self.assertEqual(summary['active_positions'], 1)
+            summary = reader.get_summary()
+            self.assertEqual(summary['total_positions'], 1)
+            self.assertEqual(summary['active_positions'], 1)
 
     def test_cache_reader_manager(self):
         """Test unified CacheReaderManager summary aggregation."""
@@ -155,6 +159,61 @@ class TestCacheReaders(unittest.TestCase):
             restored = PositionCache(dat_path=dat_path)
             self.assertIn(pos.pattern_key, restored.positions)
             self.assertEqual(restored.positions[pos.pattern_key].keys['Trader'], 'TRADER_A')
+
+    def test_position_cache_replace_order_amends_position_metrics(self):
+        """Replacing an order should amend the position delta rather than stack the old position."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = os.path.join(tmpdir, 'PositionsCache.csv')
+            dat_path = os.path.join(tmpdir, 'PositionsCache.dat')
+            pos_cache = PositionCache(csv_path=csv_path, dat_path=dat_path)
+            order = SimpleNamespace(
+                product='Equity', application='*', flow='DMA', trader='TRADER_A', desk='*', account='ACC-1',
+                client='CLIENT-1', ric='0700.HK', symbol='0700.HK', exchange='XHKG', underlying='0700',
+                algo='STRAT-1', currency='HKD', order_type='LMT', tif='DAY', side='B', quantity=100, price=10.0,
+            )
+            rule_keys = {'Product': '*', 'Application': '*', 'Flow': 'DMA', 'Trader': '$', 'Desk': '*', 'Account': 'ACC-1', 'Client': 'CLIENT-1', 'symbol': '0700.HK', 'exchange': 'XHKG', 'underlying': '0700', 'Algo Strategy': 'STRAT-1', 'Currency': 'HKD', 'Order Type': 'LMT', 'Tif': 'DAY'}
+
+            pos_cache.update_position_from_order(order=order, rule_keys=rule_keys, consideration=1000.0, xr_rate=1.0)
+
+            replacement = SimpleNamespace(
+                product='Equity', application='*', flow='DMA', trader='TRADER_A', desk='*', account='ACC-1',
+                client='CLIENT-1', ric='0700.HK', symbol='0700.HK', exchange='XHKG', underlying='0700',
+                algo='STRAT-1', currency='HKD', order_type='LMT', tif='DAY', side='B', quantity=150, price=12.0,
+            )
+
+            pos_cache.replace_position_from_order(order, replacement, rule_keys=rule_keys, xr_rate=1.0)
+            pos = next(iter(pos_cache.positions.values()))
+            self.assertEqual(pos.buy_volume, 150)
+            self.assertAlmostEqual(pos.buy_value, 1800.0)
+            self.assertAlmostEqual(pos.gross_turnover(), 1800.0)
+            self.assertAlmostEqual(pos.net_value(), 1800.0)
+            self.assertTrue(set(PositionCache.CSV_FIELDNAMES).issubset(set(pos.to_dict().keys())))
+
+    def test_position_cache_cancel_order_replenishes_position_columns(self):
+        """Cancelling a live order should reverse the position delta and reset the tracked columns back toward zero."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = os.path.join(tmpdir, 'PositionsCache.csv')
+            dat_path = os.path.join(tmpdir, 'PositionsCache.dat')
+            pos_cache = PositionCache(csv_path=csv_path, dat_path=dat_path)
+            order = SimpleNamespace(
+                product='Equity', application='*', flow='DMA', trader='TRADER_A', desk='*', account='ACC-1',
+                client='CLIENT-1', ric='0700.HK', symbol='0700.HK', exchange='XHKG', underlying='0700',
+                algo='STRAT-1', currency='HKD', order_type='LMT', tif='DAY', side='B', quantity=100, price=10.0,
+            )
+            rule_keys = {'Product': '*', 'Application': '*', 'Flow': 'DMA', 'Trader': '$', 'Desk': '*', 'Account': 'ACC-1', 'Client': 'CLIENT-1', 'symbol': '0700.HK', 'exchange': 'XHKG', 'underlying': '0700', 'Algo Strategy': 'STRAT-1', 'Currency': 'HKD', 'Order Type': 'LMT', 'Tif': 'DAY'}
+
+            pos_cache.update_position_from_order(order=order, rule_keys=rule_keys, consideration=1000.0, xr_rate=1.0)
+            pos_cache.cancel_position_from_order(order, rule_keys=rule_keys, xr_rate=1.0)
+            pos = next(iter(pos_cache.positions.values()))
+            self.assertEqual(pos.buy_volume, 0)
+            self.assertEqual(pos.sell_volume, 0)
+            self.assertEqual(pos.buy_value, 0.0)
+            self.assertEqual(pos.sell_value, 0.0)
+            self.assertEqual(pos.gross_turnover(), 0.0)
+            self.assertEqual(pos.net_value(), 0.0)
+            self.assertTrue(set(PositionCache.CSV_FIELDNAMES).issubset(set(pos.to_dict().keys())))
 
 
 if __name__ == "__main__":

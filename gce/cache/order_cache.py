@@ -1,6 +1,7 @@
 """OrderCache - Manage order data"""
 
 import csv
+import pickle
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from datetime import datetime
@@ -69,12 +70,84 @@ class Order:
 class OrderCache:
     """Cache for order data with complete OrderCache.csv schema support."""
     
-    def __init__(self, csv_path: Optional[str] = None, instrument_cache: Optional[Any] = None):
+    def __init__(self, csv_path: Optional[str] = None, instrument_cache: Optional[Any] = None,
+                 dat_path: Optional[str] = None):
         self.orders: Dict[str, Order] = {}
-        
+        self.dat_path = dat_path or str(Path(csv_path).with_suffix('.dat')) if csv_path else None
+
+        if dat_path and Path(dat_path).exists():
+            try:
+                self.load_from_dat(dat_path)
+                return
+            except Exception:
+                pass
+
         if csv_path:
             self.load_from_csv(csv_path, instrument_cache=instrument_cache)
-    
+
+    def load_from_dat(self, dat_path: str) -> int:
+        """Load orders from a binary .dat snapshot for recovery."""
+        path = Path(dat_path)
+        if not path.exists():
+            raise FileNotFoundError(f".dat file not found: {dat_path}")
+
+        with open(path, 'rb') as f:
+            payload = pickle.load(f)
+
+        if isinstance(payload, dict):
+            items = payload.values()
+        elif isinstance(payload, list):
+            items = payload
+        else:
+            return 0
+
+        count = 0
+        for item in items:
+            try:
+                if isinstance(item, Order):
+                    self.orders[item.order_id] = item
+                elif isinstance(item, dict):
+                    order = Order(
+                        order_id=str(item.get('order_id') or item.get('orderId') or item.get('id') or f"ORD-{count}"),
+                        ric=str(item.get('ric') or item.get('symbol') or ''),
+                        symbol=str(item.get('symbol') or item.get('ric') or ''),
+                        quantity=int(item.get('quantity', 0) or 0),
+                        price=float(item.get('price', 0) or 0),
+                        side=str(item.get('side', 'B') or 'B'),
+                        order_type=str(item.get('order_type', item.get('Order Type', 'LMT')) or 'LMT'),
+                        trader=str(item.get('trader', '') or ''),
+                        account=str(item.get('account', '') or ''),
+                        filled=int(item.get('filled', 0) or 0),
+                        open_qty=int(item.get('open_qty', item.get('Open', 0)) or 0),
+                        client=str(item.get('client', '') or ''),
+                        desk=str(item.get('desk', '') or ''),
+                        currency=str(item.get('currency', 'HKD') or 'HKD'),
+                        timestamp=str(item.get('timestamp', datetime.now().isoformat())),
+                        product=str(item.get('product', 'Equity') or 'Equity'),
+                        application=str(item.get('application', '') or ''),
+                        flow=str(item.get('flow', 'DMA') or 'DMA'),
+                        exchange=str(item.get('exchange', 'XHKG') or 'XHKG'),
+                        underlying=str(item.get('underlying', '') or ''),
+                        algo_strategy=str(item.get('algo_strategy', item.get('Algo Strategy', '')) or ''),
+                        tif=str(item.get('tif', 'DAY') or 'DAY'),
+                    )
+                    status = item.get('status')
+                    if hasattr(status, 'value'):
+                        order.status = status
+                    else:
+                        try:
+                            order.status = OrderStatus[str(status).upper()]
+                        except Exception:
+                            try:
+                                order.status = OrderStatus(str(status))
+                            except Exception:
+                                order.status = OrderStatus.LIVE
+                    self.orders[order.order_id] = order
+                    count += 1
+            except Exception:
+                continue
+        return count
+
     def load_from_csv(self, csv_path: str, instrument_cache: Optional[Any] = None) -> int:
         """
         Load orders from CSV file (OrderCache.csv)
@@ -211,6 +284,48 @@ class OrderCache:
         res = self.update_order_status(order_id, status=status, filled=filled)
         return res is not None
     
+    def save_to_dat(self, dat_path: Optional[str] = None) -> int:
+        """Persist orders to a binary dat snapshot for recovery.
+
+        This is used as a non-critical-path fallback so OMS state can be restored
+        without relying solely on the CSV file.
+        """
+        target_path = dat_path or self.dat_path or str(Path('cache') / 'OrderCache.dat')
+        path = Path(target_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        payload = {order_id: {
+            'order_id': order.order_id,
+            'ric': order.ric,
+            'symbol': order.symbol,
+            'quantity': order.quantity,
+            'price': order.price,
+            'side': order.side,
+            'order_type': order.order_type,
+            'trader': order.trader,
+            'account': order.account,
+            'status': order.status,
+            'timestamp': order.timestamp,
+            'filled': order.filled,
+            'open_qty': order.open_qty,
+            'client': order.client,
+            'desk': order.desk,
+            'currency': order.currency,
+            'product': getattr(order, 'product', 'Equity'),
+            'application': getattr(order, 'application', ''),
+            'flow': getattr(order, 'flow', 'DMA'),
+            'exchange': getattr(order, 'exchange', 'XHKG'),
+            'underlying': getattr(order, 'underlying', order.symbol.split('.')[0] if order.symbol else ''),
+            'algo_strategy': getattr(order, 'algo_strategy', ''),
+            'tif': getattr(order, 'tif', 'DAY'),
+            'rejection_reason': getattr(order, 'rejection_reason', ''),
+        } for order_id, order in self.orders.items()}
+
+        with open(path, 'wb') as f:
+            pickle.dump(payload, f, protocol=pickle.HIGHEST_PROTOCOL)
+        self.dat_path = str(path)
+        return len(self.orders)
+
     def save_to_csv(self, csv_path: str) -> int:
         """
         Save all orders to CSV file matching complete 22-column OrderCache.csv schema.
