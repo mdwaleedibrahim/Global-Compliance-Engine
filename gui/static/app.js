@@ -435,9 +435,10 @@ function renderLimitsTable(data) {
       <td>${r.Restricted || 'N'}</td>
       <td>${r.SSRestricted || 'N'}</td>
       <td>${enabledBadge}</td>
-      <td class="sticky-col-right">
-        <button class="btn btn-ghost btn-sm btn-icon-primary" onclick="openEditLimitModal(${r.DBId})">✏️ Edit</button>
-        <button class="btn btn-ghost btn-sm btn-icon-danger" onclick="deleteLimitRule(${r.DBId})">🗑️</button>
+      <td class="sticky-col-right" style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm btn-icon-primary" onclick="openEditLimitModal(${r.DBId})" title="Edit Limit Rule">✏️ Edit</button>
+        <button class="btn btn-ghost btn-sm btn-icon-info" onclick="openCopyLimitModal(${r.DBId})" title="Copy / Duplicate Limit Rule">📋 Copy</button>
+        <button class="btn btn-ghost btn-sm btn-icon-danger" onclick="deleteLimitRule(${r.DBId})" title="Delete Limit Rule">🗑️</button>
       </td>
     </tr>`;
   }).join('');
@@ -478,6 +479,36 @@ function openEditLimitModal(dbId) {
 
   document.getElementById('limits-modal-title').textContent = `✏️ Edit RMS Limit Rule #${dbId}`;
   document.getElementById('field-dbid').value = dbId;
+  populateLimitOptions();
+
+  const textFields = ['product', 'securitytype', 'application', 'flow', 'trader', 'desk', 'account', 'client', 'symbol', 'exchange', 'underlying', 'algostrategy', 'currency', 'side', 'ordertype', 'tif', 'extendedkey1', 'extendedkey2', 'extendedkey3', 'extendedkey4', 'extendedkey5', 'duplicateorders', 'burstorders', 'restricted', 'ssrestricted', 'enabled'];
+  const numFields = ['maxordersize', 'maxorderprice', 'maxordervalue', 'maxorderadv', 'closepricetolerance', 'lastpricetolerance', 'bbopricetolerance', 'marketdepthcheck', 'maxdailyvolume', 'maxdailyvalue', 'maxdailynetvalue', 'maxdailyturnover', 'maxdailyexposure', 'maxdailyopenvalue', 'maxdailyactiveorders'];
+
+  textFields.forEach(f => {
+    const el = document.getElementById(`field-${f}`);
+    if (el) {
+      const dbKey = Object.keys(rule).find(k => k.toLowerCase() === f.toLowerCase()) || f;
+      el.value = rule[dbKey] !== undefined ? rule[dbKey] : '*';
+    }
+  });
+
+  numFields.forEach(f => {
+    const el = document.getElementById(`field-${f}`);
+    if (el) {
+      const dbKey = Object.keys(rule).find(k => k.toLowerCase() === f.toLowerCase()) || f;
+      el.value = rule[dbKey] !== undefined ? rule[dbKey] : 0;
+    }
+  });
+
+  document.getElementById('limits-modal').style.display = 'flex';
+}
+
+function openCopyLimitModal(dbId) {
+  const rule = limitsAllData.find(r => r.DBId === dbId);
+  if (!rule) return;
+
+  document.getElementById('limits-modal-title').textContent = `📋 Copy RMS Limit Rule (from #${dbId})`;
+  document.getElementById('field-dbid').value = ''; // Cleared DBId creates a new duplicate rule on save
   populateLimitOptions();
 
   const textFields = ['product', 'securitytype', 'application', 'flow', 'trader', 'desk', 'account', 'client', 'symbol', 'exchange', 'underlying', 'algostrategy', 'currency', 'side', 'ordertype', 'tif', 'extendedkey1', 'extendedkey2', 'extendedkey3', 'extendedkey4', 'extendedkey5', 'duplicateorders', 'burstorders', 'restricted', 'ssrestricted', 'enabled'];

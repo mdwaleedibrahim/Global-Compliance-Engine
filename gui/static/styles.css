@@ -1043,6 +1043,12 @@ select.search-input {
   border-color: var(--accent-blue) !important;
 }
 
+.btn-icon-info:hover {
+  color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.15) !important;
+  border-color: #38bdf8 !important;
+}
+
 /* ============================================================
    Horizontal Scrollable Table & Column Filters
    ============================================================ */
