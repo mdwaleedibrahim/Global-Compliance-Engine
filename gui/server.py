@@ -815,6 +815,34 @@ def api_prices():
     return jsonify(prices_list)
 
 
+@app.route("/api/prices/fetch", methods=["POST"])
+def api_prices_fetch_live():
+    data = request.json or {}
+    ric = str(data.get("ric", "") or "").strip()
+    if not ric:
+        return jsonify({"ok": False, "message": "RIC is required"}), 400
+    try:
+        import yfinance as yf
+        ticker = yf.Ticker(ric)
+        info = ticker.info or {}
+        price = (
+            info.get("regularMarketPrice")
+            or info.get("currentPrice")
+            or info.get("previousClose")
+            or info.get("ask")
+            or info.get("bid")
+        )
+        if price is None:
+            fast = getattr(ticker, "fast_info", None)
+            if fast:
+                price = fast.get("last_price") or fast.get("regular_market_previous_close")
+        if price is None or float(price) <= 0:
+            return jsonify({"ok": False, "message": f"Unable to fetch live price for {ric}"}), 404
+        return jsonify({"ok": True, "ric": ric, "price": float(price)})
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 400
+
+
 @app.route("/api/prices", methods=["POST"])
 def api_prices_create():
     pc = _get("prices")
@@ -897,7 +925,88 @@ def api_prices_delete(ric):
 def api_fx():
     px = _get("pxfeeder")
     fx = px.get_all_fx_rates() if px else {}
-    return jsonify(fx)
+    search = (request.args.get("search", "") or "").strip().lower()
+    entries = []
+    for pair, rate in sorted(fx.items()):
+        normalized_key = str(pair).upper().replace(" ", "")
+        if search and search not in normalized_key.lower() and search not in str(rate).lower():
+            continue
+        if "/" not in normalized_key and len(normalized_key) == 6:
+            left, right = normalized_key[:3], normalized_key[3:]
+            normalized_key = f"{left}/{right}"
+        entries.append({"pair": normalized_key, "rate": float(rate)})
+    return jsonify(entries if entries else [])
+
+
+@app.route("/api/fx", methods=["POST"])
+def api_fx_create():
+    px = _get("pxfeeder")
+    if not px:
+        return jsonify({"ok": False, "message": "PXFeeder not available"}), 500
+    try:
+        data = request.json or {}
+        pair = str(data.get("pair", "") or "").strip().upper().replace(" ", "")
+        if not pair:
+            return jsonify({"ok": False, "message": "FX pair is required"}), 400
+        if "/" not in pair and len(pair) == 6:
+            pair = f"{pair[:3]}/{pair[3:]}"
+        rate = float(data.get("rate", 0) or 0)
+        px.set_fx_rate_in_memory(pair, rate)
+        return jsonify({"ok": True, "message": f"FX rate for {pair} updated", "fx": {"pair": pair, "rate": rate}})
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 400
+
+
+@app.route("/api/fx/<path:pair>", methods=["PUT"])
+def api_fx_update(pair):
+    px = _get("pxfeeder")
+    if not px:
+        return jsonify({"ok": False, "message": "PXFeeder not available"}), 500
+    try:
+        data = request.json or {}
+        normalized_pair = str(pair).strip().upper().replace(" ", "")
+        if "/" not in normalized_pair and len(normalized_pair) == 6:
+            normalized_pair = f"{normalized_pair[:3]}/{normalized_pair[3:]}"
+        rate = float(data.get("rate", 0) or 0)
+        px.set_fx_rate_in_memory(normalized_pair, rate)
+        return jsonify({"ok": True, "message": f"FX rate for {normalized_pair} updated", "fx": {"pair": normalized_pair, "rate": rate}})
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 400
+
+
+@app.route("/api/fx/<path:pair>", methods=["DELETE"])
+def api_fx_delete(pair):
+    px = _get("pxfeeder")
+    if not px:
+        return jsonify({"ok": False, "message": "PXFeeder not available"}), 500
+    try:
+        normalized_pair = str(pair).strip().upper().replace(" ", "")
+        if "/" not in normalized_pair and len(normalized_pair) == 6:
+            normalized_pair = f"{normalized_pair[:3]}/{normalized_pair[3:]}"
+        removed = px.remove_fx_rate_in_memory(normalized_pair)
+        if removed:
+            return jsonify({"ok": True, "message": f"FX rate for {normalized_pair} deleted"})
+        return jsonify({"ok": False, "message": f"FX rate for {normalized_pair} not found"}), 404
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 400
+
+
+@app.route("/api/fx/fetch", methods=["POST"])
+def api_fx_fetch_live():
+    px = _get("pxfeeder")
+    if not px:
+        return jsonify({"ok": False, "message": "PXFeeder not available"}), 500
+    try:
+        data = request.json or {}
+        pair = str(data.get("pair", "") or "").strip()
+        if not pair:
+            return jsonify({"ok": False, "message": "FX pair is required"}), 400
+        rate = px.fetch_live_fx_rate(pair)
+        if rate is None:
+            return jsonify({"ok": False, "message": f"Unable to fetch live FX rate for {pair}"}), 404
+        return jsonify({"ok": True, "pair": pair.upper().replace(" ", ""), "rate": float(rate)})
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 400
 
 
 # ---------------------------------------------------------------------------

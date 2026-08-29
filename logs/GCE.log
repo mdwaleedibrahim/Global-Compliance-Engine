@@ -1123,3 +1123,42 @@
 2026-08-29 21:21:56,373 [GCE] [ORD-20260829-212156-274] [INFO] 14 controls validated, 14 passed, 0 failed
 2026-08-29 21:21:56,375 [GCE] [ORD-20260829-212156-274] [INFO] LMT_CHECK_OVER in 1.83 ms
 2026-08-29 21:25:07,002 [GCE] [INFO] GCE Control Center GUI started
+2026-08-29 21:57:32,882 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-29 21:57:32,883 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
+2026-08-29 21:57:33,046 [GCE] [INFO] Loaded 17635 instruments
+2026-08-29 21:57:33,055 [GCE] [INFO] Loaded/fetched 0 prices in cache via PXFeeder
+2026-08-29 21:57:33,056 [GCE] [ERROR] Failed to load orders: CSV file not found: cache/OrderCache.csv
+2026-08-29 21:57:33,062 [GCE] [INFO] Loaded 3 positions
+2026-08-29 22:02:04,697 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-29 22:02:04,698 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
+2026-08-29 22:02:04,885 [GCE] [INFO] Loaded 17635 instruments
+2026-08-29 22:02:04,900 [GCE] [INFO] Loaded/fetched 0 prices in cache via PXFeeder
+2026-08-29 22:02:04,901 [GCE] [ERROR] Failed to load orders: CSV file not found: cache/OrderCache.csv
+2026-08-29 22:02:04,910 [GCE] [INFO] Loaded 3 positions
+2026-08-29 22:05:43,068 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-29 22:05:43,072 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
+2026-08-29 22:05:43,344 [GCE] [INFO] Loaded 17635 instruments
+2026-08-29 22:05:43,364 [GCE] [INFO] Loaded/fetched 0 prices in cache via PXFeeder
+2026-08-29 22:05:43,367 [GCE] [ERROR] Failed to load orders: CSV file not found: cache/OrderCache.csv
+2026-08-29 22:05:43,381 [GCE] [INFO] Loaded 3 positions
+2026-08-29 22:05:43,651 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-29 22:05:43,653 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
+2026-08-29 22:05:43,888 [GCE] [INFO] Loaded 17635 instruments
+2026-08-29 22:05:43,904 [GCE] [INFO] Loaded/fetched 0 prices in cache via PXFeeder
+2026-08-29 22:05:43,906 [GCE] [ERROR] Failed to load orders: CSV file not found: cache/OrderCache.csv
+2026-08-29 22:05:43,917 [GCE] [INFO] Loaded 3 positions
+2026-08-29 22:06:28,076 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-29 22:06:28,078 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
+2026-08-29 22:06:28,279 [GCE] [INFO] Loaded 17635 instruments
+2026-08-29 22:06:28,306 [GCE] [INFO] Loaded/fetched 0 prices in cache via PXFeeder
+2026-08-29 22:06:28,307 [GCE] [ERROR] Failed to load orders: CSV file not found: cache/OrderCache.csv
+2026-08-29 22:06:28,318 [GCE] [INFO] Loaded 3 positions
+2026-08-29 22:06:28,577 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-29 22:06:28,579 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
+2026-08-29 22:06:28,817 [GCE] [INFO] Loaded 17635 instruments
+2026-08-29 22:06:28,835 [GCE] [INFO] Loaded/fetched 0 prices in cache via PXFeeder
+2026-08-29 22:06:28,836 [GCE] [ERROR] Failed to load orders: CSV file not found: cache/OrderCache.csv
+2026-08-29 22:06:28,844 [GCE] [INFO] Loaded 3 positions
+2026-08-29 22:12:57,090 [GCE] [INFO] GCE Control Center GUI started
+2026-08-29 22:12:57,385 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-29 22:12:57,395 [GCE] [INFO] Loaded session timings for 2 exchanges from /mnt/d/Github/Global-Compliance-Engine/config/Datamgr.ini

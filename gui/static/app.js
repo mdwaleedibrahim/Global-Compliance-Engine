@@ -924,6 +924,7 @@ function renderPricesTable(data = pricesAllData) {
 
 // Search input listener
 document.getElementById('prices-search').addEventListener('input', () => { pricesPage = 1; filterAndRenderPrices(); });
+document.getElementById('fx-search').addEventListener('input', () => { loadFX(); });
 
 // Auto-populate price fields if entered RIC exists in prices cache
 function checkAndPopulatePriceByRIC(ricInput) {
@@ -1048,21 +1049,163 @@ async function deletePrice(ric) {
   }
 }
 
+let fxAllData = [];
+
 async function loadFX() {
-  const data = await api('/api/fx');
+  const search = (document.getElementById('fx-search') || {}).value || '';
+  const data = await api(`/api/fx?search=${encodeURIComponent(search)}`);
+  fxAllData = Array.isArray(data) ? data : [];
   const grid = document.getElementById('fx-grid');
   const empty = document.getElementById('fx-empty');
-  if (!data || Object.keys(data).length === 0) {
+  if (!fxAllData.length) {
     grid.innerHTML = '';
     empty.style.display = 'block';
     return;
   }
   empty.style.display = 'none';
-  grid.innerHTML = Object.entries(data).map(([pair, rate]) => `
+  grid.innerHTML = fxAllData.map(item => `
     <div class="card fx-card">
-      <div class="fx-pair">${pair}</div>
-      <div class="fx-rate">${Number(rate).toFixed(4)}</div>
+      <div class="fx-pair">${item.pair || item.symbol || item.name || 'N/A'}</div>
+      <div class="fx-rate">${Number(item.rate || 0).toFixed(4)}</div>
+      <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:10px">
+        <button class="btn btn-ghost btn-sm btn-icon-primary" onclick="openEditFXModal('${(item.pair || item.symbol || item.name || '').replace(/'/g, "\\'")}')">✏️ Edit</button>
+        <button class="btn btn-ghost btn-sm btn-icon-danger" onclick="deleteFX('${(item.pair || item.symbol || item.name || '').replace(/'/g, "\\'")}')">🗑️</button>
+      </div>
     </div>`).join('');
+}
+
+function openAddFXModal() {
+  document.getElementById('fx-modal-title').textContent = '➕ Add / Edit FX Rate';
+  document.getElementById('fx-field-pair').value = '';
+  document.getElementById('fx-field-rate').value = '1.0';
+  document.getElementById('fx-field-pair').disabled = false;
+  const datalist = document.getElementById('fx-pair-list');
+  if (datalist) {
+    const knownPairs = new Set([
+      ...fxAllData.map(x => x.pair),
+      ...(Object.keys(window.__fxDefaults || {})).filter(Boolean),
+      'HKD/USD', 'EUR/USD', 'GBP/USD', 'AUD/USD', 'SGD/USD', 'CAD/USD', 'CHF/USD', 'JPY/USD', 'CNH/USD'
+    ]);
+    datalist.innerHTML = Array.from(knownPairs).slice(0, 500).map(pair => `<option value="${pair}">`).join('');
+  }
+  document.getElementById('fx-modal').style.display = 'flex';
+}
+
+function openEditFXModal(pair) {
+  const cleanPair = String(pair || '').trim();
+  const item = fxAllData.find(x => String(x.pair || '').toUpperCase() === cleanPair.toUpperCase());
+  if (!item) return;
+  document.getElementById('fx-modal-title').textContent = `✏️ Edit FX Rate (${cleanPair})`;
+  document.getElementById('fx-field-pair').value = item.pair || cleanPair;
+  document.getElementById('fx-field-rate').value = Number(item.rate || 0);
+  document.getElementById('fx-field-pair').disabled = true;
+  document.getElementById('fx-modal').style.display = 'flex';
+}
+
+function closeFXModal() {
+  document.getElementById('fx-modal').style.display = 'none';
+}
+
+async function saveFX() {
+  const pair = (document.getElementById('fx-field-pair').value || '').trim();
+  if (!pair) {
+    showAlert('Please enter an FX pair', 'Input Required', 'warning');
+    return;
+  }
+  const normalizedPair = pair.toUpperCase().replace(/\s+/g, '');
+  const payload = {
+    pair: normalizedPair.includes('/') ? normalizedPair : `${normalizedPair.slice(0, 3)}/${normalizedPair.slice(3)}`,
+    rate: Number(document.getElementById('fx-field-rate').value || 0),
+  };
+  const method = document.getElementById('fx-field-pair').disabled ? 'PUT' : 'POST';
+  const url = method === 'POST' ? '/api/fx' : `/api/fx/${encodeURIComponent(payload.pair)}`;
+  try {
+    const r = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const res = await r.json();
+    if (res.ok) {
+      closeFXModal();
+      loadFX();
+      showAlert(`Operation: SAVE FX RATE\n\nFX pair ${payload.pair} saved at ${payload.rate.toFixed(6)}.`, 'FX Rate Saved', 'success');
+    } else {
+      showAlert(`Error saving FX: ${res.message}`, 'Save Error', 'error');
+    }
+  } catch (e) {
+    showAlert(`Failed to save FX: ${e}`, 'Save Failed', 'error');
+  }
+}
+
+async function deleteFX(pair) {
+  const confirmed = await showConfirm(`Are you sure you want to delete FX rate for ${pair}?`, 'Delete FX Rate', { danger: true });
+  if (!confirmed) return;
+  try {
+    const r = await fetch(`/api/fx/${encodeURIComponent(pair)}`, { method: 'DELETE' });
+    const res = await r.json();
+    if (res.ok) {
+      loadFX();
+      showAlert(`Operation: DELETE FX RATE\n\nFX pair ${pair} has been removed.`, 'FX Rate Deleted', 'success');
+    } else {
+      showAlert(`Error deleting FX: ${res.message}`, 'Delete Error', 'error');
+    }
+  } catch (e) {
+    showAlert(`Failed to delete FX: ${e}`, 'Delete Failed', 'error');
+  }
+}
+
+async function fetchLiveFXRate() {
+  const pair = (document.getElementById('fx-field-pair').value || '').trim();
+  if (!pair) {
+    showAlert('Please enter an FX pair before fetching live data', 'Input Required', 'warning');
+    return;
+  }
+  try {
+    const r = await fetch('/api/fx/fetch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pair })
+    });
+    const res = await r.json();
+    if (res.ok) {
+      document.getElementById('fx-field-rate').value = Number(res.rate || 0).toFixed(6);
+      showAlert(`Live FX fetch succeeded for ${pair}: ${Number(res.rate).toFixed(6)}`, 'Live FX Rate', 'success');
+    } else {
+      showAlert(`Unable to fetch live FX rate: ${res.message}`, 'Fetch Failed', 'warning');
+    }
+  } catch (e) {
+    showAlert(`Live FX fetch failed: ${e}`, 'Fetch Failed', 'error');
+  }
+}
+
+async function fetchLivePrice() {
+  const ric = (document.getElementById('price-field-ric').value || '').trim();
+  if (!ric) {
+    showAlert('Please enter a RIC symbol before fetching live data', 'Input Required', 'warning');
+    return;
+  }
+  try {
+    const r = await fetch('/api/prices/fetch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ric })
+    });
+    const res = await r.json();
+    if (res.ok) {
+      const value = Number(res.price || 0);
+      document.getElementById('price-field-open').value = value.toFixed(3);
+      document.getElementById('price-field-bid').value = value.toFixed(3);
+      document.getElementById('price-field-ask').value = value.toFixed(3);
+      document.getElementById('price-field-last').value = value.toFixed(3);
+      document.getElementById('price-field-close').value = value.toFixed(3);
+      showAlert(`Live market price fetched for ${ric}: ${value.toFixed(3)}`, 'Live Price', 'success');
+    } else {
+      showAlert(`Unable to fetch live price: ${res.message}`, 'Fetch Failed', 'warning');
+    }
+  } catch (e) {
+    showAlert(`Live price fetch failed: ${e}`, 'Fetch Failed', 'error');
+  }
 }
 
 function switchPriceTab(tab) {

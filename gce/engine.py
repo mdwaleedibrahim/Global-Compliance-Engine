@@ -340,6 +340,33 @@ class GCE:
         """Register a limit control function."""
         self.controls[control_name] = control_func
 
+    def _resolve_position_fx_rate(self, order: Order, rule_keys: Optional[Dict[str, Any]] = None) -> float:
+        """Resolve USD conversion rate for an order or rule before position valuation."""
+        order_currency = str(getattr(order, 'currency', '') or '').strip().upper() or 'HKD'
+        if rule_keys and isinstance(rule_keys, dict):
+            rule_currency = str(rule_keys.get('Currency') or rule_keys.get('currency') or '').strip().upper()
+            if rule_currency:
+                order_currency = rule_currency
+
+        if order_currency == 'USD':
+            return 1.0
+
+        if self.pxfeeder and hasattr(self.pxfeeder, 'get_fx_rate'):
+            rate = self.pxfeeder.get_fx_rate(order_currency, 'USD')
+            if rate and rate > 0:
+                return float(rate)
+
+        fx_rates = getattr(self.pxfeeder, 'get_all_fx_rates', lambda: {})()
+        if order_currency == 'HKD':
+            pair = fx_rates.get('HKD/USD')
+            if pair and float(pair) > 0:
+                return float(pair)
+            pair = fx_rates.get('HKDUSD')
+            if pair and float(pair) > 0:
+                return float(pair)
+
+        return 1.0
+
     def _run_single_control(self, control_name: str, control_func: callable, order: Order):
         """Helper to run single control safely."""
         try:
@@ -508,11 +535,12 @@ class GCE:
             if hasattr(self, 'positions') and self.positions:
                 for rule_ctx in rule_contexts:
                     rule_keys = rule_ctx.get('rule_limits')
+                    xr_rate = self._resolve_position_fx_rate(order, rule_keys)
                     self.positions.update_position_from_order(
                         order=order,
                         rule_keys=rule_keys,
                         consideration=order_cond,
-                        xr_rate=1.0
+                        xr_rate=xr_rate
                     )
                 try:
                     self.positions.save_to_csv("cache/PositionsCache.csv")

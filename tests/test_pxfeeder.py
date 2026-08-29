@@ -132,6 +132,56 @@ class TestPXFeeder(unittest.TestCase):
         self.assertEqual(feeder.refresh_interval, 300)
         self.assertEqual(feeder.max_symbols, 500)
 
+    def test_fx_rate_create_update_delete_in_memory(self):
+        """Test manual FX rate insertion, update, and deletion."""
+        feeder = PXFeeder(dat_path=self.test_dat, fetch_on_start=False, auto_start_bg=False)
+
+        feeder.set_fx_rate_in_memory("HKD/USD", 0.13)
+        feeder.set_fx_rate_in_memory("HKDUSD", 0.13)
+        self.assertAlmostEqual(feeder.get_fx_rate("HKD", "USD"), 0.13, places=4)
+
+        feeder.set_fx_rate_in_memory("HKD/USD", 0.135)
+        self.assertAlmostEqual(feeder.get_fx_rate("HKD", "USD"), 0.135, places=4)
+
+        removed = feeder.remove_fx_rate_in_memory("HKD/USD")
+        self.assertTrue(removed)
+        self.assertNotIn("HKD/USD", feeder.get_all_fx_rates())
+        self.assertNotIn("HKDUSD", feeder.get_all_fx_rates())
+
+    def test_engine_uses_pxfeeder_fx_rate_for_position_usd_values(self):
+        """Position updates should convert local currency to USD using the feeder's FX rate, not 1.0."""
+        from gce.engine import GCE
+        from gce.cache.position_cache import PositionCache
+
+        engine = GCE()
+        engine.pxfeeder.set_fx_rate_in_memory("HKD/USD", 0.128)
+
+        order = Order(
+            order_id="FX_POS_1",
+            symbol="0700.HK",
+            quantity=100,
+            price=10.0,
+            side="B",
+            order_type="LMT",
+            currency="HKD",
+            trader="TRADER_FX",
+            account="ACC-1",
+        )
+
+        xr = engine._resolve_position_fx_rate(order)
+        self.assertAlmostEqual(xr, 0.128, places=4)
+
+        pos_cache = PositionCache(csv_path='cache/PositionsCache.csv', dat_path='cache/PositionsCache.dat')
+        pos = pos_cache.update_position_from_order(
+            order=order,
+            rule_keys={'Currency': 'HKD'},
+            consideration=1000.0,
+            xr_rate=xr,
+        )
+        self.assertEqual(pos.xr, 0.128)
+        self.assertAlmostEqual(pos.buy_value_usd, 128.0, places=4)
+        engine.shutdown()
+
     def test_engine_oms_startup_subscription(self):
         """Test that GCE Engine subscribes active OMS order symbols on start."""
         from gce.engine import GCE

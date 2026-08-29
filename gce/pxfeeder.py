@@ -437,10 +437,96 @@ class PXFeeder:
 
     def set_fx_rate_in_memory(self, pair: str, rate: float):
         """Set FX rate in memory (e.g. 'HKD/USD', 0.128)."""
+        normalized_pair = str(pair or '').strip()
+        if not normalized_pair:
+            return
         with self._lock:
-            self._fx_rates[pair] = float(rate)
-            clean_pair = pair.replace("/", "")
+            self._fx_rates[normalized_pair] = float(rate)
+            self._fx_rates[normalized_pair.upper()] = float(rate)
+            clean_pair = normalized_pair.replace("/", "").upper()
             self._fx_rates[clean_pair] = float(rate)
+
+    def remove_fx_rate_in_memory(self, pair: str) -> bool:
+        """Remove a stored FX rate and its normalized aliases."""
+        normalized_pair = str(pair or '').strip()
+        if not normalized_pair:
+            return False
+        with self._lock:
+            keys_to_remove = {normalized_pair, normalized_pair.upper()}
+            clean_pair = normalized_pair.replace("/", "").upper()
+            keys_to_remove.add(clean_pair)
+            removed = any(k in self._fx_rates for k in keys_to_remove)
+            for key in list(keys_to_remove):
+                self._fx_rates.pop(key, None)
+        return removed
+
+    def fetch_live_fx_rate(self, pair: str) -> Optional[float]:
+        """Fetch an FX pair from Yahoo Finance when possible."""
+        normalized_pair = str(pair or '').strip().upper().replace(" ", "")
+        if not normalized_pair:
+            return None
+
+        if "/" not in normalized_pair:
+            if len(normalized_pair) == 6 and normalized_pair[:3] != normalized_pair[3:]:
+                normalized_pair = f"{normalized_pair[:3]}/{normalized_pair[3:]}"
+            else:
+                return None
+
+        base, quote = normalized_pair.split("/", 1)
+        if base == quote:
+            return 1.0
+
+        if quote == "USD":
+            lookup = f"{base}USD=X" if base in self.FX_USD_CONFIG and self.FX_USD_CONFIG[base][0].endswith("=X") else None
+            if lookup is None:
+                lookup = f"{base}USD=X"
+            try:
+                import yfinance as yf
+                ticker = yf.Ticker(lookup)
+                fast = getattr(ticker, 'fast_info', None)
+                if fast:
+                    price = fast.get('last_price') or fast.get('regular_market_previous_close')
+                    if price is not None and float(price) > 0:
+                        return float(price)
+                info = ticker.info or {}
+                val = (
+                    info.get('regularMarketPrice')
+                    or info.get('currentPrice')
+                    or info.get('previousClose')
+                    or info.get('ask')
+                    or info.get('bid')
+                )
+                if val is not None and float(val) > 0:
+                    return float(val)
+            except Exception:
+                return None
+
+        if base == "USD":
+            ticker = f"{quote}USD=X" if quote in self.FX_USD_CONFIG else None
+            if ticker:
+                try:
+                    import yfinance as yf
+                    ticker_obj = yf.Ticker(ticker)
+                    fast = getattr(ticker_obj, 'fast_info', None)
+                    if fast:
+                        price = fast.get('last_price') or fast.get('regular_market_previous_close')
+                        if price is not None and float(price) > 0:
+                            return 1.0 / float(price)
+                    info = ticker_obj.info or {}
+                    val = (
+                        info.get('regularMarketPrice')
+                        or info.get('currentPrice')
+                        or info.get('previousClose')
+                        or info.get('ask')
+                        or info.get('bid')
+                    )
+                    if val is not None and float(val) > 0:
+                        return 1.0 / float(val)
+                except Exception:
+                    return None
+
+        current = self.get_fx_rate(base, quote)
+        return current if current and current > 0 else None
 
     def get_all_fx_rates(self) -> Dict[str, float]:
         """Get copy of all cached FX rates."""
