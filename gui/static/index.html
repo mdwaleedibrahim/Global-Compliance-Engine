@@ -53,6 +53,9 @@
       <div class="nav-item" data-section="limits" id="nav-limits">
         <span class="nav-icon">⚙️</span> GCE Limits
       </div>
+      <div class="nav-item" data-section="config" id="nav-config">
+        <span class="nav-icon">🛠️</span> Config
+      </div>
       <div class="nav-item" data-section="sessions" id="nav-sessions">
         <span class="nav-icon">🕐</span> Exchange Sessions
       </div>
@@ -566,6 +569,22 @@
             <div class="card-title">🔬 Per-Control Timing (ns) — Last 20 Orders</div>
             <div class="chart-container"><canvas id="perf-control-chart"></canvas></div>
           </div>
+        </div>
+      </div>
+
+      <!-- Section 11: System Configuration -->
+      <div class="section-panel" id="panel-config">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h2 style="font-size:16px; font-weight:600; margin:0;">System Configuration Files</h2>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+              Live settings loaded from <code>config/limitchecker.ini</code> and <code>config/Datamgr.ini</code>. Updates apply immediately.
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="loadConfig()">↻ Refresh Config</button>
+        </div>
+        <div id="config-container" class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap:16px;">
+          <!-- Loaded dynamically -->
         </div>
       </div>
 

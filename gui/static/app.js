@@ -170,7 +170,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     const panel = document.getElementById('panel-' + section);
     if (panel) panel.classList.add('active');
     const titles = {
-      services: 'Services', orders: 'Place Order', limits: 'GCE Limits', oms: 'OMS Browser',
+      services: 'Services', orders: 'Place Order', limits: 'GCE Limits', config: 'System Configuration', oms: 'OMS Browser',
       prices: 'Prices', instruments: 'Instruments', sessions: 'Exchange Sessions',
       reconciliation: 'Reconciliation', logs: 'Log Viewer', positions: 'Positions',
       rms: 'RMS Controls Summary', performance: 'Performance'
@@ -254,7 +254,39 @@ async function loadServices() {
 }
 
 async function svcAction(name, action) {
-  await apiPost(`/api/service/${name}/${action}`);
+  const labelMap = { engine: 'GCE Engine', pxfeeder: 'PX Feeder', logger: 'Log Worker', datamgr: 'Data Manager' };
+  const label = labelMap[name] || name;
+
+  if (action === 'restart') {
+    const confirmed = await showConfirm(
+      `Are you sure you want to RESTART the ${label} service?\n\nAll subsystem singletons, limit configurations, and price subscriptions will be re-initialized.`,
+      `Confirm Service Restart`
+    );
+    if (!confirmed) return;
+  } else if (action === 'stop') {
+    const confirmed = await showConfirm(
+      `Are you sure you want to STOP the ${label} service?`,
+      `Confirm Service Stop`,
+      { danger: true }
+    );
+    if (!confirmed) return;
+  }
+
+  const res = await apiPost(`/api/service/${name}/${action}`);
+
+  if (res && res.ok) {
+    await showAlert(
+      `Service: ${label}\nAction: ${action.toUpperCase()}\nStatus: SUCCESS\n\nDetails: ${res.message || 'Operation completed successfully.'}`,
+      'Service Operation Acknowledgement',
+      'success'
+    );
+  } else {
+    await showAlert(
+      `Service: ${label}\nAction: ${action.toUpperCase()}\nStatus: FAILED\n\nDetails: ${res ? res.message : 'Unknown server error'}`,
+      'Service Operation Error',
+      'error'
+    );
+  }
   setTimeout(loadServices, 300);
 }
 
@@ -1801,6 +1833,89 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
+// Section: System Configuration
+// ============================================================
+async function loadConfig() {
+  const container = document.getElementById('config-container');
+  if (!container) return;
+
+  const data = await api('/api/config');
+  if (!data || !Array.isArray(data)) {
+    container.innerHTML = '<div class="card"><div style="color:var(--text-muted)">Failed to load configuration files.</div></div>';
+    return;
+  }
+
+  container.innerHTML = data.map((fileObj, fIdx) => {
+    const filename = fileObj.filename;
+    const sections = fileObj.sections || [];
+
+    const sectionHtml = sections.map((secObj, sIdx) => {
+      const secName = secObj.section;
+      const items = secObj.items || [];
+
+      const itemsHtml = items.map((item, iIdx) => {
+        const inputId = `config_input_${fIdx}_${sIdx}_${iIdx}`;
+        const keyEsc = escapeHtml(item.key);
+        const valEsc = escapeHtml(item.value);
+
+        return `
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.05); flex-wrap:wrap;">
+            <div style="flex:1; min-width:140px;">
+              <label style="font-size:12px; font-weight:600; color:var(--text-bright); display:block; margin:0;">${keyEsc}</label>
+              <span style="font-size:10px; color:var(--text-muted);">[${escapeHtml(secName)}]</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; flex:2; min-width:220px;">
+              <input type="text" id="${inputId}" class="search-input" value="${valEsc}" style="flex:1; font-size:12px; font-family:monospace; padding:6px 10px;">
+              <button class="btn btn-primary btn-sm" onclick="updateConfigItem('${filename}', '${secName}', '${keyEsc}', '${inputId}')">
+                💾 Save
+              </button>
+            </div>
+          </div>`;
+      }).join('');
+
+      return `
+        <div style="margin-top:12px;">
+          <h4 style="font-size:13px; font-weight:600; color:var(--accent-blue); margin-bottom:10px; border-bottom:1px solid var(--border-color); padding-bottom:4px;">
+            📁 [${escapeHtml(secName)}]
+          </h4>
+          ${itemsHtml}
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="card" style="display:flex; flex-direction:column; gap:8px;">
+        <div class="card-title" style="display:flex; align-items:center; justify-content:space-between;">
+          <span>⚙️ ${escapeHtml(filename)}</span>
+          <span style="font-size:11px; font-weight:normal; color:var(--text-muted);">${escapeHtml(fileObj.path)}</span>
+        </div>
+        ${sectionHtml}
+      </div>`;
+  }).join('');
+}
+
+async function updateConfigItem(filename, section, key, inputId) {
+  const inputEl = document.getElementById(inputId);
+  if (!inputEl) return;
+  const newValue = inputEl.value.trim();
+
+  const confirmMsg = `Are you sure you want to update configuration parameter?\n\nFile: ${filename}\nSection: [${section}]\nSetting: ${key}\nNew Value: ${newValue}`;
+  const confirmed = await showConfirm(confirmMsg, 'Confirm Config Update');
+  if (!confirmed) return;
+
+  const payload = { filename, section, key, value: newValue };
+  const res = await apiPost('/api/config/update', payload);
+
+  if (res && res.ok) {
+    const detailMsg = `Configuration Parameter Updated Successfully!\n\nFile: ${filename}\nSection: [${section}]\nParameter: ${key}\nUpdated Value: ${newValue}\n\n${res.message || 'Applied immediately to live GCE engine singletons.'}`;
+    await showAlert(detailMsg, 'Config Update Acknowledgement', 'success');
+    loadConfig();
+  } else {
+    const errorMsg = `Failed to update configuration parameter.\n\nFile: ${filename}\nSection: [${section}]\nParameter: ${key}\nError: ${res ? res.message : 'Unknown server error'}`;
+    await showAlert(errorMsg, 'Config Update Error', 'error');
+  }
+}
+
+// ============================================================
 // Refresh Logic
 // ============================================================
 function refreshCurrentSection() {
@@ -1810,6 +1925,7 @@ function refreshCurrentSection() {
     case 'services': loadServices(); break;
     case 'orders': loadRecentPlacedOrders(); break;
     case 'limits': loadLimits(); break;
+    case 'config': loadConfig(); break;
     case 'oms': loadOrders(); break;
     case 'prices': loadPrices(); loadFX(); break;
     case 'instruments': loadInstruments(); break;

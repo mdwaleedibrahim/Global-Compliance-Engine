@@ -207,10 +207,38 @@ def api_status():
     return jsonify([_service_info(s) for s in services])
 
 
+import configparser
+
+
+def _reinit_all_services():
+    """Restart GCE engine singletons as a whole."""
+    global _initialized
+    with _lock:
+        px = _state.get("pxfeeder")
+        if px and hasattr(px, "stop"):
+            try:
+                px.stop()
+            except Exception:
+                pass
+        lg = _state.get("logger")
+        if lg and hasattr(lg, "shutdown"):
+            try:
+                lg.shutdown()
+            except Exception:
+                pass
+
+        _initialized = False
+        _state["start_time"] = time.time()
+        _init_components()
+
+
 @app.route("/api/service/<name>/start", methods=["POST"])
 def api_service_start(name):
     try:
-        if name == "pxfeeder":
+        if name in ("engine", "gce", "all"):
+            _reinit_all_services()
+            return jsonify({"ok": True, "message": "GCE Engine service restarted successfully"})
+        elif name == "pxfeeder":
             px = _get("pxfeeder")
             if px:
                 px.start()
@@ -235,7 +263,12 @@ def api_service_start(name):
 @app.route("/api/service/<name>/stop", methods=["POST"])
 def api_service_stop(name):
     try:
-        if name == "pxfeeder":
+        if name in ("engine", "gce", "all"):
+            px = _get("pxfeeder")
+            if px and hasattr(px, "stop"):
+                px.stop()
+            return jsonify({"ok": True, "message": "GCE Engine stopped"})
+        elif name == "pxfeeder":
             px = _get("pxfeeder")
             if px:
                 px.stop()
@@ -252,9 +285,129 @@ def api_service_stop(name):
 
 @app.route("/api/service/<name>/restart", methods=["POST"])
 def api_service_restart(name):
+    if name in ("engine", "gce", "all"):
+        _reinit_all_services()
+        return jsonify({"ok": True, "message": "GCE Engine service restarted successfully"})
     api_service_stop(name)
     time.sleep(0.3)
     return api_service_start(name)
+
+
+# ---------------------------------------------------------------------------
+# Section: System Configuration API
+# ---------------------------------------------------------------------------
+@app.route("/api/config")
+def api_get_config():
+    """Retrieve all configuration parameters from config/*.ini files."""
+    try:
+        config_dir = Path(PROJECT_ROOT) / "config"
+        results = []
+        for ini_path in sorted(config_dir.glob("*.ini")):
+            parser = configparser.ConfigParser(optionxform=str)
+            raw_text = ini_path.read_text(encoding="utf-8")
+            
+            has_section = any(
+                line.strip().startswith("[") 
+                for line in raw_text.splitlines() 
+                if line.strip() and not line.strip().startswith(";")
+            )
+            parsed_text = raw_text if has_section else "[General]\n" + raw_text
+
+            parser.read_string(parsed_text)
+            
+            sections = []
+            for sec in parser.sections():
+                items = [{"key": k, "value": v} for k, v in parser.items(sec)]
+                sections.append({"section": sec, "items": items})
+            
+            results.append({
+                "filename": ini_path.name,
+                "path": str(ini_path),
+                "sections": sections
+            })
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
+
+
+@app.route("/api/config/update", methods=["POST"])
+def api_update_config():
+    """Update a configuration parameter in config/*.ini and apply it immediately."""
+    try:
+        data = request.json or {}
+        filename = data.get("filename", "")
+        section = data.get("section", "General")
+        key = data.get("key", "")
+        val = str(data.get("value", "")).strip()
+
+        if not filename or not key:
+            return jsonify({"ok": False, "message": "Filename and key are required"}), 400
+
+        config_file = Path(PROJECT_ROOT) / "config" / filename
+        if not config_file.exists():
+            return jsonify({"ok": False, "message": f"Config file not found: {filename}"}), 404
+
+        raw_text = config_file.read_text(encoding="utf-8")
+        lines = raw_text.splitlines()
+
+        updated = False
+        current_section = "General" if not any(l.strip().startswith("[") for l in lines if l.strip() and not l.strip().startswith(";")) else None
+        
+        new_lines = []
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith("[") and stripped.endswith("]"):
+                current_section = stripped[1:-1].strip()
+                new_lines.append(line)
+                continue
+            
+            if current_section == section and stripped and not stripped.startswith(";") and not stripped.startswith("#"):
+                if "=" in line:
+                    k, _ = line.split("=", 1)
+                    if k.strip() == key:
+                        new_lines.append(f"{k.split('=')[0].rstrip()} = {val}")
+                        updated = True
+                        continue
+            new_lines.append(line)
+
+        if not updated:
+            new_lines.append(f"{key} = {val}")
+
+        config_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+
+        # --- IMMEDIATE BACKEND APPLICATION ---
+        applied_msg = "Updated configuration file."
+        if filename == "limitchecker.ini":
+            px = _get("pxfeeder")
+            if px:
+                if key == "refresh_interval":
+                    try:
+                        px.refresh_interval = int(val)
+                        applied_msg = f"PXFeeder refresh interval set to {val}s immediately."
+                    except ValueError:
+                        pass
+                elif key == "max_symbols":
+                    try:
+                        px.max_symbols = int(val)
+                        applied_msg = f"PXFeeder max_symbols set to {val} immediately."
+                    except ValueError:
+                        pass
+        elif filename == "Datamgr.ini":
+            dm = _get("datamgr")
+            if dm:
+                dm.load_session_config(str(config_file))
+                applied_msg = "DataMgr exchange session timings reloaded immediately."
+
+        return jsonify({
+            "ok": True,
+            "filename": filename,
+            "section": section,
+            "key": key,
+            "value": val,
+            "message": f"Successfully updated [{section}] {key} = '{val}' in {filename}. {applied_msg}"
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
 
 
 # ---------------------------------------------------------------------------
