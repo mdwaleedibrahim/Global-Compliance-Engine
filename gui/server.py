@@ -579,6 +579,8 @@ def _get_gce_engine():
             gce_inst.positions = _get("positions")
             gce_inst.controls = {}
             gce_inst.rejection_messages = []
+            if hasattr(gce_inst, "register_default_controls"):
+                gce_inst.register_default_controls()
             _state["gce"] = gce_inst
             gce = gce_inst
         except Exception as e:
@@ -591,8 +593,10 @@ def _get_gce_engine():
         gce.instruments = _get("instruments")
         gce.orders = _get("orders")
         gce.positions = _get("positions")
-        if not hasattr(gce, "controls") or gce.controls is None:
+        if not hasattr(gce, "controls") or not gce.controls:
             gce.controls = {}
+            if hasattr(gce, "register_default_controls"):
+                gce.register_default_controls()
         if not hasattr(gce, "rejection_messages") or gce.rejection_messages is None:
             gce.rejection_messages = []
 
@@ -931,13 +935,21 @@ def api_fx():
     fx = px.get_all_fx_rates() if px else {}
     search = (request.args.get("search", "") or "").strip().lower()
     entries = []
+    seen = set()
     for pair, rate in sorted(fx.items()):
         normalized_key = str(pair).upper().replace(" ", "")
-        if search and search not in normalized_key.lower() and search not in str(rate).lower():
-            continue
         if "/" not in normalized_key and len(normalized_key) == 6:
             left, right = normalized_key[:3], normalized_key[3:]
             normalized_key = f"{left}/{right}"
+        if "/" in normalized_key:
+            parts = normalized_key.split("/")
+            if len(parts) == 2 and parts[0] == parts[1]:
+                continue  # Skip identical currency pairs like AUD/AUD, USD/USD
+        if normalized_key in seen:
+            continue
+        seen.add(normalized_key)
+        if search and search not in normalized_key.lower() and search not in str(rate).lower():
+            continue
         entries.append({"pair": normalized_key, "rate": float(rate)})
     return jsonify(entries if entries else [])
 

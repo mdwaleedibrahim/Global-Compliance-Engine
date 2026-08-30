@@ -244,11 +244,13 @@ class PXFeeder:
             self.logger.info(f"MAX_SYMBOLS_EXCEEDED Dropped oldest subscribed symbol: {dropped}")
 
     def _init_default_fx_rates(self):
-        """Populate initial baseline FX cross rates from default values."""
+        """Populate initial baseline FX cross rates from default values (excluding identical pairs like AUD/AUD)."""
         currs = self.MAJOR_CURRENCIES
         for c1 in currs:
             rate_c1_usd = self.DEFAULT_FX_TO_USD.get(c1, 1.0)
             for c2 in currs:
+                if c1 == c2:
+                    continue  # Do not subscribe / store identical currency pairs like AUD/AUD, USD/USD
                 rate_c2_usd = self.DEFAULT_FX_TO_USD.get(c2, 1.0)
                 rate = (rate_c1_usd / rate_c2_usd) if rate_c2_usd > 0 else 1.0
                 self._fx_rates[f"{c1}/{c2}"] = rate
@@ -356,6 +358,11 @@ class PXFeeder:
                     self._prices[ric.upper()] = price_dict
                     self._prices[ric.lower()] = price_dict
                 self.logger.info(f"PRICE_UPDATE {ric} Bid={details['bid']} Ask={details['ask']} Last={details['last']} Open={details['open']} Close={details['close']}")
+                if self.dat_path:
+                    try:
+                        self.save_to_dat(self.dat_path)
+                    except Exception as e:
+                        self.logger.warning(f"Failed to auto-save PriceCache.dat: {e}")
                 return True
             else:
                 self.logger.warning(f"PRICE_UPDATE_UNAVAILABLE {ric}: No price returned from provider")
@@ -414,12 +421,14 @@ class PXFeeder:
             except Exception as e:
                 self.logger.debug(f"FX_FETCH_FAIL {ticker_symbol}: {e}")
 
-        # Triangulate all cross pairs
+        # Triangulate all cross pairs (excluding same-currency pairs like AUD/AUD)
         fx_count = 0
         currs = self.MAJOR_CURRENCIES
         for c1 in currs:
             rate_c1_usd = curr_to_usd.get(c1, self.DEFAULT_FX_TO_USD.get(c1, 1.0))
             for c2 in currs:
+                if c1 == c2:
+                    continue  # Do not subscribe / store identical currency pairs like AUD/AUD, USD/USD
                 rate_c2_usd = curr_to_usd.get(c2, self.DEFAULT_FX_TO_USD.get(c2, 1.0))
                 cross_rate = (rate_c1_usd / rate_c2_usd) if rate_c2_usd > 0 else 1.0
                 new_fx[f"{c1}/{c2}"] = cross_rate
@@ -596,9 +605,18 @@ class PXFeeder:
         return current if current and current > 0 else None
 
     def get_all_fx_rates(self) -> Dict[str, float]:
-        """Get copy of all cached FX rates."""
+        """Get copy of all cached FX rates (excluding identical currency pairs like AUD/AUD)."""
         with self._lock:
-            return dict(self._fx_rates)
+            filtered = {}
+            for k, v in self._fx_rates.items():
+                if "/" in k:
+                    parts = k.split("/")
+                    if len(parts) == 2 and parts[0].upper() == parts[1].upper():
+                        continue
+                elif len(k) == 6 and k[:3].upper() == k[3:].upper():
+                    continue
+                filtered[k] = v
+            return filtered
 
     def get_all_prices(self) -> Dict[str, Dict[str, Any]]:
         """Get copy of all cached prices."""
@@ -707,4 +725,7 @@ class PXFeeder:
                 self.logger.warning(f"Error during background PXFeeder refresh: {e}")
 
     def __del__(self):
-        self.stop()
+        try:
+            self.stop()
+        except Exception:
+            pass

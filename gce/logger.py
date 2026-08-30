@@ -438,13 +438,14 @@ class PXFeederFormatter(logging.Formatter):
     
     def format(self, record):
         """Format log record with nanosecond precision timestamp."""
-        timestamp_ns = int(time.time_ns())
-        seconds = timestamp_ns // 1_000_000_000
-        nanoseconds = timestamp_ns % 1_000_000_000
-        
-        dt = datetime.fromtimestamp(seconds)
-        timestamp = dt.strftime('%Y-%m-%d %H:%M:%S')
-        timestamp = f"{timestamp}.{nanoseconds:09d}"
+        try:
+            timestamp_ns = int(time.time_ns())
+            seconds = timestamp_ns // 1_000_000_000
+            nanoseconds = timestamp_ns % 1_000_000_000
+            dt = datetime.fromtimestamp(seconds)
+            timestamp = f"{dt.strftime('%Y-%m-%d %H:%M:%S')}.{nanoseconds:09d}"
+        except Exception:
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.000000000')
         
         record.asctime = timestamp
         self._style._fmt = self.LOG_FORMAT

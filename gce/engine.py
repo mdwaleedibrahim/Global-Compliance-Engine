@@ -337,10 +337,30 @@ class GCE:
 
         self.controls: Dict[str, callable] = {}
         self.rejection_messages: List[str] = []
+        self.register_default_controls()
     
     def register_control(self, control_name: str, control_func: callable) -> None:
         """Register a limit control function."""
         self.controls[control_name] = control_func
+
+    def register_default_controls(self) -> None:
+        """Register standard pre-trade compliance controls."""
+        from gce.controls import (
+            MaxOrderQuantity,
+            MaxOrderPrice,
+            MaxOrderConsideration,
+            ClosePriceTolerance,
+            LastPriceTolerance,
+            BBOPriceTolerance,
+            MaxDailyTurnover,
+        )
+        self.register_control('MaxOrderQuantity', MaxOrderQuantity())
+        self.register_control('MaxOrderPrice', MaxOrderPrice())
+        self.register_control('MaxOrderConsideration', MaxOrderConsideration())
+        self.register_control('ClosePriceTolerance', ClosePriceTolerance())
+        self.register_control('LastPriceTolerance', LastPriceTolerance())
+        self.register_control('BBOPriceTolerance', BBOPriceTolerance())
+        self.register_control('MaxDailyTurnover', MaxDailyTurnover())
 
     def _resolve_position_fx_rate(self, order: Order, rule_keys: Optional[Dict[str, Any]] = None) -> float:
         """Resolve USD conversion rate for an order or rule before position valuation."""
@@ -436,6 +456,24 @@ class GCE:
             if not px:
                 self.pxfeeder.subscribe(ric, fetch_now=True)
                 self.logger.info(f"On-demand price subscription for {ric}")
+                px = self.pxfeeder.get_price(ric)
+
+            # Synchronize on-demand price to self.prices (PriceCache) and save to disk
+            if px and hasattr(self, 'prices') and self.prices:
+                if hasattr(self.prices, 'update_price_in_memory'):
+                    self.prices.update_price_in_memory(
+                        ric=ric,
+                        bid=float(px.get('bid', 0.0) or 0.0),
+                        ask=float(px.get('ask', 0.0) or 0.0),
+                        last=float(px.get('last', 0.0) or 0.0),
+                        close=float(px.get('close', 0.0) or 0.0),
+                        open_price=float(px.get('open', 0.0) or 0.0)
+                    )
+                if hasattr(self.prices, 'save_to_dat'):
+                    try:
+                        self.prices.save_to_dat("cache/PriceCache.dat")
+                    except Exception as e:
+                        self.logger.warning(f"Failed to auto-save PriceCache.dat: {e}")
 
         # --- Rule Engine: select matched rules ---
         rule_engine = RuleEngine()

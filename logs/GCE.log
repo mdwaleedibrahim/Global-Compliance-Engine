@@ -1,47 +1,129 @@
-2026-08-30 19:14:42,679 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 19:14:42,707 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 19:14:42,745 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 19:14:42,808 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 19:14:42,830 [GCE] [INFO] INSTRUMENT_DELTA Applied 2 updates, 0 deletions. Total active: 2
-2026-08-30 19:14:42,866 [GCE] [INFO] INSTRUMENT_DELTA Applied 0 updates, 2 deletions. Total active: 0
-2026-08-30 19:14:42,879 [GCE] [INFO] INSTRUMENT_DELTA Applied 2 updates, 0 deletions. Total active: 2
-2026-08-30 19:14:42,883 [GCE] [INFO] INSTRUMENT_DELTA Applied 2 updates, 1 deletions. Total active: 2
-2026-08-30 19:14:42,906 [GCE] [ORD-20260830-191442-890] [INFO] LMT_CHECK_START
-2026-08-30 19:14:42,907 [GCE] [ORD-20260830-191442-890] [INFO] LMT_CHECK_NEW B 0700.HK 100@LMT 380.0 HKD PAFTDACXUAT Equity|*|*|*|*|*|*|XHKG|0700|*|DAY
-2026-08-30 19:14:42,908 [GCE] [ORD-20260830-191442-890] [INFO] LMT_MKTDAT 0700.HK Last=380.5, Bid=380.0, Ask=381.0, Open=375.0, Close=378.0, XR=0.128
-2026-08-30 19:14:42,909 [GCE] [ORD-20260830-191442-890] [INFO] 0 controls validated, 0 passed, 0 failed
-2026-08-30 19:14:42,910 [GCE] [ORD-20260830-191442-890] [INFO] LMT_CHECK_OVER in 62.70 μs
-2026-08-30 19:14:42,983 [GCE] [INFO] Loaded session timings for 2 exchanges from test_Datamgr.ini
-2026-08-30 19:14:43,038 [GCE] [INFO] Loaded session timings for 2 exchanges from test_Datamgr.ini
-2026-08-30 19:14:43,103 [GCE] [INFO] Loaded session timings for 2 exchanges from test_Datamgr.ini
-2026-08-30 19:14:43,104 [GCE] [INFO] Exchange XSES session changed: BREAK -> Xsession1 at 09:00:00
-2026-08-30 19:14:43,104 [GCE] [INFO] Exchange XHKG session changed: BREAK -> Xsession1 at 09:35:00
-2026-08-30 19:14:43,105 [GCE] [INFO] Exchange XSES session changed: Xsession1 -> BREAK at 12:30:00
-2026-08-30 19:14:43,174 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 19:14:43,266 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 19:14:43,407 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 19:14:43,519 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 19:14:43,820 [GCE] [ORD-TEST-XR] [INFO] LMT_CHECK_START
-2026-08-30 19:14:43,821 [GCE] [ORD-TEST-XR] [INFO] LMT_CHECK_NEW B 0005.HK 100@LMT 60.0 HKD PAFTDACXUAT Equity||DMA|||||XHKG|0005||DAY
-2026-08-30 19:14:43,822 [GCE] [ORD-TEST-XR] [INFO] LMT_MKTDAT 0005.HK Last=60.2, Bid=60.0, Ask=60.5, Open=59.5, Close=59.8, XR=0.1282
-2026-08-30 19:14:43,823 [GCE] [ORD-TEST-XR] [INFO] 0 controls validated, 0 passed, 0 failed
-2026-08-30 19:14:43,824 [GCE] [ORD-TEST-XR] [INFO] LMT_CHECK_OVER in 106.10 μs
-2026-08-30 19:14:43,897 [GCE] [ORD-20260830-191443-891] [INFO] LMT_CHECK_START
-2026-08-30 19:14:43,898 [GCE] [ORD-20260830-191443-891] [INFO] LMT_CHECK_NEW B 0700.HK 100@LMT 380.0 HKD PAFTDACXUAT Equity|*|*|TRADER1|DESK1|ACC1|*|XHKG|0700|*|DAY
-2026-08-30 19:14:43,899 [GCE] [ORD-20260830-191443-891] [INFO] LMT_MKTDAT 0700.HK Last=380.5, Bid=380.0, Ask=381.0, Open=375.0, Close=378.0, XR=0.1282
-2026-08-30 19:14:43,900 [GCE] [ORD-20260830-191443-891] [INFO] 0 controls validated, 0 passed, 0 failed
-2026-08-30 19:14:43,901 [GCE] [ORD-20260830-191443-891] [INFO] LMT_CHECK_OVER in 75.58 μs
-2026-08-30 19:15:02,865 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 19:15:02,871 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
-2026-08-30 19:15:02,892 [GCE] [INFO] Loaded 17635 instruments from DataMgr
-2026-08-30 19:15:07,057 [GCE] [INFO] Loaded/fetched 0 prices in cache via PXFeeder
-2026-08-30 19:15:07,064 [GCE] [INFO] Loaded 3 orders
-2026-08-30 19:15:07,072 [GCE] [INFO] Loaded 4 positions
-2026-08-30 19:15:07,073 [GCE] [INFO] Subscribed 2 new RICs from 2 active OMS orders to PXFeeder
-2026-08-30 19:15:07,260 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 19:15:07,271 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
-2026-08-30 19:15:07,295 [GCE] [INFO] Loaded 17635 instruments from DataMgr
-2026-08-30 19:15:13,004 [GCE] [INFO] Loaded/fetched 0 prices in cache via PXFeeder
-2026-08-30 19:15:13,008 [GCE] [INFO] Loaded 3 orders
-2026-08-30 19:15:13,015 [GCE] [INFO] Loaded 4 positions
-2026-08-30 19:15:13,017 [GCE] [INFO] Subscribed 2 new RICs from 2 active OMS orders to PXFeeder
+2026-08-30 19:44:04,528 [GCE] [ORD-20260830-194404-514] [INFO] LMT_CHECK_START
+2026-08-30 19:44:04,529 [GCE] [ORD-20260830-194404-514] [INFO] LMT_CHECK_NEW B 0700.HK 5000000@LMT 1000.0 HKD PAFTDACXUAT Equity|*|*|TRADER1|*|ACCT1|*|XHKG|0700|*|DAY
+2026-08-30 19:44:04,530 [GCE] [ORD-20260830-194404-514] [INFO] LMT_MKTDAT 0700.HK Last=380.5, Bid=380.0, Ask=381.0, Open=375.0, Close=378.0, XR=0.128
+2026-08-30 19:44:04,532 [GCE] [ORD-20260830-194404-514] [INFO] [rule=8] [FAIL] MaxOrderQuantity: Order size is too big, ORD=5000000 > LMT=1000 | LMT=1000, ORD=5000000 {quantity_control.py:19 7.20 μs}
+2026-08-30 19:44:04,533 [GCE] [ORD-20260830-194404-514] [INFO] [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=1000.0, ORD=1000.0 {price_control.py:19 9.09 μs}
+2026-08-30 19:44:04,534 [GCE] [ORD-20260830-194404-514] [INFO] [rule=8] [FAIL] MaxOrderConsideration: Order Value is too big, LMT=100000.0, ORD=5000000000.0 | LMT=100000.0, ORD=5000000000.0 {max_order_consideration.py:139 8.83 μs}
+2026-08-30 19:44:04,535 [GCE] [ORD-20260830-194404-514] [INFO] [rule=8] [PASS] ClosePriceTolerance: Control passed | LMT=10.0, ORD=0.0 {close_price_tolerance.py:56 8.96 μs}
+2026-08-30 19:44:04,537 [GCE] [ORD-20260830-194404-514] [INFO] [rule=8] [PASS] LastPriceTolerance: Control passed | LMT=10.0, ORD=0.0 {last_price_tolerance.py:97 8.98 μs}
+2026-08-30 19:44:04,538 [GCE] [ORD-20260830-194404-514] [INFO] [rule=8] [PASS] BBOPriceTolerance: Control passed | LMT=10.0, ORD=0.0 {bbo_price_tolerance.py:57 6.34 μs}
+2026-08-30 19:44:04,539 [GCE] [ORD-20260830-194404-514] [INFO] [rule=8] [FAIL] MaxDailyTurnover: Daily turnover is too big, ORD=5000000000.0 > LMT=1000000.0 (HKD) | LMT=1000000.0, ORD=5000000000.0 {max_daily_turnover.py:14 4.46 μs}
+2026-08-30 19:44:04,539 [GCE] [ORD-20260830-194404-514] [INFO] [rule=10] [FAIL] MaxOrderQuantity: Order size is too big, ORD=5000000 > LMT=3000 | LMT=3000, ORD=5000000 {quantity_control.py:19 4.42 μs}
+2026-08-30 19:44:04,540 [GCE] [ORD-20260830-194404-514] [INFO] [rule=10] [PASS] MaxOrderPrice: Control passed | LMT=3000.0, ORD=1000.0 {price_control.py:19 6.71 μs}
+2026-08-30 19:44:04,542 [GCE] [ORD-20260830-194404-514] [INFO] [rule=10] [FAIL] MaxOrderConsideration: Order Value is too big, LMT=300000.0, ORD=5000000000.0 | LMT=300000.0, ORD=5000000000.0 {max_order_consideration.py:139 8.88 μs}
+2026-08-30 19:44:04,543 [GCE] [ORD-20260830-194404-514] [INFO] [rule=10] [PASS] ClosePriceTolerance: Control passed | LMT=30.0, ORD=0.0 {close_price_tolerance.py:56 5.33 μs}
+2026-08-30 19:44:04,544 [GCE] [ORD-20260830-194404-514] [INFO] [rule=10] [PASS] LastPriceTolerance: Control passed | LMT=30.0, ORD=0.0 {last_price_tolerance.py:97 11.31 μs}
+2026-08-30 19:44:04,546 [GCE] [ORD-20260830-194404-514] [INFO] [rule=10] [PASS] BBOPriceTolerance: Control passed | LMT=30.0, ORD=0.0 {bbo_price_tolerance.py:57 9.09 μs}
+2026-08-30 19:44:04,547 [GCE] [ORD-20260830-194404-514] [INFO] [rule=10] [FAIL] MaxDailyTurnover: Daily turnover is too big, ORD=5000000000.0 > LMT=3000000.0 (HKD) | LMT=3000000.0, ORD=5000000000.0 {max_daily_turnover.py:14 8.17 μs}
+2026-08-30 19:44:04,547 [GCE] [ORD-20260830-194404-514] [INFO] 14 controls validated, 8 passed, 6 failed
+2026-08-30 19:44:04,548 [GCE] [ORD-20260830-194404-514] [INFO] [Rule 8] Order size is too big, ORD=5000000 > LMT=1000, [Rule 8] Order Value is too big, LMT=100000.0, ORD=5000000000.0, [Rule 8] Daily turnover is too big, ORD=5000000000.0 > LMT=1000000.0 (HKD), [Rule 10] Order size is too big, ORD=5000000 > LMT=3000, [Rule 10] Order Value is too big, LMT=300000.0, ORD=5000000000.0, [Rule 10] Daily turnover is too big, ORD=5000000000.0 > LMT=3000000.0 (HKD)
+2026-08-30 19:44:04,549 [GCE] [ORD-20260830-194404-514] [INFO] LMT_CHECK_OVER in 7.10 ms
+2026-08-30 19:44:04,552 [GCE] [ORD-20260830-194404-537] [INFO] LMT_CHECK_START
+2026-08-30 19:44:04,552 [GCE] [ORD-20260830-194404-537] [INFO] LMT_CHECK_NEW B 0700.HK 100@LMT 380.0 HKD PAFTDACXUAT Equity|*|*|TRADER1|*|ACCT1|*|XHKG|0700|*|DAY
+2026-08-30 19:44:04,553 [GCE] [ORD-20260830-194404-537] [INFO] LMT_MKTDAT 0700.HK Last=380.5, Bid=380.0, Ask=381.0, Open=375.0, Close=378.0, XR=0.128
+2026-08-30 19:44:04,554 [GCE] [ORD-20260830-194404-537] [INFO] [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=1000, ORD=100 {quantity_control.py:19 11.90 μs}
+2026-08-30 19:44:04,555 [GCE] [ORD-20260830-194404-537] [INFO] [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=1000.0, ORD=380.0 {price_control.py:19 11.29 μs}
+2026-08-30 19:44:04,555 [GCE] [ORD-20260830-194404-537] [INFO] [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=100000.0, ORD=38000.0 {max_order_consideration.py:139 13.91 μs}
+2026-08-30 19:44:04,556 [GCE] [ORD-20260830-194404-537] [INFO] [rule=8] [PASS] ClosePriceTolerance: Control passed | LMT=10.0, ORD=0.0 {close_price_tolerance.py:56 11.34 μs}
+2026-08-30 19:44:04,557 [GCE] [ORD-20260830-194404-537] [INFO] [rule=8] [PASS] LastPriceTolerance: Control passed | LMT=10.0, ORD=0.0 {last_price_tolerance.py:97 18.78 μs}
+2026-08-30 19:44:04,558 [GCE] [ORD-20260830-194404-537] [INFO] [rule=8] [PASS] BBOPriceTolerance: Control passed | LMT=10.0, ORD=0.0 {bbo_price_tolerance.py:57 9.41 μs}
+2026-08-30 19:44:04,558 [GCE] [ORD-20260830-194404-537] [INFO] [rule=8] [PASS] MaxDailyTurnover: Control passed | LMT=1000000.0, ORD=38000.0 {max_daily_turnover.py:14 14.37 μs}
+2026-08-30 19:44:04,559 [GCE] [ORD-20260830-194404-537] [INFO] [rule=10] [PASS] MaxOrderQuantity: Control passed | LMT=3000, ORD=100 {quantity_control.py:19 5.15 μs}
+2026-08-30 19:44:04,560 [GCE] [ORD-20260830-194404-537] [INFO] [rule=10] [PASS] MaxOrderPrice: Control passed | LMT=3000.0, ORD=380.0 {price_control.py:19 8.70 μs}
+2026-08-30 19:44:04,561 [GCE] [ORD-20260830-194404-537] [INFO] [rule=10] [PASS] MaxOrderConsideration: Control passed | LMT=300000.0, ORD=38000.0 {max_order_consideration.py:139 11.44 μs}
+2026-08-30 19:44:04,561 [GCE] [ORD-20260830-194404-537] [INFO] [rule=10] [PASS] ClosePriceTolerance: Control passed | LMT=30.0, ORD=0.0 {close_price_tolerance.py:56 9.68 μs}
+2026-08-30 19:44:04,562 [GCE] [ORD-20260830-194404-537] [INFO] [rule=10] [PASS] LastPriceTolerance: Control passed | LMT=30.0, ORD=0.0 {last_price_tolerance.py:97 8.21 μs}
+2026-08-30 19:44:04,563 [GCE] [ORD-20260830-194404-537] [INFO] [rule=10] [PASS] BBOPriceTolerance: Control passed | LMT=30.0, ORD=0.0 {bbo_price_tolerance.py:57 9.32 μs}
+2026-08-30 19:44:04,564 [GCE] [ORD-20260830-194404-537] [INFO] [rule=10] [PASS] MaxDailyTurnover: Control passed | LMT=3000000.0, ORD=38000.0 {max_daily_turnover.py:14 7.55 μs}
+2026-08-30 19:44:04,564 [GCE] [ORD-20260830-194404-537] [INFO] 14 controls validated, 14 passed, 0 failed
+2026-08-30 19:44:04,565 [GCE] [ORD-20260830-194404-537] [INFO] LMT_CHECK_OVER in 9.10 ms
+2026-08-30 19:44:04,715 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:44:04,747 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:44:04,798 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:44:04,850 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:44:04,865 [GCE] [INFO] INSTRUMENT_DELTA Applied 2 updates, 0 deletions. Total active: 2
+2026-08-30 19:44:04,872 [GCE] [INFO] INSTRUMENT_DELTA Applied 0 updates, 2 deletions. Total active: 0
+2026-08-30 19:44:04,884 [GCE] [INFO] INSTRUMENT_DELTA Applied 2 updates, 0 deletions. Total active: 2
+2026-08-30 19:44:04,889 [GCE] [INFO] INSTRUMENT_DELTA Applied 2 updates, 1 deletions. Total active: 2
+2026-08-30 19:44:04,908 [GCE] [ORD-20260830-194404-893] [INFO] LMT_CHECK_START
+2026-08-30 19:44:04,909 [GCE] [ORD-20260830-194404-893] [INFO] LMT_CHECK_NEW B 0700.HK 100@LMT 380.0 HKD PAFTDACXUAT Equity|*|*|*|*|*|*|XHKG|0700|*|DAY
+2026-08-30 19:44:04,910 [GCE] [ORD-20260830-194404-893] [INFO] LMT_MKTDAT 0700.HK Last=380.5, Bid=380.0, Ask=381.0, Open=375.0, Close=378.0, XR=0.128
+2026-08-30 19:44:04,912 [GCE] [ORD-20260830-194404-893] [INFO] [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=1000, ORD=100 {quantity_control.py:19 10.58 μs}
+2026-08-30 19:44:04,913 [GCE] [ORD-20260830-194404-893] [INFO] [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=1000.0, ORD=380.0 {price_control.py:19 5.79 μs}
+2026-08-30 19:44:04,914 [GCE] [ORD-20260830-194404-893] [INFO] [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=100000.0, ORD=38000.0 {max_order_consideration.py:139 13.94 μs}
+2026-08-30 19:44:04,918 [GCE] [ORD-20260830-194404-893] [INFO] [rule=8] [PASS] ClosePriceTolerance: Control passed | LMT=10.0, ORD=0.0 {close_price_tolerance.py:56 8.78 μs}
+2026-08-30 19:44:04,920 [GCE] [ORD-20260830-194404-893] [INFO] [rule=8] [PASS] LastPriceTolerance: Control passed | LMT=10.0, ORD=0.0 {last_price_tolerance.py:97 7.39 μs}
+2026-08-30 19:44:04,921 [GCE] [ORD-20260830-194404-893] [INFO] [rule=8] [PASS] BBOPriceTolerance: Control passed | LMT=10.0, ORD=0.0 {bbo_price_tolerance.py:57 6.01 μs}
+2026-08-30 19:44:04,922 [GCE] [ORD-20260830-194404-893] [INFO] [rule=8] [PASS] MaxDailyTurnover: Control passed | LMT=1000000.0, ORD=38000.0 {max_daily_turnover.py:14 9.13 μs}
+2026-08-30 19:44:04,923 [GCE] [ORD-20260830-194404-893] [INFO] [rule=10] [PASS] MaxOrderQuantity: Control passed | LMT=3000, ORD=100 {quantity_control.py:19 4.89 μs}
+2026-08-30 19:44:04,924 [GCE] [ORD-20260830-194404-893] [INFO] [rule=10] [PASS] MaxOrderPrice: Control passed | LMT=3000.0, ORD=380.0 {price_control.py:19 4.09 μs}
+2026-08-30 19:44:04,925 [GCE] [ORD-20260830-194404-893] [INFO] [rule=10] [PASS] MaxOrderConsideration: Control passed | LMT=300000.0, ORD=38000.0 {max_order_consideration.py:139 13.18 μs}
+2026-08-30 19:44:04,926 [GCE] [ORD-20260830-194404-893] [INFO] [rule=10] [PASS] ClosePriceTolerance: Control passed | LMT=30.0, ORD=0.0 {close_price_tolerance.py:56 7.24 μs}
+2026-08-30 19:44:04,927 [GCE] [ORD-20260830-194404-893] [INFO] [rule=10] [PASS] LastPriceTolerance: Control passed | LMT=30.0, ORD=0.0 {last_price_tolerance.py:97 5.88 μs}
+2026-08-30 19:44:04,928 [GCE] [ORD-20260830-194404-893] [INFO] [rule=10] [PASS] BBOPriceTolerance: Control passed | LMT=30.0, ORD=0.0 {bbo_price_tolerance.py:57 6.34 μs}
+2026-08-30 19:44:04,928 [GCE] [ORD-20260830-194404-893] [INFO] [rule=10] [PASS] MaxDailyTurnover: Control passed | LMT=3000000.0, ORD=38000.0 {max_daily_turnover.py:14 7.77 μs}
+2026-08-30 19:44:04,929 [GCE] [ORD-20260830-194404-893] [INFO] 14 controls validated, 14 passed, 0 failed
+2026-08-30 19:44:04,930 [GCE] [ORD-20260830-194404-893] [INFO] LMT_CHECK_OVER in 7.96 ms
+2026-08-30 19:44:05,009 [GCE] [INFO] Loaded session timings for 2 exchanges from test_Datamgr.ini
+2026-08-30 19:44:05,088 [GCE] [INFO] Loaded session timings for 2 exchanges from test_Datamgr.ini
+2026-08-30 19:44:05,191 [GCE] [INFO] Loaded session timings for 2 exchanges from test_Datamgr.ini
+2026-08-30 19:44:05,192 [GCE] [INFO] Exchange XSES session changed: BREAK -> Xsession1 at 09:00:00
+2026-08-30 19:44:05,193 [GCE] [INFO] Exchange XHKG session changed: BREAK -> Xsession1 at 09:35:00
+2026-08-30 19:44:05,194 [GCE] [INFO] Exchange XSES session changed: Xsession1 -> BREAK at 12:30:00
+2026-08-30 19:44:05,274 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:44:05,442 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:44:05,608 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:44:05,740 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:44:06,058 [GCE] [ORD-TEST-XR] [INFO] LMT_CHECK_START
+2026-08-30 19:44:06,059 [GCE] [ORD-TEST-XR] [INFO] LMT_CHECK_NEW B 0005.HK 100@LMT 60.0 HKD PAFTDACXUAT Equity||DMA|||||XHKG|0005||DAY
+2026-08-30 19:44:06,061 [GCE] [ORD-TEST-XR] [INFO] LMT_MKTDAT 0005.HK Last=60.2, Bid=60.0, Ask=60.5, Open=59.5, Close=59.8, XR=0.1282
+2026-08-30 19:44:06,063 [GCE] [ORD-TEST-XR] [INFO] [rule=4] [PASS] MaxOrderPrice: Control passed | LMT=1000.0, ORD=60.0 {price_control.py:19 17.89 μs}
+2026-08-30 19:44:06,065 [GCE] [ORD-TEST-XR] [INFO] [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=1000, ORD=100 {quantity_control.py:19 6.71 μs}
+2026-08-30 19:44:06,066 [GCE] [ORD-TEST-XR] [INFO] [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=1000.0, ORD=60.0 {price_control.py:19 7.89 μs}
+2026-08-30 19:44:06,067 [GCE] [ORD-TEST-XR] [INFO] [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=100000.0, ORD=6000.0 {max_order_consideration.py:139 23.66 μs}
+2026-08-30 19:44:06,068 [GCE] [ORD-TEST-XR] [INFO] [rule=8] [PASS] ClosePriceTolerance: Control passed | LMT=10.0, ORD=0.0 {close_price_tolerance.py:56 13.12 μs}
+2026-08-30 19:44:06,069 [GCE] [ORD-TEST-XR] [INFO] [rule=8] [PASS] LastPriceTolerance: Control passed | LMT=10.0, ORD=0.0 {last_price_tolerance.py:97 11.63 μs}
+2026-08-30 19:44:06,070 [GCE] [ORD-TEST-XR] [INFO] [rule=8] [PASS] BBOPriceTolerance: Control passed | LMT=10.0, ORD=0.0 {bbo_price_tolerance.py:57 12.26 μs}
+2026-08-30 19:44:06,072 [GCE] [ORD-TEST-XR] [INFO] [rule=8] [PASS] MaxDailyTurnover: Control passed | LMT=1000000.0, ORD=6000.0 {max_daily_turnover.py:14 11.37 μs}
+2026-08-30 19:44:06,073 [GCE] [ORD-TEST-XR] [INFO] [rule=10] [PASS] MaxOrderQuantity: Control passed | LMT=3000, ORD=100 {quantity_control.py:19 5.70 μs}
+2026-08-30 19:44:06,073 [GCE] [ORD-TEST-XR] [INFO] [rule=10] [PASS] MaxOrderPrice: Control passed | LMT=3000.0, ORD=60.0 {price_control.py:19 7.38 μs}
+2026-08-30 19:44:06,074 [GCE] [ORD-TEST-XR] [INFO] [rule=10] [PASS] MaxOrderConsideration: Control passed | LMT=300000.0, ORD=6000.0 {max_order_consideration.py:139 14.53 μs}
+2026-08-30 19:44:06,075 [GCE] [ORD-TEST-XR] [INFO] [rule=10] [PASS] ClosePriceTolerance: Control passed | LMT=30.0, ORD=0.0 {close_price_tolerance.py:56 7.73 μs}
+2026-08-30 19:44:06,076 [GCE] [ORD-TEST-XR] [INFO] [rule=10] [PASS] LastPriceTolerance: Control passed | LMT=30.0, ORD=0.0 {last_price_tolerance.py:97 8.22 μs}
+2026-08-30 19:44:06,077 [GCE] [ORD-TEST-XR] [INFO] [rule=10] [PASS] BBOPriceTolerance: Control passed | LMT=30.0, ORD=0.0 {bbo_price_tolerance.py:57 8.72 μs}
+2026-08-30 19:44:06,078 [GCE] [ORD-TEST-XR] [INFO] [rule=10] [PASS] MaxDailyTurnover: Control passed | LMT=3000000.0, ORD=6000.0 {max_daily_turnover.py:14 7.71 μs}
+2026-08-30 19:44:06,079 [GCE] [ORD-TEST-XR] [INFO] 15 controls validated, 15 passed, 0 failed
+2026-08-30 19:44:06,081 [GCE] [ORD-TEST-XR] [INFO] LMT_CHECK_OVER in 8.31 ms
+2026-08-30 19:44:06,154 [GCE] [ORD-20260830-194406-140] [INFO] LMT_CHECK_START
+2026-08-30 19:44:06,155 [GCE] [ORD-20260830-194406-140] [INFO] LMT_CHECK_NEW B 0700.HK 100@LMT 380.0 HKD PAFTDACXUAT Equity|*|*|TRADER1|DESK1|ACC1|*|XHKG|0700|*|DAY
+2026-08-30 19:44:06,156 [GCE] [ORD-20260830-194406-140] [INFO] LMT_MKTDAT 0700.HK Last=380.5, Bid=380.0, Ask=381.0, Open=375.0, Close=378.0, XR=0.1282
+2026-08-30 19:44:06,157 [GCE] [ORD-20260830-194406-140] [INFO] [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=1000, ORD=100 {quantity_control.py:19 4.90 μs}
+2026-08-30 19:44:06,157 [GCE] [ORD-20260830-194406-140] [INFO] [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=1000.0, ORD=380.0 {price_control.py:19 9.00 μs}
+2026-08-30 19:44:06,159 [GCE] [ORD-20260830-194406-140] [INFO] [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=100000.0, ORD=38000.0 {max_order_consideration.py:139 8.53 μs}
+2026-08-30 19:44:06,160 [GCE] [ORD-20260830-194406-140] [INFO] [rule=8] [PASS] ClosePriceTolerance: Control passed | LMT=10.0, ORD=0.0 {close_price_tolerance.py:56 6.96 μs}
+2026-08-30 19:44:06,162 [GCE] [ORD-20260830-194406-140] [INFO] [rule=8] [PASS] LastPriceTolerance: Control passed | LMT=10.0, ORD=0.0 {last_price_tolerance.py:97 6.49 μs}
+2026-08-30 19:44:06,163 [GCE] [ORD-20260830-194406-140] [INFO] [rule=8] [PASS] BBOPriceTolerance: Control passed | LMT=10.0, ORD=0.0 {bbo_price_tolerance.py:57 4.96 μs}
+2026-08-30 19:44:06,164 [GCE] [ORD-20260830-194406-140] [INFO] [rule=8] [PASS] MaxDailyTurnover: Control passed | LMT=1000000.0, ORD=38000.0 {max_daily_turnover.py:14 4.90 μs}
+2026-08-30 19:44:06,166 [GCE] [ORD-20260830-194406-140] [INFO] [rule=10] [PASS] MaxOrderQuantity: Control passed | LMT=3000, ORD=100 {quantity_control.py:19 2.50 μs}
+2026-08-30 19:44:06,167 [GCE] [ORD-20260830-194406-140] [INFO] [rule=10] [PASS] MaxOrderPrice: Control passed | LMT=3000.0, ORD=380.0 {price_control.py:19 4.32 μs}
+2026-08-30 19:44:06,168 [GCE] [ORD-20260830-194406-140] [INFO] [rule=10] [PASS] MaxOrderConsideration: Control passed | LMT=300000.0, ORD=38000.0 {max_order_consideration.py:139 5.16 μs}
+2026-08-30 19:44:06,169 [GCE] [ORD-20260830-194406-140] [INFO] [rule=10] [PASS] ClosePriceTolerance: Control passed | LMT=30.0, ORD=0.0 {close_price_tolerance.py:56 4.10 μs}
+2026-08-30 19:44:06,170 [GCE] [ORD-20260830-194406-140] [INFO] [rule=10] [PASS] LastPriceTolerance: Control passed | LMT=30.0, ORD=0.0 {last_price_tolerance.py:97 4.48 μs}
+2026-08-30 19:44:06,171 [GCE] [ORD-20260830-194406-140] [INFO] [rule=10] [PASS] BBOPriceTolerance: Control passed | LMT=30.0, ORD=0.0 {bbo_price_tolerance.py:57 5.77 μs}
+2026-08-30 19:44:06,172 [GCE] [ORD-20260830-194406-140] [INFO] [rule=10] [PASS] MaxDailyTurnover: Control passed | LMT=3000000.0, ORD=38000.0 {max_daily_turnover.py:14 4.71 μs}
+2026-08-30 19:44:06,173 [GCE] [ORD-20260830-194406-140] [INFO] 14 controls validated, 14 passed, 0 failed
+2026-08-30 19:44:06,174 [GCE] [ORD-20260830-194406-140] [INFO] LMT_CHECK_OVER in 7.48 ms
+2026-08-30 19:44:27,689 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:44:27,696 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
+2026-08-30 19:44:27,727 [GCE] [INFO] Loaded 17635 instruments from DataMgr
+2026-08-30 19:44:31,801 [GCE] [INFO] Loaded/fetched 0 prices in cache via PXFeeder
+2026-08-30 19:44:31,807 [GCE] [INFO] Loaded 5 orders
+2026-08-30 19:44:31,815 [GCE] [INFO] Loaded 4 positions
+2026-08-30 19:44:31,816 [GCE] [INFO] Subscribed 2 new RICs from 2 active OMS orders to PXFeeder
+2026-08-30 19:44:32,007 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:44:32,013 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
+2026-08-30 19:44:32,033 [GCE] [INFO] Loaded 17635 instruments from DataMgr
+2026-08-30 19:44:37,968 [GCE] [INFO] Loaded/fetched 0 prices in cache via PXFeeder
+2026-08-30 19:44:37,975 [GCE] [INFO] Loaded 5 orders
+2026-08-30 19:44:37,984 [GCE] [INFO] Loaded 4 positions
+2026-08-30 19:44:37,985 [GCE] [INFO] Subscribed 2 new RICs from 2 active OMS orders to PXFeeder
