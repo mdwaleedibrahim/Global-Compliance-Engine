@@ -82,11 +82,6 @@ class GCELogger:
         """
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.DEBUG)
-        for h in list(self.logger.handlers):
-            try:
-                h.close()
-            except Exception:
-                pass
         self.logger.handlers = []
         
         self.rejection_formatter = RejectionFormatter()
@@ -473,11 +468,6 @@ class PXFeederLogger:
         """
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.DEBUG)
-        for h in list(self.logger.handlers):
-            try:
-                h.close()
-            except Exception:
-                pass
         self.logger.handlers = []
         self.log_dir = log_dir
         self.backup_count = backup_count
