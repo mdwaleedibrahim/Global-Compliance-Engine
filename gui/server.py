@@ -805,22 +805,59 @@ def api_orders_place():
 # ---------------------------------------------------------------------------
 # Section 4 — Prices & FX
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Section 4 — Prices & FX
+# ---------------------------------------------------------------------------
 @app.route("/api/prices")
 def api_prices():
     pc = _get("prices")
-    prices_list = []
-    for ric, pd in pc.prices.items():
-        prices_list.append({
-            "ric": ric,
-            "open": getattr(pd, "open_price", 0),
-            "bid": pd.bid,
-            "ask": pd.ask,
-            "last": pd.last,
-            "close": pd.close,
-            "mid": pd.mid,
-            "timestamp": getattr(pd, "timestamp", ""),
-        })
-    return jsonify(prices_list)
+    px = _get("pxfeeder")
+    prices_map = {}
+
+    # 1. From PriceCache
+    if pc and hasattr(pc, "prices"):
+        for ric, pd in pc.prices.items():
+            norm_ric = str(ric).strip().upper()
+            if not norm_ric:
+                continue
+            prices_map[norm_ric] = {
+                "ric": norm_ric,
+                "open": float(getattr(pd, "open_price", 0.0) or 0.0),
+                "bid": float(getattr(pd, "bid", 0.0) or 0.0),
+                "ask": float(getattr(pd, "ask", 0.0) or 0.0),
+                "last": float(getattr(pd, "last", 0.0) or 0.0),
+                "close": float(getattr(pd, "close", 0.0) or 0.0),
+                "mid": float(getattr(pd, "mid", 0.0) or 0.0),
+                "timestamp": getattr(pd, "timestamp", ""),
+            }
+
+    # 2. Merge from PXFeeder (active on-demand & streaming prices)
+    if px and hasattr(px, "get_all_prices"):
+        for ric, p in px.get_all_prices().items():
+            norm_ric = str(ric).strip().upper()
+            if not norm_ric or not isinstance(p, dict):
+                continue
+            bid = float(p.get("bid", 0.0) or 0.0)
+            ask = float(p.get("ask", 0.0) or 0.0)
+            last = float(p.get("last", 0.0) or 0.0)
+            close = float(p.get("close", 0.0) or 0.0)
+            open_px = float(p.get("open", 0.0) or 0.0)
+            mid = (bid + ask) / 2.0 if (bid > 0 and ask > 0) else last
+            ts = p.get("timestamp", "")
+
+            if norm_ric not in prices_map or last > 0:
+                prices_map[norm_ric] = {
+                    "ric": norm_ric,
+                    "open": open_px,
+                    "bid": bid,
+                    "ask": ask,
+                    "last": last,
+                    "close": close,
+                    "mid": mid,
+                    "timestamp": ts,
+                }
+
+    return jsonify(list(prices_map.values()))
 
 
 @app.route("/api/prices/fetch", methods=["POST"])
@@ -830,23 +867,36 @@ def api_prices_fetch_live():
     if not ric:
         return jsonify({"ok": False, "message": "RIC is required"}), 400
     try:
-        import yfinance as yf
-        ticker = yf.Ticker(ric)
-        info = ticker.info or {}
-        price = (
-            info.get("regularMarketPrice")
-            or info.get("currentPrice")
-            or info.get("previousClose")
-            or info.get("ask")
-            or info.get("bid")
-        )
-        if price is None:
-            fast = getattr(ticker, "fast_info", None)
-            if fast:
-                price = fast.get("last_price") or fast.get("regular_market_previous_close")
-        if price is None or float(price) <= 0:
-            return jsonify({"ok": False, "message": f"Unable to fetch live price for {ric}"}), 404
-        return jsonify({"ok": True, "ric": ric, "price": float(price)})
+        px = _get("pxfeeder")
+        pc = _get("prices")
+        if px:
+            px.subscribe(ric, fetch_now=True)
+            p_data = px.get_price(ric)
+            if p_data and float(p_data.get("last", 0.0) or 0.0) > 0:
+                if pc and hasattr(pc, "update_price_in_memory"):
+                    pc.update_price_in_memory(
+                        ric=ric,
+                        bid=float(p_data.get("bid", 0.0) or 0.0),
+                        ask=float(p_data.get("ask", 0.0) or 0.0),
+                        last=float(p_data.get("last", 0.0) or 0.0),
+                        close=float(p_data.get("close", 0.0) or 0.0),
+                        open_price=float(p_data.get("open", 0.0) or 0.0)
+                    )
+                    pc.save_to_dat(os.path.join(PROJECT_ROOT, "cache", "PriceCache.dat"))
+                return jsonify({"ok": True, "ric": ric, "price": float(p_data["last"]), "data": p_data})
+
+        # Fallback to direct fetch
+        details = PXFeeder._fetch_ticker_details(ric)
+        if details and float(details.get("last", 0.0) or 0.0) > 0:
+            if px and hasattr(px, "update_price_in_memory"):
+                px.update_price_in_memory(ric, **details)
+                px.save_to_dat(os.path.join(PROJECT_ROOT, "cache", "PriceCache.dat"))
+            if pc and hasattr(pc, "update_price_in_memory"):
+                pc.update_price_in_memory(ric=ric, **details)
+                pc.save_to_dat(os.path.join(PROJECT_ROOT, "cache", "PriceCache.dat"))
+            return jsonify({"ok": True, "ric": ric, "price": float(details["last"]), "data": details})
+
+        return jsonify({"ok": False, "message": f"Unable to fetch live price for {ric}"}), 404
     except Exception as e:
         return jsonify({"ok": False, "message": str(e)}), 400
 

@@ -214,12 +214,29 @@ class PriceCache:
                 'ask': p.ask,
                 'last': p.last,
                 'close': p.close,
+                'open': p.open_price,
                 'open_price': p.open_price,
                 'timestamp': p.timestamp
             }
             
+        fx_rates = {}
+        if path.exists():
+            try:
+                with open(path, 'rb') as f_old:
+                    old_dat = pickle.load(f_old)
+                    if isinstance(old_dat, dict) and 'fx_rates' in old_dat:
+                        fx_rates = old_dat['fx_rates']
+            except Exception:
+                pass
+
+        payload = {
+            'prices': serializable_data,
+            'fx_rates': fx_rates,
+            'last_updated': datetime.now().isoformat()
+        }
+            
         with open(path, 'wb') as f:
-            pickle.dump(serializable_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump(payload, f, protocol=pickle.HIGHEST_PROTOCOL)
             
         return len(self.prices)
 
@@ -241,18 +258,21 @@ class PriceCache:
             data = pickle.load(f)
             
         count = 0
-        for ric, item in data.items():
-            price_data = PriceData(
-                ric=item['ric'],
-                bid=item['bid'],
-                ask=item['ask'],
-                last=item['last'],
-                close=item['close'],
-                open_price=item.get('open_price', 0.0),
-                timestamp=item.get('timestamp')
-            )
-            self.prices[ric] = price_data
-            count += 1
+        raw_prices = data.get('prices', data) if (isinstance(data, dict) and 'prices' in data) else data
+        if isinstance(raw_prices, dict):
+            for ric, item in raw_prices.items():
+                if isinstance(item, dict):
+                    price_data = PriceData(
+                        ric=item.get('ric', ric),
+                        bid=float(item.get('bid', 0.0) or 0.0),
+                        ask=float(item.get('ask', 0.0) or 0.0),
+                        last=float(item.get('last', 0.0) or 0.0),
+                        close=float(item.get('close', 0.0) or 0.0),
+                        open_price=float(item.get('open_price', item.get('open', 0.0)) or 0.0),
+                        timestamp=item.get('timestamp')
+                    )
+                    self.prices[ric] = price_data
+                    count += 1
             
         return count
 

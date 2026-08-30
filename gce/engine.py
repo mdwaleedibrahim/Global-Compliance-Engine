@@ -460,18 +460,33 @@ class GCE:
 
             # Synchronize on-demand price to self.prices (PriceCache) and save to disk
             if px and hasattr(self, 'prices') and self.prices:
+                bid = float(px.get('bid', 0.0) or 0.0)
+                ask = float(px.get('ask', 0.0) or 0.0)
+                last = float(px.get('last', 0.0) or 0.0)
+                close = float(px.get('close', 0.0) or 0.0)
+                open_px = float(px.get('open', 0.0) or 0.0)
                 if hasattr(self.prices, 'update_price_in_memory'):
                     self.prices.update_price_in_memory(
                         ric=ric,
-                        bid=float(px.get('bid', 0.0) or 0.0),
-                        ask=float(px.get('ask', 0.0) or 0.0),
-                        last=float(px.get('last', 0.0) or 0.0),
-                        close=float(px.get('close', 0.0) or 0.0),
-                        open_price=float(px.get('open', 0.0) or 0.0)
+                        bid=bid,
+                        ask=ask,
+                        last=last,
+                        close=close,
+                        open_price=open_px
                     )
+                elif hasattr(self.prices, 'update_price'):
+                    self.prices.update_price(
+                        ric=ric,
+                        bid=bid,
+                        ask=ask,
+                        last=last,
+                        close=close,
+                        open_price=open_px
+                    )
+                target_dat = getattr(self.prices, 'dat_path', None) or "cache/PriceCache.dat"
                 if hasattr(self.prices, 'save_to_dat'):
                     try:
-                        self.prices.save_to_dat("cache/PriceCache.dat")
+                        self.prices.save_to_dat(target_dat)
                     except Exception as e:
                         self.logger.warning(f"Failed to auto-save PriceCache.dat: {e}")
 
