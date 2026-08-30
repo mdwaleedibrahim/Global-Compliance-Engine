@@ -14,7 +14,10 @@ class TestRiskAnalytics(unittest.TestCase):
 
     def setUp(self):
         self.order_cache = OrderCache()
+        self.order_cache.orders = {}
+
         self.position_cache = PositionCache()
+        self.position_cache.positions = {}
 
         # Add sample positions
         p1 = Position(symbol="0700.HK", ric="0700.HK", trader="Waleed", bopenval_usd=100000.0, sopenval_usd=20000.0)

@@ -570,19 +570,13 @@ class GCE:
             if not px_obj and hasattr(self, 'pxfeeder') and self.pxfeeder:
                 px_obj = self.pxfeeder.get_price(ric)
 
-        last_px = getattr(px_obj, 'last', 0.0) if px_obj else 0.0
-        bid_px = getattr(px_obj, 'bid', 0.0) if px_obj else 0.0
-        ask_px = getattr(px_obj, 'ask', 0.0) if px_obj else 0.0
-        open_px = getattr(px_obj, 'open_price', getattr(px_obj, 'open', 0.0)) if px_obj else 0.0
-        close_px = getattr(px_obj, 'close', 0.0) if px_obj else 0.0
-        log_batch.append(("INFO", f"LMT_MKTDAT {ric} Last={last_px}, Bid={bid_px}, Ask={ask_px}, Open={open_px}, Close={close_px}"))
-
-        for rule_id, c_name, passed, msg, limit, value, err, caller_loc, elapsed_ns in all_control_results:
-            if err is not None:
-                log_batch.append(("ERROR", f"[rule={rule_id}] Error in control {c_name}: {err}"))
-            else:
-                formatted_msg = self.logger.rejection_formatter.format_control_result(
-                    c_name, passed, limit, value,
+        def _px_val(obj, attr_name, dict_keys, default=0.0):
+            if not obj:
+                return default
+            if isinstance(obj, dict):
+                for k in dict_keys:
+                    if k in obj and obj[k] is not None:
+        xr_rate = self._resolve_position_fx_rate(order)
                     "Control passed" if passed else msg,
                     rule_id=rule_id
                 )

@@ -1,0 +1,102 @@
+2026-08-30 18:39:37,033 [PXFeeder] [INFO] PXFeeder initialized (dat_path=test_cache_reader_PriceCache.dat, refresh_interval=300s, max_symbols=500, tracked_symbols=8)
+2026-08-30 18:39:37,042 [PXFeeder] [INFO] BACKGROUND_THREAD_STOP Stopped background price refresh thread
+2026-08-30 18:39:37,094 [PXFeeder] [INFO] PXFeeder initialized (dat_path=test_cache_reader_PriceCache.dat, refresh_interval=300s, max_symbols=500, tracked_symbols=8)
+2026-08-30 18:39:37,104 [PXFeeder] [INFO] PRICE_UPDATE AAPL Bid=220.0 Ask=221.0 Last=220.5 Open=0.0 Close=218.0 [MANUAL]
+2026-08-30 18:39:37,105 [PXFeeder] [INFO] FX_UPDATE EUR/USD = 1.08
+2026-08-30 18:39:37,111 [PXFeeder] [INFO] SNAPSHOT_SAVE Saved 1 prices and 200 FX rates to test_cache_reader_PriceCache.dat
+2026-08-30 18:39:37,173 [PXFeeder] [INFO] BACKGROUND_THREAD_STOP Stopped background price refresh thread
+2026-08-30 18:39:38,415 [PXFeeder] [INFO] PRICE_UPDATE 0005.HK Bid=60.0 Ask=60.5 Last=60.2 Open=59.5 Close=59.8 [MANUAL]
+2026-08-30 18:39:38,416 [PXFeeder] [INFO] FX_UPDATE HKD/USD = 0.1282
+2026-08-30 18:39:38,579 [PXFeeder] [INFO] PRICE_UPDATE 0700.HK Bid=380.0 Ask=381.0 Last=380.5 Open=375.0 Close=378.0 [MANUAL]
+2026-08-30 18:39:38,581 [PXFeeder] [INFO] FX_UPDATE HKD/USD = 0.1282
+2026-08-30 18:39:39,806 [PXFeeder] [INFO] PXFeeder initialized (dat_path=cache/PriceCache.dat, refresh_interval=300s, max_symbols=500, tracked_symbols=10)
+2026-08-30 18:39:46,166 [PXFeeder] [INFO] REFRESH_START Updating prices for 10 symbols and 10 currencies
+2026-08-30 18:39:50,760 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00001.HK: No price returned
+2026-08-30 18:39:51,562 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00002.HK: No price returned
+2026-08-30 18:39:52,483 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00003.HK: No price returned
+2026-08-30 18:39:53,283 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00004.HK: No price returned
+2026-08-30 18:39:54,182 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00005.HK: No price returned
+2026-08-30 18:39:55,176 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00006.HK: No price returned
+2026-08-30 18:39:56,036 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00007.HK: No price returned
+2026-08-30 18:39:56,941 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00008.HK: No price returned
+2026-08-30 18:39:57,842 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00010.HK: No price returned
+2026-08-30 18:39:58,847 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00012.HK: No price returned
+2026-08-30 18:40:01,091 [PXFeeder] [INFO] REFRESH_COMPLETE Fetched 0 security prices, 100 FX cross rates
+2026-08-30 18:40:01,102 [PXFeeder] [INFO] SNAPSHOT_SAVE Saved 0 prices and 200 FX rates to cache/PriceCache.dat
+2026-08-30 18:40:01,103 [PXFeeder] [INFO] BACKGROUND_THREAD_START Started background price refresh thread (interval=300s)
+2026-08-30 18:40:01,152 [PXFeeder] [INFO] SUBSCRIBE symbol=0700.HK (fetch_now=True, total_subscribed=11)
+2026-08-30 18:40:01,427 [PXFeeder] [INFO] PRICE_UPDATE 0700.HK Bid=443.4 Ask=462.2 Last=455.2 Open=444.0 Close=447.8
+2026-08-30 18:40:01,849 [PXFeeder] [INFO] PXFeeder initialized (dat_path=test_PriceCache.dat, refresh_interval=1s, max_symbols=500, tracked_symbols=8)
+2026-08-30 18:40:01,851 [PXFeeder] [INFO] BACKGROUND_THREAD_START Started background price refresh thread (interval=1s)
+2026-08-30 18:40:01,852 [PXFeeder] [INFO] BACKGROUND_THREAD_STOP Stopped background price refresh thread
+2026-08-30 18:40:01,852 [PXFeeder] [INFO] BACKGROUND_THREAD_STOP Stopped background price refresh thread
+2026-08-30 18:40:01,883 [PXFeeder] [INFO] PXFeeder initialized (dat_path=test_PriceCache.dat, refresh_interval=300s, max_symbols=500, tracked_symbols=8)
+2026-08-30 18:40:01,883 [PXFeeder] [INFO] FX_UPDATE HKD/USD = 0.13
+2026-08-30 18:40:01,884 [PXFeeder] [INFO] BACKGROUND_THREAD_STOP Stopped background price refresh thread
+2026-08-30 18:40:01,909 [PXFeeder] [INFO] PXFeeder initialized (dat_path=test_PriceCache.dat, refresh_interval=300s, max_symbols=500, tracked_symbols=8)
+2026-08-30 18:40:01,910 [PXFeeder] [INFO] PRICE_UPDATE 0700.HK Bid=380.0 Ask=381.0 Last=380.5 Open=375.0 Close=378.0 [MANUAL]
+2026-08-30 18:40:01,911 [PXFeeder] [INFO] FX_UPDATE HKD/USD = 0.1281
+2026-08-30 18:40:01,915 [PXFeeder] [INFO] SNAPSHOT_SAVE Saved 1 prices and 200 FX rates to test_PriceCache.dat
+2026-08-30 18:40:01,950 [PXFeeder] [INFO] PXFeeder initialized (dat_path=test_PriceCache.dat, refresh_interval=300s, max_symbols=500, tracked_symbols=8)
+2026-08-30 18:40:01,958 [PXFeeder] [INFO] SNAPSHOT_LOAD Loaded 1 prices and 200 FX rates from test_PriceCache.dat
+2026-08-30 18:40:01,959 [PXFeeder] [INFO] BACKGROUND_THREAD_STOP Stopped background price refresh thread
+2026-08-30 18:40:01,960 [PXFeeder] [INFO] BACKGROUND_THREAD_STOP Stopped background price refresh thread
+2026-08-30 18:40:02,301 [PXFeeder] [INFO] PXFeeder initialized (dat_path=cache/PriceCache.dat, refresh_interval=300s, max_symbols=500, tracked_symbols=10)
+2026-08-30 18:40:02,303 [PXFeeder] [INFO] REFRESH_START Updating prices for 10 symbols and 10 currencies
+2026-08-30 18:40:02,846 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00001.HK: No price returned
+2026-08-30 18:40:03,538 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00002.HK: No price returned
+2026-08-30 18:40:04,179 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00003.HK: No price returned
+2026-08-30 18:40:04,821 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00004.HK: No price returned
+2026-08-30 18:40:05,354 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00005.HK: No price returned
+2026-08-30 18:40:05,881 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00006.HK: No price returned
+2026-08-30 18:40:06,563 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00007.HK: No price returned
+2026-08-30 18:40:07,032 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00008.HK: No price returned
+2026-08-30 18:40:07,617 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00010.HK: No price returned
+2026-08-30 18:40:08,017 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00012.HK: No price returned
+2026-08-30 18:40:08,579 [PXFeeder] [INFO] REFRESH_COMPLETE Fetched 0 security prices, 100 FX cross rates
+2026-08-30 18:40:08,587 [PXFeeder] [INFO] SNAPSHOT_SAVE Saved 0 prices and 200 FX rates to cache/PriceCache.dat
+2026-08-30 18:40:08,588 [PXFeeder] [INFO] BACKGROUND_THREAD_START Started background price refresh thread (interval=300s)
+2026-08-30 18:40:08,631 [PXFeeder] [INFO] SUBSCRIBE_MANY added=1 new symbols, total_subscribed=11: ['NVDA']
+2026-08-30 18:40:08,632 [PXFeeder] [INFO] BACKGROUND_THREAD_STOP Stopped background price refresh thread
+2026-08-30 18:40:08,638 [PXFeeder] [INFO] BACKGROUND_THREAD_STOP Stopped background price refresh thread
+2026-08-30 18:40:08,990 [PXFeeder] [INFO] PXFeeder initialized (dat_path=cache/PriceCache.dat, refresh_interval=300s, max_symbols=500, tracked_symbols=10)
+2026-08-30 18:40:08,990 [PXFeeder] [INFO] REFRESH_START Updating prices for 10 symbols and 10 currencies
+2026-08-30 18:40:09,392 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00001.HK: No price returned
+2026-08-30 18:40:09,794 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00002.HK: No price returned
+2026-08-30 18:40:10,202 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00003.HK: No price returned
+2026-08-30 18:40:10,609 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00004.HK: No price returned
+2026-08-30 18:40:11,005 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00005.HK: No price returned
+2026-08-30 18:40:11,405 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00006.HK: No price returned
+2026-08-30 18:40:11,875 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00007.HK: No price returned
+2026-08-30 18:40:12,338 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00008.HK: No price returned
+2026-08-30 18:40:12,817 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00010.HK: No price returned
+2026-08-30 18:40:13,351 [PXFeeder] [WARNING] PRICE_UPDATE_UNAVAILABLE 00012.HK: No price returned
+2026-08-30 18:40:15,271 [PXFeeder] [INFO] REFRESH_COMPLETE Fetched 0 security prices, 100 FX cross rates
+2026-08-30 18:40:15,286 [PXFeeder] [INFO] SNAPSHOT_SAVE Saved 0 prices and 200 FX rates to cache/PriceCache.dat
+2026-08-30 18:40:15,287 [PXFeeder] [INFO] BACKGROUND_THREAD_START Started background price refresh thread (interval=300s)
+2026-08-30 18:40:15,336 [PXFeeder] [INFO] FX_UPDATE HKD/USD = 0.128
+2026-08-30 18:40:15,345 [PXFeeder] [INFO] BACKGROUND_THREAD_STOP Stopped background price refresh thread
+2026-08-30 18:40:15,352 [PXFeeder] [INFO] BACKGROUND_THREAD_STOP Stopped background price refresh thread
+2026-08-30 18:40:15,380 [PXFeeder] [INFO] PXFeeder initialized (dat_path=test_PriceCache.dat, refresh_interval=300s, max_symbols=500, tracked_symbols=8)
+2026-08-30 18:40:15,381 [PXFeeder] [INFO] FX_UPDATE HKD/USD = 0.13
+2026-08-30 18:40:15,382 [PXFeeder] [INFO] FX_UPDATE HKDUSD = 0.13
+2026-08-30 18:40:15,383 [PXFeeder] [INFO] FX_UPDATE HKD/USD = 0.135
+2026-08-30 18:40:15,384 [PXFeeder] [INFO] FX_REMOVE HKD/USD
+2026-08-30 18:40:15,385 [PXFeeder] [INFO] BACKGROUND_THREAD_STOP Stopped background price refresh thread
+2026-08-30 18:40:15,420 [PXFeeder] [INFO] PXFeeder initialized (dat_path=test_PriceCache.dat, refresh_interval=300s, max_symbols=500, tracked_symbols=8)
+2026-08-30 18:40:15,422 [PXFeeder] [INFO] FX_UPDATE HKD/USD = 0.128
+2026-08-30 18:40:15,423 [PXFeeder] [INFO] FX_UPDATE EUR/USD = 1.08
+2026-08-30 18:40:15,424 [PXFeeder] [INFO] FX_UPDATE GBP/USD = 1.28
+2026-08-30 18:40:15,425 [PXFeeder] [INFO] FX_UPDATE JPY/USD = 0.0067
+2026-08-30 18:40:15,425 [PXFeeder] [INFO] FX_UPDATE AUD/USD = 0.65
+2026-08-30 18:40:15,426 [PXFeeder] [INFO] FX_UPDATE SGD/USD = 0.75
+2026-08-30 18:40:15,427 [PXFeeder] [INFO] FX_UPDATE CNH/USD = 0.14
+2026-08-30 18:40:15,428 [PXFeeder] [INFO] BACKGROUND_THREAD_STOP Stopped background price refresh thread
+2026-08-30 18:40:15,456 [PXFeeder] [INFO] PXFeeder initialized (dat_path=test_PriceCache.dat, refresh_interval=300s, max_symbols=500, tracked_symbols=8)
+2026-08-30 18:40:15,457 [PXFeeder] [INFO] BACKGROUND_THREAD_STOP Stopped background price refresh thread
+2026-08-30 18:40:15,484 [PXFeeder] [INFO] PXFeeder initialized (dat_path=test_PriceCache.dat, refresh_interval=300s, max_symbols=500, tracked_symbols=8)
+2026-08-30 18:40:15,485 [PXFeeder] [INFO] SUBSCRIBE symbol=0700.HK (fetch_now=False, total_subscribed=3)
+2026-08-30 18:40:15,486 [PXFeeder] [DEBUG] SUBSCRIBE 0700.HK already subscribed
+2026-08-30 18:40:15,487 [PXFeeder] [INFO] SUBSCRIBE_MANY added=2 new symbols, total_subscribed=5: ['9988.HK', '3690.HK', 'AAPL']
+2026-08-30 18:40:15,488 [PXFeeder] [INFO] UNSUBSCRIBE symbol=0700.HK (remaining=4)
+2026-08-30 18:40:15,489 [PXFeeder] [INFO] BACKGROUND_THREAD_STOP Stopped background price refresh thread

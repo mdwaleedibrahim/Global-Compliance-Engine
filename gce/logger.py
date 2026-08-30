@@ -303,9 +303,9 @@ class GCELogger:
         msg = self._format_order_check_line("LMT_CHECK_AMEND", order)
         self._enqueue_log("INFO", msg)
 
-    def lmt_mktdat(self, ric: str, last: Any = 0.0, bid: Any = 0.0, ask: Any = 0.0, open_px: Any = 0.0, close: Any = 0.0, order_id: str = ""):
-        """Log market data prices line (LMT_MKTDAT)."""
-        msg = f"LMT_MKTDAT {ric} Last={last}, Bid={bid}, Ask={ask}, Open={open_px}, Close={close}"
+    def lmt_mktdat(self, ric: str, last: Any = 0.0, bid: Any = 0.0, ask: Any = 0.0, open_px: Any = 0.0, close: Any = 0.0, xr: Any = 1.0, order_id: str = ""):
+        """Log market data prices line (LMT_MKTDAT) including FX exchange rate."""
+        msg = f"LMT_MKTDAT {ric} Last={last}, Bid={bid}, Ask={ask}, Open={open_px}, Close={close}, XR={xr}"
         self._enqueue_log("INFO", msg, order_id=order_id or self.current_order_id)
     
     def _format_duration(self, elapsed_ns: float) -> str:

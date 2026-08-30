@@ -557,16 +557,8 @@ def api_limits_import():
 # Section 3 — OMS Browser & Order Placement
 # ---------------------------------------------------------------------------
 def _get_gce_engine():
-    if "gce" not in _state or _state["gce"] is None:
-        try:
-            from gce.engine import GCE
-            gce_inst = GCE(
-                instrument_csv=os.path.join(PROJECT_ROOT, "HK-ListOfSecurities.csv"),
-                price_csv=os.path.join(PROJECT_ROOT, "PriceCache.csv"),
-                order_csv=os.path.join(PROJECT_ROOT, "OrderCache.csv"),
-                position_csv=os.path.join(PROJECT_ROOT, "cache", "PositionsCache.csv"),
-                log_dir=os.path.join(PROJECT_ROOT, "logs")
-            )
+    gce = _get("gce")
+            from concurrent.futures import ThreadPoolExecutor
             from gce.controls.quantity_control import MaxOrderQuantity
             from gce.controls.price_control import MaxOrderPrice
             from gce.controls.max_order_consideration import MaxOrderConsideration
@@ -575,28 +567,26 @@ def _get_gce_engine():
             from gce.controls.last_price_tolerance import LastPriceTolerance
             from gce.controls.max_daily_turnover import MaxDailyTurnover
 
-            gce_inst.register_control("MaxOrderQuantity", MaxOrderQuantity())
-            gce_inst.register_control("MaxOrderPrice", MaxOrderPrice())
-            gce_inst.register_control("MaxOrderConsideration", MaxOrderConsideration())
-            gce_inst.register_control("BBOPriceTolerance", BBOPriceTolerance())
-            gce_inst.register_control("ClosePriceTolerance", ClosePriceTolerance())
-            gce_inst.register_control("LastPriceTolerance", LastPriceTolerance())
-            gce_inst.register_control("MaxDailyTurnover", MaxDailyTurnover())
-
+            gce_inst = GCE.__new__(GCE)
+            gce_inst.logger = _get("logger")
+            gce_inst.executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="GCEControlExec")
+            gce_inst.datamgr = _get("datamgr")
+            gce_inst.instruments = _get("instruments")
+            gce_inst.pxfeeder = _get("pxfeeder")
+            gce_inst.prices = _get("prices")
+            gce_inst.orders = _get("orders")
             _state["gce"] = gce_inst
+            gce = gce_inst
         except Exception as e:
             print(f"[GUI] GCE engine init warning: {e}")
-            _state["gce"] = None
+            return None
 
-    gce = _state.get("gce")
     if gce:
         gce.prices = _get("prices")
         gce.pxfeeder = _get("pxfeeder")
-        gce.datamgr = _get("datamgr")
         gce.instruments = _get("instruments")
         gce.orders = _get("orders")
         gce.positions = _get("positions")
-    return gce
 
 
 @app.route("/api/orders")

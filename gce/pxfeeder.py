@@ -243,37 +243,6 @@ class PXFeeder:
             dropped = self.symbols.pop(0)
             self.logger.info(f"MAX_SYMBOLS_EXCEEDED Dropped oldest subscribed symbol: {dropped}")
 
-    def _fetch_and_cache_single(self, ric: str) -> bool:
-        """Fetch price for a single RIC and update in-memory cache.
-
-        Args:
-            ric: Ticker/RIC symbol.
-
-        Returns:
-            True if price was fetched successfully, False otherwise.
-        """
-        try:
-            price = self._fetch_ticker_price(ric)
-            if price is not None:
-                timestamp = datetime.now().isoformat()
-                with self._lock:
-                    self._prices[ric] = {
-                        'ric': ric,
-                        'bid': price,
-                        'ask': price,
-                        'last': price,
-                        'close': price,
-                        'open': price,
-                        'timestamp': timestamp,
-                    }
-                self.logger.info(f"PRICE_UPDATE {ric} Bid={price:.4f} Ask={price:.4f} Last={price:.4f} Open={price:.4f} Close={price:.4f}")
-                return True
-            else:
-                self.logger.warning(f"PRICE_UPDATE_UNAVAILABLE {ric}: No price returned from provider")
-        except Exception as e:
-            self.logger.warning(f"PRICE_FETCH_ERROR {ric}: {e}")
-        return False
-
     def _init_default_fx_rates(self):
         """Populate initial baseline FX cross rates from default values."""
         currs = self.MAJOR_CURRENCIES
@@ -286,99 +255,72 @@ class PXFeeder:
                 self._fx_rates[f"{c1}{c2}"] = rate
 
     @staticmethod
-    def _fetch_ticker_price(symbol: str) -> Optional[float]:
-        """Safely fetch latest price for a symbol using fast_info or info without noisy errors."""
-        try:
-            import yfinance as yf
-            ticker = yf.Ticker(symbol)
+    def _fetch_ticker_details(symbol: str) -> Optional[Dict[str, float]]:
+        """Safely fetch latest price components (bid, ask, last, open, close) for a symbol."""
+        if not symbol:
+            return None
 
-            # 1. Try fast_info (fast and direct in modern yfinance)
+        candidates = [symbol]
+        clean_sym = str(symbol).strip()
+        if clean_sym.isdigit():
+            candidates.append(f"{clean_sym.zfill(4)}.HK")
+            candidates.append(f"{clean_sym}.HK")
+        elif not clean_sym.endswith(".HK") and len(clean_sym) <= 5 and clean_sym.isalnum():
+            if clean_sym.isdigit():
+                candidates.append(f"{clean_sym.zfill(4)}.HK")
+
+        for sym in candidates:
             try:
+                import yfinance as yf
+                ticker = yf.Ticker(sym)
+
+                # 1. Try fast_info attributes (fast and direct)
                 fast = getattr(ticker, 'fast_info', None)
+                last = None
+                open_px = None
+                close_px = None
                 if fast:
-                    price = fast.get('last_price') or fast.get('regular_market_previous_close')
-                    if price is not None and float(price) > 0:
-                        return float(price)
+                    try:
+                        last = getattr(fast, 'last_price', None) or getattr(fast, 'regular_market_previous_close', None)
+                        close_px = getattr(fast, 'previous_close', None) or getattr(fast, 'regular_market_previous_close', None)
+                        open_px = getattr(fast, 'open', None)
+                    except Exception:
+                        pass
+
+                # 2. Fallback to info dict only if fast_info was missing
+                info = {}
+                if last is None:
+                    try:
+                            or info.get('previousClose')
+                            or info.get('ask')
+                    open_f = round(float(open_px if open_px is not None else last_f), 4)
+                        'bid': bid_f,
+                        'close': close_f
+                    }
             except Exception:
-                pass
+                continue
 
-            # 2. Try info dictionary
-            try:
-                info = ticker.info or {}
-                price = (
-                    info.get('regularMarketPrice')
-                    or info.get('currentPrice')
-                    or info.get('previousClose')
-                    or info.get('ask')
-                    or info.get('bid')
-                )
-                if price is not None and float(price) > 0:
-                    return float(price)
-            except Exception:
-                pass
+        return None
 
-            return None
-        except Exception:
-            return None
+    def _fetch_and_cache_single(self, ric: str) -> bool:
+        """Fetch price for a single RIC and update in-memory cache.
 
-    # ------------------------------------------------------------------
-    # Data Fetching & Refresh Logic
-    # ------------------------------------------------------------------
-
-    def refresh_now(self) -> Tuple[int, int]:
-        """
-        Fetch prices and FX rates synchronously via yfinance, update in-memory cache,
-        and dump snapshot to .dat file.
+        Args:
+            ric: Ticker/RIC symbol.
 
         Returns:
-            Tuple of (prices_fetched_count, fx_pairs_fetched_count)
+            True if price was fetched successfully, False otherwise.
         """
+        try:
+            details = self._fetch_ticker_details(ric)
+            if details is not None:
+        Returns:
+            Tuple of (prices_fetched_count, fx_pairs_fetched_count)
         try:
             import yfinance as yf
         except ImportError:
             self.logger.error("yfinance library is not installed.")
-            return 0, 0
 
-        self.logger.info(f"REFRESH_START Updating prices for {len(self.symbols)} symbols and {len(self.MAJOR_CURRENCIES)} currencies")
-        timestamp = datetime.now().isoformat()
-        new_prices: Dict[str, Dict[str, Any]] = {}
-        new_fx: Dict[str, float] = {}
-
-        # 1. Fetch Security Prices
-        p_count = 0
-        for symbol in self.symbols:
-            try:
-                price = self._fetch_ticker_price(symbol)
-                if price is not None:
-                    new_prices[symbol] = {
-                        'ric': symbol,
-                        'bid': price,
-                        'ask': price,
-                        'last': price,
-                        'close': price,
-                        'open': price,
-                        'timestamp': timestamp,
-                    }
-                    p_count += 1
-                    self.logger.info(f"PRICE_UPDATE {symbol} Bid={price:.4f} Ask={price:.4f} Last={price:.4f} Open={price:.4f} Close={price:.4f}")
-                elif symbol in self._prices:
-                    new_prices[symbol] = self._prices[symbol]
-                else:
-                    self.logger.warning(f"PRICE_UPDATE_UNAVAILABLE {symbol}: No price returned")
-            except Exception as e:
-                self.logger.warning(f"PRICE_FETCH_ERROR {symbol}: {e}")
-
-        # 2. Fetch Major Currency FX Rates (against USD) and compute cross rates
-        curr_to_usd: Dict[str, float] = dict(self.DEFAULT_FX_TO_USD)
-        for curr, (ticker_symbol, is_direct) in self.FX_USD_CONFIG.items():
-            try:
-                rate = self._fetch_ticker_price(ticker_symbol)
-                if rate and rate > 0:
-                    if is_direct:
-                        curr_to_usd[curr] = float(rate)
-                    else:
-                        curr_to_usd[curr] = 1.0 / float(rate)
-            except Exception as e:
                 self.logger.debug(f"FX_FETCH_FAIL {ticker_symbol}: {e}")
 
         # Triangulate all cross pairs

@@ -1,0 +1,5 @@
+Product,Application,Flow,Trader,Desk,Account,Client,symbol,exchange,underlying,Algo Strategy,Currency,Order Type,Tif,xr,bvol,bval,bval_usd,bfill,bfillval,bfillval_usd,bopen,bopenval,bopenval_usd,Bexposure,svol,sval,sval_usd,sfill,sfillval,sfillval_usd,sopen,sopenval,sopenval_usd,Sexposure,Ssexposure,Turnover,NetValue,Timestamp
+Equity,*,*,TRADER_BLOCKED,*,*,*,*,*,*,*,*,*,*,1.0,100,6000.0,6000.0,0,0.0,0.0,100,6000.0,6000.0,0.0,0,0.0,0.0,0,0.0,0.0,0,0.0,0.0,0.0,0.0,,,
+Equity,*,*,*,*,*,*,0005.HK,XHKG,*,*,HKD,*,*,0.1282,100,6000.0,769.2,0,0.0,0.0,100,6000.0,769.2,0.0,0,0.0,0.0,0,0.0,0.0,0,0.0,0.0,0.0,0.0,,,
+Equity,*,*,*,*,*,*,*,XHKG,*,*,HKD,*,*,0.1282,200,44000.0,5640.8,0,0.0,0.0,200,44000.0,5640.8,0.0,0,0.0,0.0,0,0.0,0.0,0,0.0,0.0,0.0,0.0,,,
+Equity,*,*,*,*,*,*,0700.HK,XHKG,*,*,HKD,*,*,0.1282,100,38000.0,4871.6,0,0.0,0.0,100,38000.0,4871.6,0.0,0,0.0,0.0,0,0.0,0.0,0,0.0,0.0,0.0,0.0,,,
