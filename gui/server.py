@@ -56,6 +56,8 @@ _state = {
     "orders": None,
     "positions": None,
     "log_parser": None,
+    "perf_order_times": [],
+    "perf_control_timings": [],
 }
 _lock = threading.RLock()
 _initialized = False
@@ -86,11 +88,11 @@ def _init_components():
             print(f"[GUI] DataMgr init warning: {e}")
             _state["datamgr"] = DataMgr(auto_load=False)
 
-        # Instruments
+        # Instruments (initialized from DataMgr singleton in memory)
         try:
-            _state["instruments"] = InstrumentCache(
-                os.path.join(PROJECT_ROOT, "HK-ListOfSecurities.csv")
-            )
+            _state["instruments"] = InstrumentCache.from_datamgr(_state["datamgr"])
+            if _state["instruments"].count() == 0 and os.path.exists(os.path.join(PROJECT_ROOT, "HK-ListOfSecurities.csv")):
+                _state["instruments"].load_from_csv(os.path.join(PROJECT_ROOT, "HK-ListOfSecurities.csv"))
         except Exception:
             _state["instruments"] = InstrumentCache()
 
@@ -734,10 +736,18 @@ def api_orders_place():
                         rejections.append(f"Order price {order.price} exceeds MaxOrderPrice limit ({max_p})")
 
         # 2. Evaluate against GCE Engine registered controls
+        val_start = time.perf_counter()
         if gce_engine and hasattr(gce_engine, "validate_order"):
             gce_passed, gce_rejections = gce_engine.validate_order(order)
             if not gce_passed:
                 rejections.extend(gce_rejections)
+        val_elapsed_ms = round((time.perf_counter() - val_start) * 1000.0, 4)
+
+        with _lock:
+            if "perf_order_times" in _state:
+                _state["perf_order_times"].append(val_elapsed_ms)
+                if len(_state["perf_order_times"]) > 500:
+                    _state["perf_order_times"].pop(0)
 
         passed = (len(rejections) == 0)
         if passed:
@@ -1144,6 +1154,40 @@ def api_instruments_delete(ric):
     return jsonify({"ok": False, "message": f"Instrument {ric} not found"}), 404
 
 
+@app.route("/api/instruments/delta", methods=["POST"])
+def api_instruments_delta():
+    """
+    Intraday delta update endpoint for instruments.
+    Accepts a single instrument dict or list of delta dicts.
+    Applies changes directly in-memory and saves .dat snapshot without reloading full universe.
+    """
+    dm = _get("datamgr")
+    ic = _get("instruments")
+    gce_inst = _get("gce")
+    data = request.json or {}
+
+    deltas = data.get("deltas", data) if isinstance(data, dict) else data
+    if isinstance(deltas, dict) and "deltas" not in data and "ric" not in deltas:
+        return jsonify({"ok": False, "message": "Invalid delta format, expected list or object with 'ric'"}), 400
+
+    try:
+        dm_res = {"applied": 0, "deleted": 0, "total": 0}
+        if dm and hasattr(dm, "apply_delta"):
+            dm_res = dm.apply_delta(deltas)
+        if ic and hasattr(ic, "apply_delta"):
+            ic.apply_delta(deltas)
+        if gce_inst and hasattr(gce_inst, "instruments") and hasattr(gce_inst.instruments, "apply_delta"):
+            gce_inst.instruments.apply_delta(deltas)
+
+        return jsonify({
+            "ok": True,
+            "message": f"Applied {dm_res.get('applied', 0)} intraday updates, {dm_res.get('deleted', 0)} deletions. Total active: {dm_res.get('total', 0)}",
+            "delta_summary": dm_res
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 400
+
+
 # ---------------------------------------------------------------------------
 # Section 6 — Exchange Sessions
 # ---------------------------------------------------------------------------
@@ -1247,7 +1291,32 @@ def api_rms_orders(control, status):
 @app.route("/api/performance")
 def api_performance():
     parser = _get("log_parser")
-    return jsonify(parser.get_performance_data())
+    log_data = parser.get_performance_data() if parser else {
+        "order_times_ms": [],
+        "control_timings": [],
+        "stats": {"avg_ms": 0, "min_ms": 0, "max_ms": 0, "p95_ms": 0, "total_orders": 0}
+    }
+
+    # Merge live in-memory telemetry if available
+    live_times = _state.get("perf_order_times", [])
+    if live_times:
+        combined_times = list(log_data.get("order_times_ms", []))
+        for t in live_times[-50:]:
+            if len(combined_times) < len(live_times):
+                combined_times.append(t)
+        if combined_times:
+            sorted_times = sorted(combined_times)
+            log_data["order_times_ms"] = combined_times
+            p95_idx = int(len(sorted_times) * 0.95)
+            log_data["stats"] = {
+                "avg_ms": round(sum(sorted_times) / len(sorted_times), 4),
+                "min_ms": sorted_times[0],
+                "max_ms": sorted_times[-1],
+                "p95_ms": sorted_times[min(p95_idx, len(sorted_times) - 1)],
+                "total_orders": len(combined_times)
+            }
+
+    return jsonify(log_data)
 
 
 # ---------------------------------------------------------------------------

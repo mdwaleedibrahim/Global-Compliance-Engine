@@ -1,8 +1,9 @@
 """InstrumentCache - Load and manage instrument static data"""
 
 import csv
+import threading
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any, Union
 
 
 class Instrument:
@@ -168,6 +169,69 @@ class InstrumentCache:
         if stock_code:
             self.ric_to_code[ric] = stock_code
         return inst
+
+    @classmethod
+    def from_datamgr(cls, datamgr: Any) -> 'InstrumentCache':
+        """Construct InstrumentCache populated from DataMgr in memory on startup/restart without re-reading CSV."""
+        cache = cls()
+        if datamgr and hasattr(datamgr, 'instruments'):
+            with getattr(datamgr, '_lock', threading.Lock()):
+                for ric, inst in datamgr.instruments.items():
+                    board_lot = int(getattr(inst, 'board_lot', 100) or 100)
+                    stock_code = str(getattr(inst, 'stock_code', '') or '')
+                    name = str(getattr(inst, 'name', '') or '')
+                    category = str(getattr(inst, 'category', '') or '')
+                    sec_type = str(getattr(inst, 'security_type', getattr(inst, 'sub_category', '')) or '')
+                    exchange = str(getattr(inst, 'exchange', 'XHKG') or 'XHKG')
+                    shortsell = 'Y' if getattr(inst, 'shortsell_eligible', False) else 'N'
+                    cas = 'Y' if getattr(inst, 'cas_eligible', False) else 'N'
+                    vcm = 'Y' if getattr(inst, 'vcm_eligible', False) else 'N'
+                    currency = str(getattr(inst, 'trading_currency', getattr(inst, 'currency', 'HKD')) or 'HKD')
+                    isin = str(getattr(inst, 'isin', '') or '')
+
+                    cache.instruments[ric] = Instrument(
+                        ric=ric,
+                        stock_code=stock_code,
+                        name=name,
+                        board_lot=board_lot,
+                        isin=isin,
+                        category=category,
+                        security_type=sec_type,
+                        exchange=exchange,
+                        shortsell_eligible=shortsell,
+                        cas_eligible=cas,
+                        vcm_eligible=vcm,
+                        currency=currency
+                    )
+                    if stock_code:
+                        cache.ric_to_code[ric] = stock_code
+        return cache
+
+    def apply_delta(self, deltas: Union[Dict[str, Any], List[Dict[str, Any]]]) -> Dict[str, Any]:
+        """Apply intraday delta updates to InstrumentCache in memory."""
+        if isinstance(deltas, dict):
+            delta_list = [deltas]
+        elif isinstance(deltas, list):
+            delta_list = deltas
+        else:
+            delta_list = []
+
+        applied = 0
+        deleted = 0
+        for item in delta_list:
+            if not isinstance(item, dict):
+                continue
+            ric = str(item.get('ric', item.get('RIC', '')) or '').strip()
+            if not ric:
+                continue
+            action = str(item.get('action', item.get('Action', 'upsert'))).strip().lower()
+            if action == 'delete':
+                if self.delete_instrument(ric):
+                    deleted += 1
+            else:
+                self.add_or_update_instrument(item)
+                applied += 1
+        return {"applied": applied, "deleted": deleted, "total": len(self.instruments)}
 
     def delete_instrument(self, ric: str) -> bool:
         """Delete instrument from memory cache by RIC."""

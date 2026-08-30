@@ -293,9 +293,11 @@ class GCE:
             self.datamgr = DataMgr(auto_load=False)
 
         try:
-            self.instruments = InstrumentCache(instrument_csv)
-            self.logger.info(f"Loaded {self.instruments.count()} instruments")
-        except FileNotFoundError as e:
+            self.instruments = InstrumentCache.from_datamgr(self.datamgr)
+            if self.instruments.count() == 0 and instrument_csv and Path(instrument_csv).exists():
+                self.instruments.load_from_csv(instrument_csv)
+            self.logger.info(f"Loaded {self.instruments.count()} instruments from DataMgr")
+        except Exception as e:
             self.logger.error(f"Failed to load instruments: {e}")
             self.instruments = InstrumentCache()
 

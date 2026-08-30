@@ -799,6 +799,96 @@ class DataMgr:
 
         return found
 
+    def apply_delta(self, deltas: Union[Dict[str, Any], List[Dict[str, Any]]]) -> Dict[str, Any]:
+        """
+        Apply intraday delta updates to instruments in memory and update .dat snapshot.
+        Carries only changed/new/deleted instruments without reloading the full static universe.
+
+        Args:
+            deltas: A single instrument dict or a list of instrument dicts.
+                    Optional 'action': 'add' | 'update' | 'upsert' | 'delete' (default: 'upsert').
+
+        Returns:
+            Dict summarizing delta execution: {"applied": count, "deleted": count, "total": count}
+        """
+        if isinstance(deltas, dict):
+            delta_list = [deltas]
+        elif isinstance(deltas, list):
+            delta_list = deltas
+        else:
+            delta_list = []
+
+        applied_count = 0
+        deleted_count = 0
+
+        with self._lock:
+            for item in delta_list:
+                if not isinstance(item, dict):
+                    continue
+                ric = str(item.get('ric', item.get('RIC', '')) or '').strip()
+                if not ric:
+                    continue
+
+                action = str(item.get('action', item.get('Action', 'upsert'))).strip().lower()
+                if action == 'delete':
+                    if ric in self.instruments:
+                        inst = self.instruments.pop(ric)
+                        code = getattr(inst, 'stock_code', '')
+                        if code and code in self.code_to_ric:
+                            del self.code_to_ric[code]
+                        deleted_count += 1
+                else:
+                    stock_code = str(item.get('stock_code', item.get('Stock Code', '')) or '').strip()
+                    name = str(item.get('name', item.get('Name of Securities', item.get('Name', ''))) or '').strip()
+                    category = str(item.get('category', item.get('Category', '')) or '').strip()
+                    sub_category = str(item.get('security_type', item.get('Sub-Category', item.get('sub_category', ''))) or '').strip()
+                    exchange = str(item.get('exchange', item.get('Exchange', 'XHKG')) or 'XHKG').strip()
+                    board_lot = int(item.get('board_lot', item.get('Board Lot', 100)) or 100)
+                    isin = str(item.get('isin', item.get('ISIN', '')) or '').strip()
+                    stamp_duty = item.get('stamp_duty') in (True, 'Y', 'y', 1, '1') or item.get('Subject to Stamp Duty') in (True, 'Y', 'y', 1, '1')
+                    shortsell = (
+                        item.get('shortsell') in (True, 'Y', 'y', 1, '1')
+                        or item.get('shortsell_eligible') in (True, 'Y', 'y', 1, '1')
+                        or item.get('Shortsell Eligible') in (True, 'Y', 'y', 1, '1')
+                    )
+                    cas = item.get('cas') in (True, 'Y', 'y', 1, '1') or item.get('cas_eligible') in (True, 'Y', 'y', 1, '1')
+                    vcm = item.get('vcm') in (True, 'Y', 'y', 1, '1') or item.get('vcm_eligible') in (True, 'Y', 'y', 1, '1')
+                    currency = str(item.get('currency', item.get('Trading Currency', 'HKD')) or 'HKD').strip()
+
+                    inst = InstrumentStatic(
+                        ric=ric,
+                        stock_code=stock_code,
+                        name=name,
+                        category=category,
+                        sub_category=sub_category,
+                        exchange=exchange,
+                        board_lot=board_lot,
+                        isin=isin,
+                        stamp_duty=stamp_duty,
+                        shortsell_eligible=shortsell,
+                        currency=currency,
+                        cas_eligible=cas,
+                        vcm_eligible=vcm,
+                    )
+                    self.instruments[ric] = inst
+                    if stock_code:
+                        self.code_to_ric[stock_code] = ric
+                    applied_count += 1
+
+        if applied_count > 0 or deleted_count > 0:
+            try:
+                self.save_to_dat(self.dat_path)
+            except Exception as e:
+                self.logger.warning(f"Failed to save .dat snapshot after delta update: {e}")
+
+        self.logger.info(f"INSTRUMENT_DELTA Applied {applied_count} updates, {deleted_count} deletions. Total active: {len(self.instruments)}")
+
+        return {
+            "applied": applied_count,
+            "deleted": deleted_count,
+            "total": len(self.instruments)
+        }
+
     # ------------------------------------------------------------------
     # Lookup & Order Details Enrichment Utility
     # ------------------------------------------------------------------

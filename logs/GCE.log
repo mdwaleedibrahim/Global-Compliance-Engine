@@ -1,38 +1,47 @@
-2026-08-30 18:56:59,542 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 18:56:59,575 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 18:56:59,616 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 18:56:59,674 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 18:56:59,754 [GCE] [INFO] Loaded session timings for 2 exchanges from test_Datamgr.ini
-2026-08-30 18:56:59,828 [GCE] [INFO] Loaded session timings for 2 exchanges from test_Datamgr.ini
-2026-08-30 18:56:59,908 [GCE] [INFO] Loaded session timings for 2 exchanges from test_Datamgr.ini
-2026-08-30 18:56:59,909 [GCE] [INFO] Exchange XSES session changed: BREAK -> Xsession1 at 09:00:00
-2026-08-30 18:56:59,910 [GCE] [INFO] Exchange XHKG session changed: BREAK -> Xsession1 at 09:35:00
-2026-08-30 18:56:59,911 [GCE] [INFO] Exchange XSES session changed: Xsession1 -> BREAK at 12:30:00
-2026-08-30 18:56:59,986 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 18:57:00,120 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 18:57:00,276 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 18:57:00,397 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 18:57:00,699 [GCE] [ORD-TEST-XR] [INFO] LMT_CHECK_START
-2026-08-30 18:57:00,701 [GCE] [ORD-TEST-XR] [INFO] LMT_CHECK_NEW B 0005.HK 100@LMT 60.0 HKD PAFTDACXUAT Equity||DMA|||||XHKG|0005||DAY
-2026-08-30 18:57:00,702 [GCE] [ORD-TEST-XR] [INFO] LMT_MKTDAT 0005.HK Last=60.2, Bid=60.0, Ask=60.5, Open=59.5, Close=59.8, XR=0.1282
-2026-08-30 18:57:00,703 [GCE] [ORD-TEST-XR] [INFO] 0 controls validated, 0 passed, 0 failed
-2026-08-30 18:57:00,704 [GCE] [ORD-TEST-XR] [INFO] LMT_CHECK_OVER in 112.77 μs
-2026-08-30 18:57:00,789 [GCE] [ORD-20260830-185700-782] [INFO] LMT_CHECK_START
-2026-08-30 18:57:00,790 [GCE] [ORD-20260830-185700-782] [INFO] LMT_CHECK_NEW B 0700.HK 100@LMT 380.0 HKD PAFTDACXUAT Equity|*|*|TRADER1|DESK1|ACC1|*|XHKG|0700|*|DAY
-2026-08-30 18:57:00,791 [GCE] [ORD-20260830-185700-782] [INFO] LMT_MKTDAT 0700.HK Last=380.5, Bid=380.0, Ask=381.0, Open=375.0, Close=378.0, XR=0.1282
-2026-08-30 18:57:00,792 [GCE] [ORD-20260830-185700-782] [INFO] 0 controls validated, 0 passed, 0 failed
-2026-08-30 18:57:00,793 [GCE] [ORD-20260830-185700-782] [INFO] LMT_CHECK_OVER in 70.10 μs
-2026-08-30 18:57:20,236 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 18:57:20,237 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
-2026-08-30 18:57:20,394 [GCE] [INFO] Loaded 17635 instruments
-2026-08-30 18:57:25,262 [GCE] [INFO] Loaded/fetched 0 prices in cache via PXFeeder
-2026-08-30 18:57:25,270 [GCE] [INFO] Loaded 2 orders
-2026-08-30 18:57:25,280 [GCE] [INFO] Loaded 4 positions
-2026-08-30 18:57:25,281 [GCE] [INFO] Subscribed 2 new RICs from 2 active OMS orders to PXFeeder
-2026-08-30 18:57:25,439 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 18:57:25,441 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
-2026-08-30 18:57:25,576 [GCE] [INFO] Loaded 17635 instruments
-2026-08-30 18:57:31,281 [GCE] [INFO] Loaded/fetched 0 prices in cache via PXFeeder
-2026-08-30 18:57:31,287 [GCE] [INFO] Loaded 2 orders
-2026-08-30 18:57:31,294 [GCE] [INFO] Loaded 4 positions
-2026-08-30 18:57:31,295 [GCE] [INFO] Subscribed 2 new RICs from 2 active OMS orders to PXFeeder
+2026-08-30 19:14:42,679 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:14:42,707 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:14:42,745 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:14:42,808 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:14:42,830 [GCE] [INFO] INSTRUMENT_DELTA Applied 2 updates, 0 deletions. Total active: 2
+2026-08-30 19:14:42,866 [GCE] [INFO] INSTRUMENT_DELTA Applied 0 updates, 2 deletions. Total active: 0
+2026-08-30 19:14:42,879 [GCE] [INFO] INSTRUMENT_DELTA Applied 2 updates, 0 deletions. Total active: 2
+2026-08-30 19:14:42,883 [GCE] [INFO] INSTRUMENT_DELTA Applied 2 updates, 1 deletions. Total active: 2
+2026-08-30 19:14:42,906 [GCE] [ORD-20260830-191442-890] [INFO] LMT_CHECK_START
+2026-08-30 19:14:42,907 [GCE] [ORD-20260830-191442-890] [INFO] LMT_CHECK_NEW B 0700.HK 100@LMT 380.0 HKD PAFTDACXUAT Equity|*|*|*|*|*|*|XHKG|0700|*|DAY
+2026-08-30 19:14:42,908 [GCE] [ORD-20260830-191442-890] [INFO] LMT_MKTDAT 0700.HK Last=380.5, Bid=380.0, Ask=381.0, Open=375.0, Close=378.0, XR=0.128
+2026-08-30 19:14:42,909 [GCE] [ORD-20260830-191442-890] [INFO] 0 controls validated, 0 passed, 0 failed
+2026-08-30 19:14:42,910 [GCE] [ORD-20260830-191442-890] [INFO] LMT_CHECK_OVER in 62.70 μs
+2026-08-30 19:14:42,983 [GCE] [INFO] Loaded session timings for 2 exchanges from test_Datamgr.ini
+2026-08-30 19:14:43,038 [GCE] [INFO] Loaded session timings for 2 exchanges from test_Datamgr.ini
+2026-08-30 19:14:43,103 [GCE] [INFO] Loaded session timings for 2 exchanges from test_Datamgr.ini
+2026-08-30 19:14:43,104 [GCE] [INFO] Exchange XSES session changed: BREAK -> Xsession1 at 09:00:00
+2026-08-30 19:14:43,104 [GCE] [INFO] Exchange XHKG session changed: BREAK -> Xsession1 at 09:35:00
+2026-08-30 19:14:43,105 [GCE] [INFO] Exchange XSES session changed: Xsession1 -> BREAK at 12:30:00
+2026-08-30 19:14:43,174 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:14:43,266 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:14:43,407 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:14:43,519 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:14:43,820 [GCE] [ORD-TEST-XR] [INFO] LMT_CHECK_START
+2026-08-30 19:14:43,821 [GCE] [ORD-TEST-XR] [INFO] LMT_CHECK_NEW B 0005.HK 100@LMT 60.0 HKD PAFTDACXUAT Equity||DMA|||||XHKG|0005||DAY
+2026-08-30 19:14:43,822 [GCE] [ORD-TEST-XR] [INFO] LMT_MKTDAT 0005.HK Last=60.2, Bid=60.0, Ask=60.5, Open=59.5, Close=59.8, XR=0.1282
+2026-08-30 19:14:43,823 [GCE] [ORD-TEST-XR] [INFO] 0 controls validated, 0 passed, 0 failed
+2026-08-30 19:14:43,824 [GCE] [ORD-TEST-XR] [INFO] LMT_CHECK_OVER in 106.10 μs
+2026-08-30 19:14:43,897 [GCE] [ORD-20260830-191443-891] [INFO] LMT_CHECK_START
+2026-08-30 19:14:43,898 [GCE] [ORD-20260830-191443-891] [INFO] LMT_CHECK_NEW B 0700.HK 100@LMT 380.0 HKD PAFTDACXUAT Equity|*|*|TRADER1|DESK1|ACC1|*|XHKG|0700|*|DAY
+2026-08-30 19:14:43,899 [GCE] [ORD-20260830-191443-891] [INFO] LMT_MKTDAT 0700.HK Last=380.5, Bid=380.0, Ask=381.0, Open=375.0, Close=378.0, XR=0.1282
+2026-08-30 19:14:43,900 [GCE] [ORD-20260830-191443-891] [INFO] 0 controls validated, 0 passed, 0 failed
+2026-08-30 19:14:43,901 [GCE] [ORD-20260830-191443-891] [INFO] LMT_CHECK_OVER in 75.58 μs
+2026-08-30 19:15:02,865 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:15:02,871 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
+2026-08-30 19:15:02,892 [GCE] [INFO] Loaded 17635 instruments from DataMgr
+2026-08-30 19:15:07,057 [GCE] [INFO] Loaded/fetched 0 prices in cache via PXFeeder
+2026-08-30 19:15:07,064 [GCE] [INFO] Loaded 3 orders
+2026-08-30 19:15:07,072 [GCE] [INFO] Loaded 4 positions
+2026-08-30 19:15:07,073 [GCE] [INFO] Subscribed 2 new RICs from 2 active OMS orders to PXFeeder
+2026-08-30 19:15:07,260 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-30 19:15:07,271 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
+2026-08-30 19:15:07,295 [GCE] [INFO] Loaded 17635 instruments from DataMgr
+2026-08-30 19:15:13,004 [GCE] [INFO] Loaded/fetched 0 prices in cache via PXFeeder
+2026-08-30 19:15:13,008 [GCE] [INFO] Loaded 3 orders
+2026-08-30 19:15:13,015 [GCE] [INFO] Loaded 4 positions
+2026-08-30 19:15:13,017 [GCE] [INFO] Subscribed 2 new RICs from 2 active OMS orders to PXFeeder

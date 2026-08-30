@@ -2,31 +2,66 @@
 
 Parses log lines like:
   [PASS] MaxOrderPrice: Control passed | LMT=100.0, ORD=50.0 {price_control.py:19 2800 nano seconds}
-  [FAIL] MaxOrderPrice: ... {price_control.py:19 4300 nano seconds}
+  [rule=8] [PASS] QtyControl: Control passed | LMT=1000, ORD=500 {test_parallel_logging.py:69 2.75 μs}
+  [rule=8] [FAIL] PriceControl: Price Exceeds Limit | LMT=100.0, ORD=200.0 {test_parallel_logging.py:75 3.78 μs}
+  LMT_CHECK_OVER in 270.98 ms
+  LMT_CHECK_OVER in 155.93 μs
   LMT_CHECK_OVER in 0.60ms
 """
 
 import re
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 from collections import defaultdict
+
+
+def parse_duration_to_ms(val_str: str) -> float:
+    """Parse any duration string (e.g. '242.43 ms', '155.93 μs', '2800 ns', '1.25 s', '0.60ms') to milliseconds."""
+    if not val_str:
+        return 0.0
+    s = str(val_str).strip().replace('nano seconds', 'ns').replace('nanoseconds', 'ns').replace('micro seconds', 'μs').replace('microseconds', 'μs')
+    m = re.search(r'([\d.]+)\s*([a-zA-Zμµ]+)', s)
+    if not m:
+        try:
+            return float(s)
+        except ValueError:
+            return 0.0
+    num = float(m.group(1))
+    unit = m.group(2).lower()
+    if unit in ('ns', 'nanos'):
+        return num / 1_000_000.0
+    elif unit in ('μs', 'µs', 'us', 'micros'):
+        return num / 1000.0
+    elif unit in ('ms', 'millis'):
+        return num
+    elif unit in ('s', 'sec', 'secs', 'second', 'seconds'):
+        return num * 1000.0
+    elif unit in ('m', 'min', 'mins', 'minute', 'minutes'):
+        return num * 60_000.0
+    return num
+
+
+def parse_duration_to_ns(val_str: str) -> int:
+    """Parse any duration string to integer nanoseconds."""
+    return int(round(parse_duration_to_ms(val_str) * 1_000_000.0))
 
 
 # Regex patterns for log parsing
 CONTROL_RESULT_RE = re.compile(
+    r'(?:\[rule=(?P<rule>\w+)\]\s+)?'
     r'\[(?P<status>PASS|FAIL)\]\s+'
     r'(?P<control>\S+?):\s+'
-    r'(?P<message>.+?)\s*\|\s*'
-    r'LMT=(?P<limit>[^,]+),\s*ORD=(?P<order_val>\S+)'
+    r'(?P<message>[^|]+?)\s*\|\s*'
+    r'LMT=(?P<limit>[^,]+),\s*ORD=(?P<order_val>[^ \t\r\n{}]+)'
     r'(?:\s*\{(?P<caller>[^}]+)\})?'
 )
 
 TIMING_SUFFIX_RE = re.compile(
-    r'(?P<file>\S+?:\d+)\s+(?P<ns>\d+)\s+nano\s+seconds'
+    r'(?P<file>\S+?:\d+)?\s*(?P<duration>[\d.]+\s*(?:nano\s+seconds|nanoseconds|ns|μs|µs|us|ms|s))?'
 )
 
 LMT_CHECK_OVER_RE = re.compile(
-    r'LMT_CHECK_OVER\s+in\s+(?P<ms>[\d.]+)ms'
+    r'LMT_CHECK_OVER\s+in\s+(?P<duration>[\d.]+\s*(?:nano\s+seconds|nanoseconds|ns|μs|µs|us|ms|s)?)'
 )
 
 LMT_CHECK_START_RE = re.compile(r'LMT_CHECK_START')
@@ -93,14 +128,16 @@ class LogParser:
             ts_m = TIMESTAMP_RE.match(line)
             timestamp = ts_m.group('ts') if ts_m else ""
 
-            # Extract timing from caller info
+            # Extract timing and file from caller info
             elapsed_ns = 0
             source_file = ""
             if caller_info:
                 tm = TIMING_SUFFIX_RE.search(caller_info)
                 if tm:
-                    source_file = tm.group('file')
-                    elapsed_ns = int(tm.group('ns'))
+                    source_file = tm.group('file') or ""
+                    dur_str = tm.group('duration') or ""
+                    if dur_str:
+                        elapsed_ns = parse_duration_to_ns(dur_str)
 
             if status == "PASS":
                 controls[control]["pass"] += 1
@@ -163,7 +200,7 @@ class LogParser:
             {
                 "order_times_ms": [0.60, 0.45, ...],  # total time per order validation
                 "control_timings": [
-                    {"order_index": 0, "control": "MaxOrderPrice", "elapsed_ns": 2800},
+                    {"order_index": 0, "control": "MaxOrderPrice", "elapsed_ns": 2800, "status": "PASS"},
                     ...
                 ],
                 "stats": {
@@ -188,20 +225,27 @@ class LogParser:
             m = CONTROL_RESULT_RE.search(line)
             if m:
                 caller_info = m.group('caller') or ""
+                elapsed_ns = 0
                 if caller_info:
                     tm = TIMING_SUFFIX_RE.search(caller_info)
                     if tm:
-                        control_timings.append({
-                            "order_index": current_order_idx,
-                            "control": m.group('control'),
-                            "elapsed_ns": int(tm.group('ns')),
-                            "status": m.group('status'),
-                        })
+                        dur_str = tm.group('duration') or ""
+                        if dur_str:
+                            elapsed_ns = parse_duration_to_ns(dur_str)
+
+                control_timings.append({
+                    "order_index": max(0, current_order_idx),
+                    "control": m.group('control'),
+                    "elapsed_ns": elapsed_ns,
+                    "status": m.group('status'),
+                })
 
             # Total order time
             over_m = LMT_CHECK_OVER_RE.search(line)
             if over_m:
-                order_times_ms.append(float(over_m.group('ms')))
+                dur_str = over_m.group('duration') or ""
+                dur_ms = parse_duration_to_ms(dur_str)
+                order_times_ms.append(round(dur_ms, 4))
 
         # Calculate stats
         stats = {"avg_ms": 0, "min_ms": 0, "max_ms": 0, "p95_ms": 0, "total_orders": len(order_times_ms)}
