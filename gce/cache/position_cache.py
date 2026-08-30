@@ -206,8 +206,8 @@ class PositionCache:
 
     def __init__(self, csv_path: Optional[str] = None, dat_path: Optional[str] = None):
         self.positions: Dict[str, Position] = {}
-        self.csv_path = csv_path or self.DEFAULT_CSV_PATH
-        self.dat_path = dat_path or self.DEFAULT_DAT_PATH
+        self.csv_path = csv_path
+        self.dat_path = dat_path
 
         self.CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -223,12 +223,6 @@ class PositionCache:
                 self.load_from_csv(csv_path)
                 return
             except FileNotFoundError:
-                pass
-
-        if Path(self.dat_path).exists():
-            try:
-                self.load_from_dat(self.dat_path)
-            except Exception:
                 pass
     
     def add_position(self, symbol_or_position: Any, position: Optional[Position] = None) -> None:

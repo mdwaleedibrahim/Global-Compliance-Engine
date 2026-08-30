@@ -661,7 +661,7 @@
                 <span class="nav-badge" id="admin-count-orders" style="background:#3b82f6; color:#fff; font-size:12px;">0 orders</span>
               </div>
               <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:16px;">
-                In-memory order book cache, active live orders, and <code>OrderCache.csv</code> / <code>.dat</code> snapshot.
+                In-memory order book cache, active live orders, and <code>cache/OrderCache.dat</code> snapshot.
               </div>
             </div>
             <button class="btn btn-danger btn-sm" style="width:100%" onclick="purgeCache('oms')">🗑️ Purge OMS Cache</button>
@@ -675,7 +675,7 @@
                 <span class="nav-badge" id="admin-count-positions" style="background:#10b981; color:#fff; font-size:12px;">0 positions</span>
               </div>
               <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:16px;">
-                Pattern-aggregated intraday trading positions, volume turnover, and <code>PositionsCache.csv</code> / <code>.dat</code>.
+                Pattern-aggregated intraday trading positions, volume turnover, and <code>cache/PositionsCache.dat</code>.
               </div>
             </div>
             <button class="btn btn-danger btn-sm" style="width:100%" onclick="purgeCache('positions')">🗑️ Purge Positions Cache</button>
@@ -689,7 +689,7 @@
                 <span class="nav-badge" id="admin-count-prices" style="background:#8b5cf6; color:#fff; font-size:12px;">0 prices / FX</span>
               </div>
               <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:16px;">
-                PXFeeder & PriceCache live quotes, FX conversion rates, and <code>PriceCache.csv</code> / <code>.dat</code>.
+                PXFeeder & PriceCache live quotes, FX conversion rates, and <code>cache/PriceCache.dat</code>.
               </div>
             </div>
             <button class="btn btn-danger btn-sm" style="width:100%" onclick="purgeCache('prices')">🗑️ Purge Price Cache</button>

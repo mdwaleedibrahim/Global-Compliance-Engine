@@ -45,7 +45,7 @@ class PositionUpdater:
         success, msg = self._apply_fill(position, order.side, filled_qty, order.price)
         
         if success:
-            self.position_cache.save_to_csv("cache/PositionsCache.csv")
+            self.position_cache.save_to_dat("cache/PositionsCache.dat")
         
         return success, msg
     

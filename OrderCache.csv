@@ -1,3 +1,0 @@
-order id,DateTime,status,Product,Application,Flow,Trader,Desk,Account,Client,symbol,exchange,underlying,Algo Strategy,Currency,Side,Order Type,Quantity,Price,Tif,Filled,Open
-ORD-TEST-XR,2026-08-30T18:39:38.417201,Live,Equity,,DMA,,,,,0005.HK,XHKG,0005,,HKD,B,LMT,100,60.0,DAY,0,100
-ORD-20260830-183938-583,2026-08-30T18:39:38.583125,Live,Equity,*,*,TRADER1,DESK1,ACC1,*,0700.HK,XHKG,0700,*,HKD,B,LMT,100,380.0,DAY,0,100

@@ -291,16 +291,43 @@ class PXFeeder:
                 info = {}
                 if last is None:
                     try:
+                        info = ticker.info or {}
+                        last = (
+                            info.get('regularMarketPrice')
+                            or info.get('currentPrice')
                             or info.get('previousClose')
                             or info.get('ask')
+                            or info.get('bid')
+                        )
+                        close_px = info.get('regularMarketPreviousClose') or info.get('previousClose')
+                        open_px = info.get('regularMarketOpen') or info.get('open')
+                    except Exception:
+                        pass
+
+                if last is not None and float(last) > 0:
+                    last_f = round(float(last), 4)
+                    close_f = round(float(close_px if close_px is not None else last_f), 4)
                     open_f = round(float(open_px if open_px is not None else last_f), 4)
+                    bid_f = round(float(info.get('bid') or getattr(fast, 'day_low', None) or last_f), 4)
+                    ask_f = round(float(info.get('ask') or getattr(fast, 'day_high', None) or last_f), 4)
+
+                    return {
                         'bid': bid_f,
+                        'ask': ask_f,
+                        'last': last_f,
+                        'open': open_f,
                         'close': close_f
                     }
             except Exception:
                 continue
 
         return None
+
+    @staticmethod
+    def _fetch_ticker_price(symbol: str) -> Optional[float]:
+        """Safely fetch latest price for a symbol using fast_info or info without noisy errors."""
+        details = PXFeeder._fetch_ticker_details(symbol)
+        return details.get('last') if details else None
 
     def _fetch_and_cache_single(self, ric: str) -> bool:
         """Fetch price for a single RIC and update in-memory cache.
@@ -314,13 +341,77 @@ class PXFeeder:
         try:
             details = self._fetch_ticker_details(ric)
             if details is not None:
+                timestamp = datetime.now().isoformat()
+                price_dict = {
+                    'ric': ric,
+                    'bid': details['bid'],
+                    'ask': details['ask'],
+                    'last': details['last'],
+                    'close': details['close'],
+                    'open': details['open'],
+                    'timestamp': timestamp,
+                }
+                with self._lock:
+                    self._prices[ric] = price_dict
+                    self._prices[ric.upper()] = price_dict
+                    self._prices[ric.lower()] = price_dict
+                self.logger.info(f"PRICE_UPDATE {ric} Bid={details['bid']} Ask={details['ask']} Last={details['last']} Open={details['open']} Close={details['close']}")
+                return True
+            else:
+                self.logger.warning(f"PRICE_UPDATE_UNAVAILABLE {ric}: No price returned from provider")
+        except Exception as e:
+            self.logger.warning(f"PRICE_FETCH_ERROR {ric}: {e}")
+        return False
+
+    def refresh_now(self) -> Tuple[int, int]:
+        """
+        Fetch prices and FX rates synchronously via yfinance, update in-memory cache,
+        and dump snapshot to .dat file.
+
         Returns:
             Tuple of (prices_fetched_count, fx_pairs_fetched_count)
+        """
         try:
             import yfinance as yf
         except ImportError:
             self.logger.error("yfinance library is not installed.")
+            return 0, 0
 
+        with self._lock:
+            active_symbols = list(self.symbols)
+
+        timestamp = datetime.now().isoformat()
+        new_prices = {}
+        p_count = 0
+
+        # 1. Fetch equity / instrument prices
+        for sym in active_symbols:
+            details = self._fetch_ticker_details(sym)
+            if details is not None:
+                new_prices[sym] = {
+                    'ric': sym,
+                    'bid': details['bid'],
+                    'ask': details['ask'],
+                    'last': details['last'],
+                    'close': details['close'],
+                    'open': details['open'],
+                    'timestamp': timestamp,
+                }
+                new_prices[sym.upper()] = new_prices[sym]
+                p_count += 1
+
+        # 2. Fetch base FX tickers to USD
+        new_fx = {}
+        curr_to_usd = {}
+        for curr, ticker_symbol in self.FX_TICKERS.items():
+            if curr == "USD":
+                curr_to_usd["USD"] = 1.0
+                continue
+            try:
+                rate = self._fetch_ticker_price(ticker_symbol)
+                if rate is not None and float(rate) > 0:
+                    curr_to_usd[curr] = 1.0 / float(rate)
+            except Exception as e:
                 self.logger.debug(f"FX_FETCH_FAIL {ticker_symbol}: {e}")
 
         # Triangulate all cross pairs

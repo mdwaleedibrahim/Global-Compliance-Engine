@@ -27,6 +27,7 @@ from gce.logger import GCELogger
 from gce.pxfeeder import PXFeeder
 from gce.datamgr import DataMgr
 from gce.reconciler import PositionReconciler
+from gce.engine import GCE
 
 from gui.log_parser import LogParser
 
@@ -114,17 +115,15 @@ def _init_components():
         try:
             _state["prices"] = PriceCache(
                 dat_path=os.path.join(PROJECT_ROOT, "cache", "PriceCache.dat"),
-                csv_path=os.path.join(PROJECT_ROOT, "cache", "PriceCache.csv"),
                 fetch_yfinance=False,
                 auto_save=False,
             )
         except Exception:
-            _state["prices"] = PriceCache()
+            _state["prices"] = PriceCache(dat_path=os.path.join(PROJECT_ROOT, "cache", "PriceCache.dat"))
 
         # OrderCache
         try:
             _state["orders"] = OrderCache(
-                csv_path=os.path.join(PROJECT_ROOT, "OrderCache.csv"),
                 dat_path=os.path.join(PROJECT_ROOT, "cache", "OrderCache.dat"),
                 instrument_cache=_state["instruments"],
             )
@@ -134,11 +133,13 @@ def _init_components():
         # PositionCache
         try:
             _state["positions"] = PositionCache(
-                csv_path=os.path.join(PROJECT_ROOT, "cache", "PositionsCache.csv"),
                 dat_path=os.path.join(PROJECT_ROOT, "cache", "PositionsCache.dat"),
             )
         except Exception:
-            _state["positions"] = PositionCache()
+            _state["positions"] = PositionCache(dat_path=os.path.join(PROJECT_ROOT, "cache", "PositionsCache.dat"))
+
+        # Logger
+        _state["logger"] = GCELogger(log_dir=log_dir)
 
         # Log parser
         _state["log_parser"] = LogParser(os.path.join(log_dir, "GCE.log"))
@@ -558,23 +559,24 @@ def api_limits_import():
 # ---------------------------------------------------------------------------
 def _get_gce_engine():
     gce = _get("gce")
+    if not gce:
+        try:
             from concurrent.futures import ThreadPoolExecutor
-            from gce.controls.quantity_control import MaxOrderQuantity
-            from gce.controls.price_control import MaxOrderPrice
-            from gce.controls.max_order_consideration import MaxOrderConsideration
-            from gce.controls.bbo_price_tolerance import BBOPriceTolerance
-            from gce.controls.close_price_tolerance import ClosePriceTolerance
-            from gce.controls.last_price_tolerance import LastPriceTolerance
-            from gce.controls.max_daily_turnover import MaxDailyTurnover
-
             gce_inst = GCE.__new__(GCE)
-            gce_inst.logger = _get("logger")
+            log_inst = _get("logger")
+            if not log_inst:
+                log_inst = GCELogger(log_dir=os.path.join(PROJECT_ROOT, "logs"))
+                _state["logger"] = log_inst
+            gce_inst.logger = log_inst
             gce_inst.executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="GCEControlExec")
             gce_inst.datamgr = _get("datamgr")
             gce_inst.instruments = _get("instruments")
             gce_inst.pxfeeder = _get("pxfeeder")
             gce_inst.prices = _get("prices")
             gce_inst.orders = _get("orders")
+            gce_inst.positions = _get("positions")
+            gce_inst.controls = {}
+            gce_inst.rejection_messages = []
             _state["gce"] = gce_inst
             gce = gce_inst
         except Exception as e:
@@ -587,6 +589,12 @@ def _get_gce_engine():
         gce.instruments = _get("instruments")
         gce.orders = _get("orders")
         gce.positions = _get("positions")
+        if not hasattr(gce, "controls") or gce.controls is None:
+            gce.controls = {}
+        if not hasattr(gce, "rejection_messages") or gce.rejection_messages is None:
+            gce.rejection_messages = []
+
+    return gce
 
 
 @app.route("/api/orders")
@@ -741,12 +749,8 @@ def api_orders_place():
         if orders_cache:
             orders_cache.add_order(order)
 
-        # Persist orders cache
+        # Persist orders cache to .dat
         if orders_cache:
-            try:
-                orders_cache.save_to_csv(os.path.join(PROJECT_ROOT, "OrderCache.csv"))
-            except Exception as e:
-                print(f"Warning: Failed to save OrderCache.csv: {e}")
             try:
                 orders_cache.save_to_dat(os.path.join(PROJECT_ROOT, "cache", "OrderCache.dat"))
             except Exception as e:
@@ -1376,17 +1380,21 @@ def api_admin_status():
 
 @app.route("/api/admin/purge/oms", methods=["POST"])
 def api_admin_purge_oms():
-    """Purge OMS order cache in memory and on disk."""
+    """Purge OMS order cache in memory and on disk (.dat only)."""
     try:
         oc = _get("orders")
         if oc and hasattr(oc, "orders"):
             with _lock:
                 oc.orders.clear()
 
-        # Reset OrderCache.csv with header
-        header = "Order ID,Product,SecurityType,Application,Flow,Trader,Desk,Account,Client,symbol,exchange,underlying,Algo Strategy,Currency,Side,Order Type,Tif,Quantity,Price,Filled,Open,Status,DateTime\n"
-        csv_path = Path(PROJECT_ROOT) / "OrderCache.csv"
-        csv_path.write_text(header, encoding="utf-8")
+        # Remove any legacy OrderCache.csv
+        for csv_name in ("OrderCache.csv", "cache/OrderCache.csv"):
+            p = Path(PROJECT_ROOT) / csv_name
+            if p.exists():
+                try:
+                    p.unlink()
+                except Exception:
+                    pass
 
         # Reset .dat cache file
         for dat_name in ("cache/OrderCache.dat", "OrderCache.dat"):
@@ -1399,14 +1407,14 @@ def api_admin_purge_oms():
                 except Exception:
                     pass
 
-        return jsonify({"ok": True, "message": "OMS order cache cleared in memory and on disk."})
+        return jsonify({"ok": True, "message": "OMS order cache cleared in memory and .dat disk snapshot."})
     except Exception as e:
         return jsonify({"ok": False, "message": str(e)}), 500
 
 
 @app.route("/api/admin/purge/positions", methods=["POST"])
 def api_admin_purge_positions():
-    """Purge positions cache in memory and on disk."""
+    """Purge positions cache in memory and on disk (.dat only)."""
     try:
         pc = _get("positions")
         if pc and hasattr(pc, "positions"):
@@ -1415,12 +1423,14 @@ def api_admin_purge_positions():
                 if hasattr(pc, "pattern_index"):
                     pc.pattern_index.clear()
 
-        # Reset PositionsCache.csv
-        header = "Product,Application,Flow,Trader,Desk,Account,Client,symbol,exchange,underlying,Algo Strategy,Currency,Order Type,Tif,xr,bvol,bval,bval_usd,bfill,bfillval,bfillval_usd,bopen,bopenval,bopenval_usd,Bexposure,svol,sval,sval_usd,sfill,sfillval,sfillval_usd,sopen,sopenval,sopenval_usd,Sexposure,Ssexposure,Timestamp\n"
+        # Remove any legacy PositionsCache.csv
         for csv_name in ("cache/PositionsCache.csv", "PositionsCache.csv"):
             p = Path(PROJECT_ROOT) / csv_name
             if p.exists():
-                p.write_text(header, encoding="utf-8")
+                try:
+                    p.unlink()
+                except Exception:
+                    pass
 
         # Reset .dat cache file
         for dat_name in ("cache/PositionsCache.dat", "PositionsCache.dat"):
@@ -1433,14 +1443,14 @@ def api_admin_purge_positions():
                 except Exception:
                     pass
 
-        return jsonify({"ok": True, "message": "Positions cache cleared in memory and on disk."})
+        return jsonify({"ok": True, "message": "Positions cache cleared in memory and .dat disk snapshot."})
     except Exception as e:
         return jsonify({"ok": False, "message": str(e)}), 500
 
 
 @app.route("/api/admin/purge/prices", methods=["POST"])
 def api_admin_purge_prices():
-    """Purge price & FX cache in memory and on disk."""
+    """Purge price & FX cache in memory and on disk (.dat only)."""
     try:
         prc = _get("prices")
         if prc and hasattr(prc, "prices"):
@@ -1456,12 +1466,14 @@ def api_admin_purge_prices():
             if hasattr(px, "logger") and px.logger:
                 px.logger.info("ADMIN_PURGE Price and FX cache cleared by administrator")
 
-        # Reset PriceCache.csv
-        header = "RIC,Open,Bid,Ask,Last,Close,Timestamp\n"
+        # Remove any legacy PriceCache.csv
         for csv_name in ("cache/PriceCache.csv", "PriceCache.csv"):
             p = Path(PROJECT_ROOT) / csv_name
             if p.exists():
-                p.write_text(header, encoding="utf-8")
+                try:
+                    p.unlink()
+                except Exception:
+                    pass
 
         # Reset .dat cache file
         for dat_name in ("cache/PriceCache.dat", "PriceCache.dat"):
@@ -1474,7 +1486,7 @@ def api_admin_purge_prices():
                 except Exception:
                     pass
 
-        return jsonify({"ok": True, "message": "Price and FX cache cleared in memory and on disk."})
+        return jsonify({"ok": True, "message": "Price and FX cache cleared in memory and .dat disk snapshot."})
     except Exception as e:
         return jsonify({"ok": False, "message": str(e)}), 500
 

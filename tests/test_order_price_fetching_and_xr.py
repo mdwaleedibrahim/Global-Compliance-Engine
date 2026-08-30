@@ -15,6 +15,13 @@ class TestOrderDynamicPriceAndXR(unittest.TestCase):
 
     def test_order_placement_latency_and_caching(self):
         """Test that placing orders with cached/live prices is fast and does not reload CSVs."""
+        pxf = _get("pxfeeder")
+        if pxf:
+            pxf.update_price_in_memory("0700.HK", bid=380.0, ask=381.0, last=380.5, close=378.0, open_price=375.0)
+            pxf.set_fx_rate_in_memory("HKD/USD", 0.1282)
+
+        start = time.perf_counter()
+        res = self.client.post("/api/orders/place", json={
             "ric": "0700.HK",
             "side": "B",
             "quantity": 100,

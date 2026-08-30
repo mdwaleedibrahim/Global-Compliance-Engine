@@ -310,18 +310,18 @@ class GCE:
             self.prices = PriceCache(dat_path="cache/PriceCache.dat")
 
         try:
-            self.orders = OrderCache(csv_path=order_csv, instrument_cache=self.instruments)
+            self.orders = OrderCache(dat_path="cache/OrderCache.dat", instrument_cache=self.instruments)
             self.logger.info(f"Loaded {self.orders.count()} orders")
-        except FileNotFoundError as e:
+        except Exception as e:
             self.logger.error(f"Failed to load orders: {e}")
             self.orders = OrderCache()
 
         try:
-            self.positions = PositionCache(csv_path=position_csv, dat_path="cache/PositionsCache.dat")
-            self.logger.info(f"Loaded {self.positions.count()} positions")
-        except FileNotFoundError as e:
-            self.logger.error(f"Failed to load positions: {e}")
             self.positions = PositionCache(dat_path="cache/PositionsCache.dat")
+            self.logger.info(f"Loaded {self.positions.count()} positions")
+        except Exception as e:
+            self.logger.error(f"Failed to load positions: {e}")
+            self.positions = PositionCache()
         
         # OMS-driven subscription: subscribe all RICs with active orders to PXFeeder
         try:
@@ -543,7 +543,6 @@ class GCE:
                         xr_rate=xr_rate
                     )
                 try:
-                    self.positions.save_to_csv("cache/PositionsCache.csv")
                     self.positions.save_to_dat("cache/PositionsCache.dat")
                 except Exception as e:
                     self.logger.error(f"Failed to auto-save position cache: {e}")
@@ -576,7 +575,27 @@ class GCE:
             if isinstance(obj, dict):
                 for k in dict_keys:
                     if k in obj and obj[k] is not None:
+                        try:
+                            return float(obj[k])
+                        except Exception:
+                            pass
+                return default
+            return float(getattr(obj, attr_name, default) or default)
+
+        last_px = _px_val(px_obj, 'last', ['last', 'Last'])
+        bid_px = _px_val(px_obj, 'bid', ['bid', 'Bid'])
+        ask_px = _px_val(px_obj, 'ask', ['ask', 'Ask'])
+        open_px = _px_val(px_obj, 'open_price', ['open_price', 'open', 'Open'])
+        close_px = _px_val(px_obj, 'close', ['close', 'Close'])
         xr_rate = self._resolve_position_fx_rate(order)
+        log_batch.append(("INFO", f"LMT_MKTDAT {ric} Last={last_px}, Bid={bid_px}, Ask={ask_px}, Open={open_px}, Close={close_px}, XR={xr_rate}"))
+
+        for rule_id, c_name, passed, msg, limit, value, err, caller_loc, elapsed_ns in all_control_results:
+            if err is not None:
+                log_batch.append(("ERROR", f"[rule={rule_id}] Error in control {c_name}: {err}"))
+            else:
+                formatted_msg = self.logger.rejection_formatter.format_control_result(
+                    c_name, passed, limit, value,
                     "Control passed" if passed else msg,
                     rule_id=rule_id
                 )
@@ -617,12 +636,12 @@ class GCE:
             'max_turnover',
         }
     
-    def save_state(self, order_csv: str = "OrderCache.csv", 
-                   position_csv: str = "PositionsCache.csv") -> None:
-        """Save caches to CSV files"""
-        self.orders.save_to_csv(order_csv)
-        self.positions.save_to_csv(position_csv)
-        self.logger.info(f"State saved: orders={order_csv}, positions={position_csv}")
+    def save_state(self, order_dat: str = "cache/OrderCache.dat", 
+                   position_dat: str = "cache/PositionsCache.dat") -> None:
+        """Save caches to binary .dat files"""
+        self.orders.save_to_dat(order_dat)
+        self.positions.save_to_dat(position_dat)
+        self.logger.info(f"State saved: orders={order_dat}, positions={position_dat}")
 
     def get_risk_report(self):
         """Generate comprehensive risk report snapshot."""

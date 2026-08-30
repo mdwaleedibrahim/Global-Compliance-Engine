@@ -70,10 +70,13 @@ class Order:
 class OrderCache:
     """Cache for order data with complete OrderCache.csv schema support."""
     
+    DEFAULT_DAT_PATH = str(Path(__file__).resolve().parents[2] / "cache" / "OrderCache.dat")
+
     def __init__(self, csv_path: Optional[str] = None, instrument_cache: Optional[Any] = None,
                  dat_path: Optional[str] = None):
         self.orders: Dict[str, Order] = {}
-        self.dat_path = dat_path or str(Path(csv_path).with_suffix('.dat')) if csv_path else None
+        self.dat_path = dat_path
+        self.csv_path = csv_path
 
         if dat_path and Path(dat_path).exists():
             try:
@@ -82,8 +85,11 @@ class OrderCache:
             except Exception:
                 pass
 
-        if csv_path:
-            self.load_from_csv(csv_path, instrument_cache=instrument_cache)
+        if csv_path and Path(csv_path).exists():
+            try:
+                self.load_from_csv(csv_path, instrument_cache=instrument_cache)
+            except FileNotFoundError:
+                pass
 
     def load_from_dat(self, dat_path: str) -> int:
         """Load orders from a binary .dat snapshot for recovery."""
