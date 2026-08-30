@@ -98,14 +98,10 @@ def _init_components():
 
         # PXFeeder
         try:
-            symbols = (
-                list(_state["instruments"].instruments.keys())[:10]
-                if _state["instruments"].count() > 0
-                else None
-            )
+            default_symbols = ["0700.HK", "9988.HK", "0005.HK", "1299.HK", "0941.HK", "3690.HK", "0001.HK"]
             _state["pxfeeder"] = PXFeeder(
                 dat_path=os.path.join(PROJECT_ROOT, "cache", "PriceCache.dat"),
-                symbols=symbols,
+                symbols=default_symbols,
                 fetch_on_start=False,
                 auto_start_bg=True,
             )
@@ -150,7 +146,14 @@ def _init_components():
 
 
 # Start background initialization immediately on module load so services are pre-warmed
-threading.Thread(target=_init_components, name="GCEPreWarmThread", daemon=True).start()
+def _background_prewarm():
+    _init_components()
+    try:
+        _get_gce_engine()
+    except Exception:
+        pass
+
+threading.Thread(target=_background_prewarm, name="GCEPreWarmThread", daemon=True).start()
 
 
 def _get(key):

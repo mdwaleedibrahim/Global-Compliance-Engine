@@ -14,14 +14,33 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 
+try:
+    import yfinance as yf
+except Exception:
+    yf = None
+
 from gce.logger import PXFeederLogger
+
+
+def normalize_ticker_symbol(symbol: str) -> str:
+    """Normalize Hong Kong and global ticker symbols for Yahoo Finance lookup."""
+    s = str(symbol or '').strip().upper()
+    if not s:
+        return ""
+    if s.endswith(".HK"):
+        code_part = s[:-3]
+        if code_part.isdigit():
+            return f"{int(code_part):04d}.HK"
+    elif s.isdigit():
+        return f"{int(s):04d}.HK"
+    return s
 
 
 class PXFeeder:
     """Market Data and FX Rate feeder with in-memory caching, .dat file recovery, and background refresh."""
 
     MAJOR_CURRENCIES = ["USD", "EUR", "GBP", "JPY", "HKD", "AUD", "SGD", "CNH", "CAD", "CHF"]
-    DEFAULT_SYMBOLS = ["0700.HK", "9988.HK", "3690.HK", "AAPL", "MSFT", "GOOGL", "NVDA", "AMZN"]
+    DEFAULT_SYMBOLS = ["0700.HK", "9988.HK", "0005.HK", "1299.HK", "0941.HK", "3690.HK", "0001.HK"]
 
     # Liquid currency tickers against USD on Yahoo Finance
     # True if quoted directly as 1 CURR = X USD (e.g. EURUSD=X)
@@ -262,21 +281,21 @@ class PXFeeder:
         if not symbol:
             return None
 
-        candidates = [symbol]
-        clean_sym = str(symbol).strip()
-        if clean_sym.isdigit():
-            candidates.append(f"{clean_sym.zfill(4)}.HK")
-            candidates.append(f"{clean_sym}.HK")
-        elif not clean_sym.endswith(".HK") and len(clean_sym) <= 5 and clean_sym.isalnum():
-            if clean_sym.isdigit():
-                candidates.append(f"{clean_sym.zfill(4)}.HK")
+        clean_sym = str(symbol).strip().upper()
+        candidates = []
+        norm = normalize_ticker_symbol(clean_sym)
+        if norm:
+            candidates.append(norm)
+        if clean_sym not in candidates:
+            candidates.append(clean_sym)
 
+        # Pre-warmed yfinance Ticker lookup
         for sym in candidates:
             try:
                 import yfinance as yf
                 ticker = yf.Ticker(sym)
 
-                # 1. Try fast_info attributes (fast and direct)
+                # 1. Try fast_info attributes (fastest, single network call)
                 fast = getattr(ticker, 'fast_info', None)
                 last = None
                 open_px = None
@@ -289,22 +308,37 @@ class PXFeeder:
                     except Exception:
                         pass
 
-                # 2. Fallback to info dict only if fast_info was missing
+                # If fast_info succeeded, return immediately without querying heavy info dict!
+                if last is not None and float(last) > 0:
+                    last_f = round(float(last), 4)
+                    close_f = round(float(close_px if close_px is not None else last_f), 4)
+                    open_f = round(float(open_px if open_px is not None else last_f), 4)
+                    bid_f = round(float(getattr(fast, 'day_low', None) or last_f), 4)
+                    ask_f = round(float(getattr(fast, 'day_high', None) or last_f), 4)
+
+                    return {
+                        'bid': bid_f,
+                        'ask': ask_f,
+                        'last': last_f,
+                        'open': open_f,
+                        'close': close_f
+                    }
+
+                # 2. Fallback to info dict only if fast_info had no price
                 info = {}
-                if last is None:
-                    try:
-                        info = ticker.info or {}
-                        last = (
-                            info.get('regularMarketPrice')
-                            or info.get('currentPrice')
-                            or info.get('previousClose')
-                            or info.get('ask')
-                            or info.get('bid')
-                        )
-                        close_px = info.get('regularMarketPreviousClose') or info.get('previousClose')
-                        open_px = info.get('regularMarketOpen') or info.get('open')
-                    except Exception:
-                        pass
+                try:
+                    info = ticker.info or {}
+                    last = (
+                        info.get('regularMarketPrice')
+                        or info.get('currentPrice')
+                        or info.get('previousClose')
+                        or info.get('ask')
+                        or info.get('bid')
+                    )
+                    close_px = info.get('regularMarketPreviousClose') or info.get('previousClose')
+                    open_px = info.get('regularMarketOpen') or info.get('open')
+                except Exception:
+                    pass
 
                 if last is not None and float(last) > 0:
                     last_f = round(float(last), 4)

@@ -302,9 +302,9 @@ class GCE:
             self.instruments = InstrumentCache()
 
         try:
-            symbols = list(self.instruments.instruments.keys())[:10] if self.instruments.count() > 0 else None
-            self.pxfeeder = PXFeeder(dat_path="cache/PriceCache.dat", symbols=symbols, fetch_on_start=True)
-            self.prices = PriceCache(dat_path="cache/PriceCache.dat", csv_path=price_csv, fetch_yfinance=False, symbols=symbols, auto_save=True)
+            default_symbols = ["0700.HK", "9988.HK", "0005.HK", "1299.HK", "0941.HK", "3690.HK", "0001.HK"]
+            self.pxfeeder = PXFeeder(dat_path="cache/PriceCache.dat", symbols=default_symbols, fetch_on_start=False, auto_start_bg=True)
+            self.prices = PriceCache(dat_path="cache/PriceCache.dat", csv_path=price_csv, fetch_yfinance=False, symbols=default_symbols, auto_save=True)
             self.logger.info(f"Loaded/fetched {self.prices.count()} prices in cache via PXFeeder")
         except Exception as e:
             self.logger.error(f"Failed to initialize price cache / PXFeeder: {e}")
