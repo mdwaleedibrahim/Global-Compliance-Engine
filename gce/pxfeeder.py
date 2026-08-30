@@ -14,6 +14,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 
+from gce.logger import PXFeederLogger
+
 
 class PXFeeder:
     """Market Data and FX Rate feeder with in-memory caching, .dat file recovery, and background refresh."""
@@ -83,6 +85,8 @@ class PXFeeder:
         refresh_interval: Optional[int] = None,
         auto_start_bg: bool = True,
         config_path: Optional[str] = None,
+        log_dir: str = "logs",
+        logger: Optional[Any] = None,
     ):
         """
         Initialize PXFeeder.
@@ -95,7 +99,12 @@ class PXFeeder:
                               If None, loaded from config (default 300s / 5 min).
             auto_start_bg: Automatically start the background refresh thread if refresh_interval > 0.
             config_path: Path to INI config file for PXFeeder settings.
+            log_dir: Directory path for pxfeeder.log.
+            logger: Optional custom PXFeeder logger instance.
         """
+        # Initialize logger
+        self.logger = logger or PXFeederLogger(log_dir=log_dir)
+
         # Load config-driven defaults
         cfg = self._load_config(config_path)
 
@@ -112,6 +121,11 @@ class PXFeeder:
         self._stop_event = threading.Event()
         self._bg_thread: Optional[threading.Thread] = None
 
+        self.logger.info(
+            f"PXFeeder initialized (dat_path={self.dat_path}, refresh_interval={self.refresh_interval}s, "
+            f"max_symbols={self.max_symbols}, tracked_symbols={len(self.symbols)})"
+        )
+
         # Pre-seed baseline FX rates so controls always have valid rates immediately
         self._init_default_fx_rates()
 
@@ -121,13 +135,13 @@ class PXFeeder:
                 self.refresh_now()
                 loaded = True
             except Exception as e:
-                print(f"Warning: PXFeeder startup yfinance fetch failed: {e}. Falling back to .dat recovery.")
+                self.logger.warning(f"Startup yfinance fetch failed: {e}. Falling back to .dat recovery.")
 
         if not loaded and Path(self.dat_path).exists():
             try:
                 self.load_from_dat(self.dat_path)
             except Exception as e:
-                print(f"Warning: Failed to load PXFeeder state from .dat file {self.dat_path}: {e}")
+                self.logger.warning(f"Failed to load state from .dat file {self.dat_path}: {e}")
 
         if auto_start_bg and self.refresh_interval > 0:
             self.start()
@@ -155,11 +169,14 @@ class PXFeeder:
         with self._lock:
             if ric in self.symbols:
                 # Already subscribed — still fetch if requested and price missing
+                self.logger.debug(f"SUBSCRIBE {ric} already subscribed")
                 if fetch_now and ric not in self._prices:
                     self._fetch_and_cache_single(ric)
                 return False
             self.symbols.append(ric)
             self._enforce_max_symbols()
+
+        self.logger.info(f"SUBSCRIBE symbol={ric} (fetch_now={fetch_now}, total_subscribed={len(self.symbols)})")
 
         if fetch_now:
             self._fetch_and_cache_single(ric)
@@ -191,6 +208,8 @@ class PXFeeder:
                     to_fetch.append(ric)
             self._enforce_max_symbols()
 
+        self.logger.info(f"SUBSCRIBE_MANY added={added} new symbols, total_subscribed={len(self.symbols)}: {rics}")
+
         # Fetch missing prices outside the lock
         for ric in to_fetch:
             self._fetch_and_cache_single(ric)
@@ -209,6 +228,7 @@ class PXFeeder:
         with self._lock:
             if ric in self.symbols:
                 self.symbols.remove(ric)
+                self.logger.info(f"UNSUBSCRIBE symbol={ric} (remaining={len(self.symbols)})")
                 return True
         return False
 
@@ -220,7 +240,8 @@ class PXFeeder:
     def _enforce_max_symbols(self):
         """Trim subscription list to max_symbols by dropping oldest entries (FIFO)."""
         while len(self.symbols) > self.max_symbols:
-            self.symbols.pop(0)
+            dropped = self.symbols.pop(0)
+            self.logger.info(f"MAX_SYMBOLS_EXCEEDED Dropped oldest subscribed symbol: {dropped}")
 
     def _fetch_and_cache_single(self, ric: str) -> bool:
         """Fetch price for a single RIC and update in-memory cache.
@@ -245,9 +266,12 @@ class PXFeeder:
                         'open': price,
                         'timestamp': timestamp,
                     }
+                self.logger.info(f"PRICE_UPDATE {ric} Bid={price:.4f} Ask={price:.4f} Last={price:.4f} Open={price:.4f} Close={price:.4f}")
                 return True
+            else:
+                self.logger.warning(f"PRICE_UPDATE_UNAVAILABLE {ric}: No price returned from provider")
         except Exception as e:
-            print(f"Warning: PXFeeder failed to fetch price for {ric}: {e}")
+            self.logger.warning(f"PRICE_FETCH_ERROR {ric}: {e}")
         return False
 
     def _init_default_fx_rates(self):
@@ -312,9 +336,10 @@ class PXFeeder:
         try:
             import yfinance as yf
         except ImportError:
-            print("Error: yfinance library is not installed.")
+            self.logger.error("yfinance library is not installed.")
             return 0, 0
 
+        self.logger.info(f"REFRESH_START Updating prices for {len(self.symbols)} symbols and {len(self.MAJOR_CURRENCIES)} currencies")
         timestamp = datetime.now().isoformat()
         new_prices: Dict[str, Dict[str, Any]] = {}
         new_fx: Dict[str, float] = {}
@@ -335,10 +360,13 @@ class PXFeeder:
                         'timestamp': timestamp,
                     }
                     p_count += 1
+                    self.logger.info(f"PRICE_UPDATE {symbol} Bid={price:.4f} Ask={price:.4f} Last={price:.4f} Open={price:.4f} Close={price:.4f}")
                 elif symbol in self._prices:
                     new_prices[symbol] = self._prices[symbol]
+                else:
+                    self.logger.warning(f"PRICE_UPDATE_UNAVAILABLE {symbol}: No price returned")
             except Exception as e:
-                print(f"Warning: PXFeeder failed to fetch price for {symbol}: {e}")
+                self.logger.warning(f"PRICE_FETCH_ERROR {symbol}: {e}")
 
         # 2. Fetch Major Currency FX Rates (against USD) and compute cross rates
         curr_to_usd: Dict[str, float] = dict(self.DEFAULT_FX_TO_USD)
@@ -350,8 +378,8 @@ class PXFeeder:
                         curr_to_usd[curr] = float(rate)
                     else:
                         curr_to_usd[curr] = 1.0 / float(rate)
-            except Exception:
-                pass
+            except Exception as e:
+                self.logger.debug(f"FX_FETCH_FAIL {ticker_symbol}: {e}")
 
         # Triangulate all cross pairs
         fx_count = 0
@@ -371,12 +399,14 @@ class PXFeeder:
             self._fx_rates.update(new_fx)
             self._last_updated = timestamp
 
+        self.logger.info(f"REFRESH_COMPLETE Fetched {p_count} security prices, {fx_count} FX cross rates")
+
         # Dump binary .dat snapshot
         if self.dat_path:
             try:
                 self.save_to_dat(self.dat_path)
             except Exception as e:
-                print(f"Warning: Failed to save .dat snapshot: {e}")
+                self.logger.warning(f"Failed to save .dat snapshot: {e}")
 
         return p_count, fx_count
 
@@ -434,6 +464,7 @@ class PXFeeder:
                 'open': float(open_price),
                 'timestamp': datetime.now().isoformat(),
             }
+        self.logger.info(f"PRICE_UPDATE {ric} Bid={bid} Ask={ask} Last={last} Open={open_price} Close={close} [MANUAL]")
 
     def set_fx_rate_in_memory(self, pair: str, rate: float):
         """Set FX rate in memory (e.g. 'HKD/USD', 0.128)."""
@@ -445,6 +476,7 @@ class PXFeeder:
             self._fx_rates[normalized_pair.upper()] = float(rate)
             clean_pair = normalized_pair.replace("/", "").upper()
             self._fx_rates[clean_pair] = float(rate)
+        self.logger.info(f"FX_UPDATE {normalized_pair} = {rate}")
 
     def remove_fx_rate_in_memory(self, pair: str) -> bool:
         """Remove a stored FX rate and its normalized aliases."""
@@ -458,6 +490,8 @@ class PXFeeder:
             removed = any(k in self._fx_rates for k in keys_to_remove)
             for key in list(keys_to_remove):
                 self._fx_rates.pop(key, None)
+        if removed:
+            self.logger.info(f"FX_REMOVE {normalized_pair}")
         return removed
 
     def fetch_live_fx_rate(self, pair: str) -> Optional[float]:
@@ -565,7 +599,9 @@ class PXFeeder:
         with open(path, 'wb') as f:
             pickle.dump(payload, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-        return len(payload['prices']) + len(payload['fx_rates'])
+        total_saved = len(payload['prices']) + len(payload['fx_rates'])
+        self.logger.info(f"SNAPSHOT_SAVE Saved {len(payload['prices'])} prices and {len(payload['fx_rates'])} FX rates to {dat_path}")
+        return total_saved
 
     def load_from_dat(self, dat_path: str) -> int:
         """
@@ -594,14 +630,16 @@ class PXFeeder:
             if last_updated:
                 self._last_updated = last_updated
 
-        return len(prices) + len(fx_rates)
+        total_loaded = len(prices) + len(fx_rates)
+        self.logger.info(f"SNAPSHOT_LOAD Loaded {len(prices)} prices and {len(fx_rates)} FX rates from {dat_path}")
+        return total_loaded
 
     # ------------------------------------------------------------------
     # Background Scheduled Refresh Thread (Hourly Refresh)
     # ------------------------------------------------------------------
 
     def start(self):
-        """Start the hourly background refresh thread."""
+        """Start the background refresh thread."""
         with self._lock:
             if self._bg_thread is not None and self._bg_thread.is_alive():
                 return
@@ -612,6 +650,7 @@ class PXFeeder:
                 daemon=True,
             )
             self._bg_thread.start()
+        self.logger.info(f"BACKGROUND_THREAD_START Started background price refresh thread (interval={self.refresh_interval}s)")
 
     def stop(self):
         """Stop the background refresh thread."""
@@ -620,6 +659,7 @@ class PXFeeder:
             if self._bg_thread and self._bg_thread.is_alive():
                 self._bg_thread.join(timeout=2.0)
                 self._bg_thread = None
+        self.logger.info("BACKGROUND_THREAD_STOP Stopped background price refresh thread")
 
     def _background_loop(self):
         """Background worker loop refreshing every refresh_interval seconds."""
@@ -628,9 +668,10 @@ class PXFeeder:
             if self._stop_event.wait(timeout=self.refresh_interval):
                 break
             try:
+                self.logger.info("BACKGROUND_REFRESH Triggering periodic price & FX refresh cycle")
                 self.refresh_now()
             except Exception as e:
-                print(f"Warning: Error during background PXFeeder refresh: {e}")
+                self.logger.warning(f"Error during background PXFeeder refresh: {e}")
 
     def __del__(self):
         self.stop()

@@ -82,6 +82,11 @@ class GCELogger:
         """
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.DEBUG)
+        for h in list(self.logger.handlers):
+            try:
+                h.close()
+            except Exception:
+                pass
         self.logger.handlers = []
         
         self.rejection_formatter = RejectionFormatter()
@@ -90,6 +95,11 @@ class GCELogger:
         self.async_logging = async_logging
         self.current_order_id = "-"
         
+        self.log_dir = log_dir
+        self.backup_count = backup_count
+        self.file_handler: Optional[TimedRotatingFileHandler] = None
+        self.log_file: Optional[Path] = None
+
         formatter = GCEFormatter()
         
         # Console handler
@@ -104,20 +114,20 @@ class GCELogger:
             log_path = Path(log_dir)
             log_path.mkdir(parents=True, exist_ok=True)
             
-            log_file = log_path / "GCE.log"
-            self._rotate_existing_log_if_needed(log_file)
+            self.log_file = log_path / "GCE.log"
+            self._rotate_existing_log_if_needed(self.log_file)
 
-            file_handler = TimedRotatingFileHandler(
-                log_file,
+            self.file_handler = TimedRotatingFileHandler(
+                self.log_file,
                 when='midnight',
                 interval=1,
                 backupCount=backup_count,
                 encoding='utf-8'
             )
-            file_handler.suffix = "%Y-%m-%d"
-            file_handler.setLevel(logging.DEBUG)
-            file_handler.setFormatter(formatter)
-            self.logger.addHandler(file_handler)
+            self.file_handler.suffix = "%Y-%m-%d"
+            self.file_handler.setLevel(logging.DEBUG)
+            self.file_handler.setFormatter(formatter)
+            self.logger.addHandler(self.file_handler)
             
         # Parallel queue and background worker thread
         if self.async_logging:
@@ -152,25 +162,38 @@ class GCELogger:
         except Exception as e:
             sys.stderr.write(f"Warning: Failed to rotate existing log file at startup: {e}\n")
 
-    def _log_worker(self):
-        """Background worker thread to format and write logs off critical path."""
-        while not self._stop_event.is_set() or not self.log_queue.empty():
-            try:
-                item = self.log_queue.get(timeout=0.1)
-            except queue.Empty:
-                continue
-            
-            if item is None:
-                self.log_queue.task_done()
-                break
-                
-            if len(item) == 3:
-                level, msg, ord_id = item
-            else:
-                level, msg = item
-                ord_id = getattr(self, 'current_order_id', '-')
+    def rollover(self) -> str:
+        """Manually rollover current GCE.log file and create a fresh one."""
+        if not self.log_file or not self.log_file.exists():
+            return ""
+        self.flush()
+        try:
+            if self.file_handler:
+                self.file_handler.close()
+                self.logger.removeHandler(self.file_handler)
 
-            extra = {'order_id': ord_id or '-'}
+            now_str = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+            rotated_name = f"{self.log_file.name}.{now_str}"
+            rotated_path = self.log_file.parent / rotated_name
+            self.log_file.rename(rotated_path)
+
+            formatter = GCEFormatter()
+            self.file_handler = TimedRotatingFileHandler(
+                self.log_file,
+                when='midnight',
+                interval=1,
+                backupCount=self.backup_count,
+                encoding='utf-8'
+            )
+            self.file_handler.suffix = "%Y-%m-%d"
+            self.file_handler.setLevel(logging.DEBUG)
+            self.file_handler.setFormatter(formatter)
+            self.logger.addHandler(self.file_handler)
+            return str(rotated_path)
+        except Exception as e:
+            sys.stderr.write(f"Failed to rollover GCE log: {e}\n")
+            return ""
+
     def _write_batch(self, batch: List[Tuple[str, str, str]]):
         """Write a batch of log records sequentially."""
         for level, msg, ord_id in batch:
@@ -408,4 +431,154 @@ class GCELogger:
             self._stop_event.set()
             self.log_queue.put(None)
             self.worker_thread.join(timeout=2.0)
+
+
+class PXFeederFormatter(logging.Formatter):
+    """Custom formatter for PXFeeder logs with nanosecond precision."""
+    
+    LOG_FORMAT = "%(asctime)s [PXFeeder] [%(levelname)s] %(message)s"
+    
+    def __init__(self, fmt: Optional[str] = None, datefmt: Optional[str] = None, style: str = '%'):
+        super().__init__(fmt=fmt or self.LOG_FORMAT, datefmt=datefmt, style=style)
+    
+    def format(self, record):
+        """Format log record with nanosecond precision timestamp."""
+        timestamp_ns = int(time.time_ns())
+        seconds = timestamp_ns // 1_000_000_000
+        nanoseconds = timestamp_ns % 1_000_000_000
+        
+        dt = datetime.fromtimestamp(seconds)
+        timestamp = dt.strftime('%Y-%m-%d %H:%M:%S')
+        timestamp = f"{timestamp}.{nanoseconds:09d}"
+        
+        record.asctime = timestamp
+        self._style._fmt = self.LOG_FORMAT
+        return super().format(record)
+
+
+class PXFeederLogger:
+    """Structured logger for PXFeeder with daily rotation and file persistence."""
+    
+    def __init__(self, name: str = "PXFeeder", log_dir: str = "logs",
+                 console: bool = False, file: bool = True, backup_count: int = 30):
+        """
+        Initialize PXFeeder Logger.
+        
+        Args:
+            name: Logger name
+            log_dir: Directory to store pxfeeder.log
+            console: Whether to log to stdout
+            file: Whether to write to file
+            backup_count: Number of rotated daily log files to retain
+        """
+        self.logger = logging.getLogger(name)
+        self.logger.setLevel(logging.DEBUG)
+        for h in list(self.logger.handlers):
+            try:
+                h.close()
+            except Exception:
+                pass
+        self.logger.handlers = []
+        self.log_dir = log_dir
+        self.backup_count = backup_count
+        self.file_handler: Optional[TimedRotatingFileHandler] = None
+        self.log_file: Optional[Path] = None
+
+        formatter = PXFeederFormatter()
+
+        # Console handler
+        if console:
+            console_handler = logging.StreamHandler(sys.stdout)
+            console_handler.setLevel(logging.INFO)
+            console_handler.setFormatter(formatter)
+            self.logger.addHandler(console_handler)
+
+        # File handler with daily rotation
+        if file:
+            log_path = Path(log_dir)
+            log_path.mkdir(parents=True, exist_ok=True)
+            self.log_file = log_path / "pxfeeder.log"
+            self._rotate_existing_log_if_needed(self.log_file)
+
+            self.file_handler = TimedRotatingFileHandler(
+                self.log_file,
+                when='midnight',
+                interval=1,
+                backupCount=backup_count,
+                encoding='utf-8'
+            )
+            self.file_handler.suffix = "%Y-%m-%d"
+            self.file_handler.setLevel(logging.DEBUG)
+            self.file_handler.setFormatter(formatter)
+            self.logger.addHandler(self.file_handler)
+
+    def _rotate_existing_log_if_needed(self, log_file: Path):
+        """
+        At system startup, check if pxfeeder.log exists from a previous date.
+        If it exists and no rotated file for its last modified date exists,
+        rotate it to pxfeeder.log.YYYY-MM-DD before opening a new pxfeeder.log for today.
+        """
+        if not log_file.exists():
+            return
+        
+        try:
+            mtime = log_file.stat().st_mtime
+            log_date_str = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d")
+            today_str = datetime.now().strftime("%Y-%m-%d")
+
+            # Rotate if the log file is from an earlier date
+            if log_date_str != today_str:
+                rotated_file = log_file.parent / f"{log_file.name}.{log_date_str}"
+                if not rotated_file.exists():
+                    log_file.rename(rotated_file)
+        except Exception as e:
+            sys.stderr.write(f"Warning: Failed to rotate existing pxfeeder log file at startup: {e}\n")
+
+    def rollover(self) -> str:
+        """Manually rollover current pxfeeder.log file and create a fresh one."""
+        if not self.log_file or not self.log_file.exists():
+            return ""
+        try:
+            if self.file_handler:
+                self.file_handler.close()
+                self.logger.removeHandler(self.file_handler)
+
+            now_str = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+            rotated_name = f"{self.log_file.name}.{now_str}"
+            rotated_path = self.log_file.parent / rotated_name
+            self.log_file.rename(rotated_path)
+
+            formatter = PXFeederFormatter()
+            self.file_handler = TimedRotatingFileHandler(
+                self.log_file,
+                when='midnight',
+                interval=1,
+                backupCount=self.backup_count,
+                encoding='utf-8'
+            )
+            self.file_handler.suffix = "%Y-%m-%d"
+            self.file_handler.setLevel(logging.DEBUG)
+            self.file_handler.setFormatter(formatter)
+            self.logger.addHandler(self.file_handler)
+            return str(rotated_path)
+        except Exception as e:
+            sys.stderr.write(f"Failed to rollover pxfeeder log: {e}\n")
+            return ""
+
+    def info(self, msg: str):
+        """Log info message."""
+        self.logger.info(msg)
+
+    def debug(self, msg: str):
+        """Log debug message."""
+        self.logger.debug(msg)
+
+    def warning(self, msg: str):
+        """Log warning message."""
+        self.logger.warning(msg)
+
+    def error(self, msg: str):
+        """Log error message."""
+        self.logger.error(msg)
+
 

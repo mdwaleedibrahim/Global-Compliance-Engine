@@ -68,6 +68,9 @@
       <div class="nav-item" data-section="logs" id="nav-logs">
         <span class="nav-icon">📜</span> Log Viewer
       </div>
+      <div class="nav-item" data-section="admin" id="nav-admin">
+        <span class="nav-icon">🛡️</span> Admin
+      </div>
     </nav>
   </aside>
 
@@ -399,6 +402,10 @@
       <!-- Section: Log Viewer -->
       <div class="section-panel" id="panel-logs">
         <div class="search-bar" style="gap:12px;flex-wrap:wrap">
+          <select class="search-input" id="logs-file-select" style="width:140px;font-weight:600" onchange="loadLogsSection()">
+            <option value="GCE" selected>GCE.log</option>
+            <option value="pxfeeder">pxfeeder.log</option>
+          </select>
           <input type="text" class="search-input" id="logs-search" placeholder="Search keyword or Order ID (e.g. ORD-...)" style="min-width:260px">
           <select class="search-input" id="logs-level-filter" style="width:130px">
             <option value="">All Levels</option>
@@ -422,7 +429,7 @@
         <div class="card" style="background:#0f172a;border-color:#334155">
           <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #1e293b">
             <div style="font-family:monospace;font-size:13px;color:#94a3b8">
-              📄 <span id="log-count-label">0 lines displayed</span> (Source: <code style="color:#38bdf8">logs/GCE.log</code>)
+              📄 <span id="log-count-label">0 lines displayed</span> (Source: <code id="log-source-label" style="color:#38bdf8">logs/GCE.log</code>)
             </div>
             <button class="btn btn-ghost btn-sm" onclick="copyConsoleLogs()" style="color:#94a3b8;font-size:11px">📋 Copy All</button>
           </div>
@@ -625,6 +632,143 @@
         <div id="config-container" class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap:16px;">
           <!-- Loaded dynamically -->
         </div>
+      </div>
+
+      <!-- Section 12: Admin Console -->
+      <div class="section-panel" id="panel-admin">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h2 style="font-size:18px; font-weight:600; margin:0;">🛡️ Administration & Maintenance</h2>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+              Manage in-memory runtime caches, persistence files, and compliance log lifecycle operations.
+            </div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-danger btn-sm" onclick="purgeCache('all')">⚠️ Purge All Caches</button>
+            <button class="btn btn-ghost btn-sm" onclick="loadAdmin()">↻ Refresh Admin</button>
+          </div>
+        </div>
+
+        <!-- Category 1: Cache Management Cards -->
+        <div class="form-section-title" style="margin-top:8px; margin-bottom:12px;">🗄️ In-Memory & Snapshot Cache Management</div>
+        <div class="card-grid" style="grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-bottom:24px;">
+          
+          <!-- OMS Cache -->
+          <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-weight:600; font-size:15px; color:var(--text-bright);">📋 OMS Cache</span>
+                <span class="nav-badge" id="admin-count-orders" style="background:#3b82f6; color:#fff; font-size:12px;">0 orders</span>
+              </div>
+              <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:16px;">
+                In-memory order book cache, active live orders, and <code>OrderCache.csv</code> / <code>.dat</code> snapshot.
+              </div>
+            </div>
+            <button class="btn btn-danger btn-sm" style="width:100%" onclick="purgeCache('oms')">🗑️ Purge OMS Cache</button>
+          </div>
+
+          <!-- Positions Cache -->
+          <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-weight:600; font-size:15px; color:var(--text-bright);">📍 Positions Cache</span>
+                <span class="nav-badge" id="admin-count-positions" style="background:#10b981; color:#fff; font-size:12px;">0 positions</span>
+              </div>
+              <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:16px;">
+                Pattern-aggregated intraday trading positions, volume turnover, and <code>PositionsCache.csv</code> / <code>.dat</code>.
+              </div>
+            </div>
+            <button class="btn btn-danger btn-sm" style="width:100%" onclick="purgeCache('positions')">🗑️ Purge Positions Cache</button>
+          </div>
+
+          <!-- Price Cache -->
+          <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-weight:600; font-size:15px; color:var(--text-bright);">💹 Price Cache</span>
+                <span class="nav-badge" id="admin-count-prices" style="background:#8b5cf6; color:#fff; font-size:12px;">0 prices / FX</span>
+              </div>
+              <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:16px;">
+                PXFeeder & PriceCache live quotes, FX conversion rates, and <code>PriceCache.csv</code> / <code>.dat</code>.
+              </div>
+            </div>
+            <button class="btn btn-danger btn-sm" style="width:100%" onclick="purgeCache('prices')">🗑️ Purge Price Cache</button>
+          </div>
+
+          <!-- Instruments Cache -->
+          <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-weight:600; font-size:15px; color:var(--text-bright);">🏢 Instruments Cache</span>
+                <span class="nav-badge" id="admin-count-instruments" style="background:#f59e0b; color:#fff; font-size:12px;">0 items</span>
+              </div>
+              <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:16px;">
+                In-memory instrument static cache, board lots, eligibility flags, and <code>InstrumentStatic.dat</code>.
+              </div>
+            </div>
+            <button class="btn btn-danger btn-sm" style="width:100%" onclick="purgeCache('instruments')">🗑️ Purge Instruments Cache</button>
+          </div>
+
+        </div>
+
+        <!-- Category 2: Log Operations Cards -->
+        <div class="form-section-title" style="margin-top:16px; margin-bottom:12px;">📜 Compliance Log File Management</div>
+        <div class="card-grid" style="grid-template-columns:repeat(auto-fit, minmax(360px, 1fr)); gap:16px; margin-bottom:24px;">
+          
+          <!-- Log Rollover Card -->
+          <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-weight:600; font-size:15px; color:var(--text-bright);">🔄 Log File Rollover</span>
+              </div>
+              <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:16px;">
+                Rotate active log files (<code>GCE.log</code> and/or <code>pxfeeder.log</code>) to timestamped archives and start new clean log files immediately.
+              </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary btn-sm" style="flex:1" onclick="rolloverLogs('gce')">🔄 Rollover GCE.log</button>
+              <button class="btn btn-ghost btn-sm" style="flex:1" onclick="rolloverLogs('pxfeeder')">🔄 Rollover pxfeeder.log</button>
+            </div>
+          </div>
+
+          <!-- Log Archiving Card -->
+          <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-weight:600; font-size:15px; color:var(--text-bright);">📦 Archive Historical Logs</span>
+              </div>
+              <div style="font-size:12px; color:var(--text-muted); line-height:1.4; margin-bottom:16px;">
+                Compress all rotated / historical log files (excluding active <code>GCE.log</code> and <code>pxfeeder.log</code>) into a zip archive in <code>logs/archive/</code>.
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="archiveLogs()">📦 Archive Old Log Files</button>
+          </div>
+
+        </div>
+
+        <!-- Category 3: Log Files Table -->
+        <div class="card">
+          <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="font-weight:600; font-size:15px; color:var(--text-bright);">📁 Log Files Directory Inventory</div>
+            <div style="font-size:12px; color:var(--text-muted);" id="admin-logs-summary">0 files</div>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>File Name</th>
+                  <th>Type</th>
+                  <th>Size</th>
+                  <th>Last Modified</th>
+                </tr>
+              </thead>
+              <tbody id="admin-logs-tbody">
+                <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Loading log files inventory...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
 
     </div>

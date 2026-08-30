@@ -1264,14 +1264,16 @@ def api_logs():
     order_id = request.args.get("order_id", "").strip()
     search = request.args.get("search", "").strip()
     level = request.args.get("level", "").strip().upper()
+    log_type = request.args.get("file", "GCE").strip().lower()
     try:
         limit = int(request.args.get("limit", 200))
     except Exception:
         limit = 200
 
-    log_path = Path(PROJECT_ROOT) / "logs" / "GCE.log"
+    filename = "pxfeeder.log" if log_type in ("pxfeeder", "px") else "GCE.log"
+    log_path = Path(PROJECT_ROOT) / "logs" / filename
     if not log_path.exists():
-        return jsonify({"ok": True, "count": 0, "lines": [], "message": "Log file not found"})
+        return jsonify({"ok": True, "count": 0, "lines": [], "message": f"Log file {filename} not found"})
 
     matching_lines = []
     try:
@@ -1299,11 +1301,326 @@ def api_logs():
 
         return jsonify({
             "ok": True,
+            "filename": filename,
             "count": len(matching_lines),
             "lines": matching_lines
         })
     except Exception as e:
         return jsonify({"ok": False, "message": str(e), "lines": []}), 500
+
+
+# ---------------------------------------------------------------------------
+# Section 12 — Admin Operations & Cache Management
+# ---------------------------------------------------------------------------
+def _format_file_size(size_bytes: int) -> str:
+    """Format bytes into readable string."""
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    else:
+        return f"{size_bytes / (1024 * 1024):.2f} MB"
+
+
+@app.route("/api/admin/status")
+def api_admin_status():
+    """Retrieve overview metrics for all caches and log files."""
+    try:
+        oc = _get("orders")
+        pc = _get("positions")
+        prc = _get("prices")
+        px = _get("pxfeeder")
+        dm = _get("datamgr")
+        ic = _get("instruments")
+
+        orders_count = len(oc.orders) if oc and hasattr(oc, "orders") else 0
+        positions_count = len(pc.positions) if pc and hasattr(pc, "positions") else 0
+        prices_count = len(prc.prices) if prc and hasattr(prc, "prices") else 0
+        fx_count = len(px.get_all_fx_rates()) if px and hasattr(px, "get_all_fx_rates") else 0
+        
+        instruments_count = 0
+        if dm and hasattr(dm, "count"):
+            instruments_count = dm.count()
+        elif ic and hasattr(ic, "count"):
+            instruments_count = ic.count()
+
+        # Scan log directory
+        log_dir = Path(PROJECT_ROOT) / "logs"
+        log_files = []
+        if log_dir.exists():
+            for p in sorted(log_dir.glob("**/*")):
+                if p.is_file():
+                    rel_path = str(p.relative_to(log_dir))
+                    size_bytes = p.stat().st_size
+                    mtime = datetime.fromtimestamp(p.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+                    
+                    if p.name in ("GCE.log", "pxfeeder.log"):
+                        file_type = "Active Log"
+                    elif p.suffix == ".zip" or "archive" in rel_path:
+                        file_type = "Archived"
+                    else:
+                        file_type = "Rotated Log"
+
+                    log_files.append({
+                        "filename": rel_path,
+                        "size_bytes": size_bytes,
+                        "size_formatted": _format_file_size(size_bytes),
+                        "mtime": mtime,
+                        "type": file_type,
+                    })
+
+        return jsonify({
+            "ok": True,
+            "caches": {
+                "orders": orders_count,
+                "positions": positions_count,
+                "prices": prices_count,
+                "fx_rates": fx_count,
+                "instruments": instruments_count,
+            },
+            "logs": log_files
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
+
+
+@app.route("/api/admin/purge/oms", methods=["POST"])
+def api_admin_purge_oms():
+    """Purge OMS order cache in memory and on disk."""
+    try:
+        oc = _get("orders")
+        if oc and hasattr(oc, "orders"):
+            with _lock:
+                oc.orders.clear()
+
+        # Reset OrderCache.csv with header
+        header = "Order ID,Product,SecurityType,Application,Flow,Trader,Desk,Account,Client,symbol,exchange,underlying,Algo Strategy,Currency,Side,Order Type,Tif,Quantity,Price,Filled,Open,Status,DateTime\n"
+        csv_path = Path(PROJECT_ROOT) / "OrderCache.csv"
+        csv_path.write_text(header, encoding="utf-8")
+
+        # Reset .dat cache file
+        for dat_name in ("cache/OrderCache.dat", "OrderCache.dat"):
+            p = Path(PROJECT_ROOT) / dat_name
+            if p.exists():
+                try:
+                    import pickle
+                    with open(p, "wb") as f:
+                        pickle.dump({}, f)
+                except Exception:
+                    pass
+
+        return jsonify({"ok": True, "message": "OMS order cache cleared in memory and on disk."})
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
+
+
+@app.route("/api/admin/purge/positions", methods=["POST"])
+def api_admin_purge_positions():
+    """Purge positions cache in memory and on disk."""
+    try:
+        pc = _get("positions")
+        if pc and hasattr(pc, "positions"):
+            with _lock:
+                pc.positions.clear()
+                if hasattr(pc, "pattern_index"):
+                    pc.pattern_index.clear()
+
+        # Reset PositionsCache.csv
+        header = "Product,Application,Flow,Trader,Desk,Account,Client,symbol,exchange,underlying,Algo Strategy,Currency,Order Type,Tif,xr,bvol,bval,bval_usd,bfill,bfillval,bfillval_usd,bopen,bopenval,bopenval_usd,Bexposure,svol,sval,sval_usd,sfill,sfillval,sfillval_usd,sopen,sopenval,sopenval_usd,Sexposure,Ssexposure,Timestamp\n"
+        for csv_name in ("cache/PositionsCache.csv", "PositionsCache.csv"):
+            p = Path(PROJECT_ROOT) / csv_name
+            if p.exists():
+                p.write_text(header, encoding="utf-8")
+
+        # Reset .dat cache file
+        for dat_name in ("cache/PositionsCache.dat", "PositionsCache.dat"):
+            p = Path(PROJECT_ROOT) / dat_name
+            if p.exists():
+                try:
+                    import pickle
+                    with open(p, "wb") as f:
+                        pickle.dump({}, f)
+                except Exception:
+                    pass
+
+        return jsonify({"ok": True, "message": "Positions cache cleared in memory and on disk."})
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
+
+
+@app.route("/api/admin/purge/prices", methods=["POST"])
+def api_admin_purge_prices():
+    """Purge price & FX cache in memory and on disk."""
+    try:
+        prc = _get("prices")
+        if prc and hasattr(prc, "prices"):
+            with _lock:
+                prc.prices.clear()
+
+        px = _get("pxfeeder")
+        if px:
+            with px._lock:
+                px._prices.clear()
+                px._fx_rates.clear()
+                px._init_default_fx_rates()
+            if hasattr(px, "logger") and px.logger:
+                px.logger.info("ADMIN_PURGE Price and FX cache cleared by administrator")
+
+        # Reset PriceCache.csv
+        header = "RIC,Open,Bid,Ask,Last,Close,Timestamp\n"
+        for csv_name in ("cache/PriceCache.csv", "PriceCache.csv"):
+            p = Path(PROJECT_ROOT) / csv_name
+            if p.exists():
+                p.write_text(header, encoding="utf-8")
+
+        # Reset .dat cache file
+        for dat_name in ("cache/PriceCache.dat", "PriceCache.dat"):
+            p = Path(PROJECT_ROOT) / dat_name
+            if p.exists():
+                try:
+                    import pickle
+                    with open(p, "wb") as f:
+                        pickle.dump({"prices": {}, "fx_rates": {}, "last_updated": datetime.now().isoformat()}, f)
+                except Exception:
+                    pass
+
+        return jsonify({"ok": True, "message": "Price and FX cache cleared in memory and on disk."})
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
+
+
+@app.route("/api/admin/purge/instruments", methods=["POST"])
+def api_admin_purge_instruments():
+    """Purge instruments in-memory cache and binary .dat recovery snapshot."""
+    try:
+        ic = _get("instruments")
+        if ic:
+            with _lock:
+                ic.instruments.clear()
+                if hasattr(ic, "ric_to_code"):
+                    ic.ric_to_code.clear()
+
+        dm = _get("datamgr")
+        if dm:
+            with dm._lock:
+                dm.instruments.clear()
+                if hasattr(dm, "code_to_ric"):
+                    dm.code_to_ric.clear()
+
+        # Remove .dat snapshot files so recovery starts fresh
+        for dat_name in ("cache/InstrumentStatic.dat", "InstrumentStatic.dat"):
+            p = Path(PROJECT_ROOT) / dat_name
+            if p.exists():
+                try:
+                    p.unlink()
+                except Exception:
+                    pass
+
+        return jsonify({"ok": True, "message": "Instruments runtime cache and .dat snapshot purged successfully."})
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
+
+
+@app.route("/api/admin/purge/all", methods=["POST"])
+def api_admin_purge_all():
+    """Purge all caches (OMS, Positions, Prices, Instruments)."""
+    try:
+        api_admin_purge_oms()
+        api_admin_purge_positions()
+        api_admin_purge_prices()
+        api_admin_purge_instruments()
+        return jsonify({"ok": True, "message": "All GCE caches (OMS, Positions, Prices, Instruments) purged successfully."})
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
+
+
+@app.route("/api/admin/logs/rollover", methods=["POST"])
+def api_admin_logs_rollover():
+    """Rollover current GCE.log (and optionally pxfeeder.log) and create fresh file(s)."""
+    try:
+        data = request.json or {}
+        target = data.get("target", "all").lower()
+        rotated_files = []
+
+        if target in ("all", "gce"):
+            lg = _get("logger")
+            if lg and hasattr(lg, "rollover"):
+                res = lg.rollover()
+                if res:
+                    rotated_files.append(Path(res).name)
+            else:
+                log_file = Path(PROJECT_ROOT) / "logs" / "GCE.log"
+                if log_file.exists():
+                    now_str = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+                    rot = log_file.parent / f"GCE.log.{now_str}"
+                    log_file.rename(rot)
+                    log_file.touch()
+                    rotated_files.append(rot.name)
+
+        if target in ("all", "pxfeeder", "px"):
+            px = _get("pxfeeder")
+            if px and hasattr(px, "logger") and hasattr(px.logger, "rollover"):
+                res = px.logger.rollover()
+                if res:
+                    rotated_files.append(Path(res).name)
+
+        return jsonify({
+            "ok": True,
+            "message": f"Rollover completed. Created new active log file(s). Rotated: {', '.join(rotated_files) if rotated_files else 'None'}",
+            "rotated_files": rotated_files
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
+
+
+@app.route("/api/admin/logs/archive", methods=["POST"])
+def api_admin_logs_archive():
+    """Archive all historical / rotated log files into a zip file, preserving active log files."""
+    try:
+        import zipfile
+        log_dir = Path(PROJECT_ROOT) / "logs"
+        if not log_dir.exists():
+            return jsonify({"ok": True, "message": "No logs directory found to archive.", "count": 0})
+
+        archive_dir = log_dir / "archive"
+        archive_dir.mkdir(parents=True, exist_ok=True)
+
+        now_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+        zip_filename = f"logs_archive_{now_str}.zip"
+        zip_path = archive_dir / zip_filename
+
+        # Identify rotated / non-current log files
+        to_archive = []
+        for item in log_dir.iterdir():
+            if item.is_file() and item.name not in ("GCE.log", "pxfeeder.log") and not item.name.endswith(".zip"):
+                to_archive.append(item)
+
+        if not to_archive:
+            return jsonify({"ok": True, "message": "No historical log files found to archive.", "count": 0})
+
+        # Compress into zip
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for file_path in to_archive:
+                zipf.write(file_path, arcname=file_path.name)
+
+        # Delete archived files
+        archived_names = []
+        for file_path in to_archive:
+            archived_names.append(file_path.name)
+            try:
+                file_path.unlink()
+            except Exception:
+                pass
+
+        return jsonify({
+            "ok": True,
+            "message": f"Successfully archived {len(archived_names)} historical log files into {zip_filename}",
+            "archive_filename": zip_filename,
+            "archived_files": archived_names,
+            "count": len(archived_names)
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
 
 
 # ---------------------------------------------------------------------------

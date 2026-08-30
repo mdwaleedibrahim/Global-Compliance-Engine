@@ -194,7 +194,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
       services: 'Services', orders: 'Place Order', limits: 'GCE Limits', config: 'System Configuration', oms: 'OMS Browser',
       prices: 'Prices', instruments: 'Instruments', sessions: 'Exchange Sessions',
       reconciliation: 'Reconciliation', logs: 'Log Viewer', positions: 'Positions',
-      rms: 'RMS Controls Summary', performance: 'Performance'
+      rms: 'RMS Controls Summary', performance: 'Performance', admin: 'Admin Console'
     };
     document.getElementById('section-title').textContent = titles[section] || section;
     currentSection = section;
@@ -1868,17 +1868,24 @@ function renderRecentPlacedOrders() {
 let logsFilterDebounceTimer = null;
 
 async function loadLogsSection() {
+  const fileSelect = document.getElementById('logs-file-select');
+  const file = fileSelect ? fileSelect.value : 'GCE';
   const search = (document.getElementById('logs-search') ? document.getElementById('logs-search').value : '').trim();
   const level = document.getElementById('logs-level-filter') ? document.getElementById('logs-level-filter').value : '';
   const limit = document.getElementById('logs-limit-select') ? document.getElementById('logs-limit-select').value : '200';
 
-  const query = new URLSearchParams({ search, level, limit });
+  const sourceLabel = document.getElementById('log-source-label');
+  if (sourceLabel) {
+    sourceLabel.textContent = `logs/${file === 'pxfeeder' ? 'pxfeeder.log' : 'GCE.log'}`;
+  }
+
+  const query = new URLSearchParams({ file, search, level, limit });
   const data = await api(`/api/logs?${query.toString()}`);
   const consoleEl = document.getElementById('log-console-content');
   const countLabel = document.getElementById('log-count-label');
 
   if (!data || !data.ok) {
-    if (consoleEl) consoleEl.innerHTML = `<span style="color:#ef4444">Failed to load logs</span>`;
+    if (consoleEl) consoleEl.innerHTML = `<span style="color:#ef4444">${data && data.message ? escapeHtml(data.message) : 'Failed to load logs'}</span>`;
     if (countLabel) countLabel.textContent = '0 lines displayed';
     return;
   }
@@ -1888,7 +1895,7 @@ async function loadLogsSection() {
 
   if (consoleEl) {
     if (lines.length === 0) {
-      consoleEl.innerHTML = `<span style="color:#64748b">No matching log records found</span>`;
+      consoleEl.innerHTML = `<span style="color:#64748b">No matching log records found in ${data.filename || file}</span>`;
     } else {
       consoleEl.innerHTML = formatLogLinesHTML(lines);
       const autoScrollEl = document.getElementById('logs-autoscroll');
@@ -2302,6 +2309,125 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
+// Section 12: Admin Console & Maintenance
+// ============================================================
+async function loadAdmin() {
+  const data = await api('/api/admin/status');
+  if (!data || !data.ok) return;
+
+  const caches = data.caches || {};
+  const ordersEl = document.getElementById('admin-count-orders');
+  const posEl = document.getElementById('admin-count-positions');
+  const prcEl = document.getElementById('admin-count-prices');
+  const instEl = document.getElementById('admin-count-instruments');
+
+  if (ordersEl) ordersEl.textContent = `${caches.orders || 0} orders`;
+  if (posEl) posEl.textContent = `${caches.positions || 0} positions`;
+  if (prcEl) prcEl.textContent = `${caches.prices || 0} prices / ${caches.fx_rates || 0} FX`;
+  if (instEl) instEl.textContent = `${caches.instruments || 0} items`;
+
+  // Render Log Files Inventory Table
+  const logs = data.logs || [];
+  const summaryEl = document.getElementById('admin-logs-summary');
+  const tbody = document.getElementById('admin-logs-tbody');
+
+  if (summaryEl) summaryEl.textContent = `${logs.length} files tracked`;
+
+  if (tbody) {
+    if (logs.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px;">No log files found in directory</td></tr>`;
+    } else {
+      tbody.innerHTML = logs.map(f => {
+        let badgeColor = '#3b82f6';
+        if (f.type === 'Active Log') badgeColor = '#10b981';
+        else if (f.type === 'Archived') badgeColor = '#8b5cf6';
+        else if (f.type === 'Rotated Log') badgeColor = '#f59e0b';
+
+        return `
+          <tr>
+            <td style="font-family:monospace; font-weight:600; color:var(--text-bright);">📄 ${escapeHtml(f.filename)}</td>
+            <td><span class="nav-badge" style="background:${badgeColor}; color:#fff; font-size:11px;">${escapeHtml(f.type)}</span></td>
+            <td style="font-family:monospace;">${escapeHtml(f.size_formatted)}</td>
+            <td style="color:var(--text-muted); font-size:12px;">${escapeHtml(f.mtime)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+}
+
+async function purgeCache(type) {
+  const names = {
+    oms: 'OMS Order Cache',
+    positions: 'Positions Cache',
+    prices: 'Price & FX Cache',
+    instruments: 'Instruments Static Cache',
+    all: 'ALL GCE runtime caches'
+  };
+  const label = names[type] || `${type} cache`;
+
+  const confirmed = await showConfirm(
+    `Are you sure you want to purge/clear ${label}?\nThis will clear in-memory data and reset associated cache files on disk.`,
+    `Purge ${label}`,
+    { danger: true, confirmText: 'Purge Cache' }
+  );
+
+  if (!confirmed) return;
+
+  const res = await apiPost(`/api/admin/purge/${type}`);
+  if (res && res.ok) {
+    await showAlert(res.message || `${label} purged successfully.`, 'Cache Purged', 'success');
+    loadAdmin();
+    // Update sidebar badge if OMS purged
+    if (type === 'oms' || type === 'all') {
+      const badge = document.getElementById('order-count-badge');
+      if (badge) badge.textContent = '0';
+    }
+  } else {
+    await showAlert(res && res.message ? res.message : `Failed to purge ${label}`, 'Error', 'error');
+  }
+}
+
+async function rolloverLogs(target = 'all') {
+  const targetName = target === 'pxfeeder' ? 'pxfeeder.log' : target === 'gce' ? 'GCE.log' : 'active log files';
+  const confirmed = await showConfirm(
+    `Are you sure you want to rollover ${targetName}?\nThis will rotate the active log file into a timestamped file and create a fresh active log file immediately.`,
+    `Rollover ${targetName}`,
+    { confirmText: 'Rollover' }
+  );
+
+  if (!confirmed) return;
+
+  const res = await apiPost('/api/admin/logs/rollover', { target });
+  if (res && res.ok) {
+    await showAlert(res.message || 'Log rollover completed successfully.', 'Rollover Complete', 'success');
+    loadAdmin();
+    loadLogsSection();
+  } else {
+    await showAlert(res && res.message ? res.message : 'Log rollover failed.', 'Error', 'error');
+  }
+}
+
+async function archiveLogs() {
+  const confirmed = await showConfirm(
+    `Are you sure you want to archive historical log files?\nAll rotated log files (excluding active GCE.log and pxfeeder.log) will be zipped into logs/archive/ and removed from the active directory.`,
+    'Archive Historical Logs',
+    { confirmText: 'Archive Logs' }
+  );
+
+  if (!confirmed) return;
+
+  const res = await apiPost('/api/admin/logs/archive');
+  if (res && res.ok) {
+    const details = res.count > 0 ? `${res.message}\nSaved as: ${res.archive_filename}` : res.message;
+    await showAlert(details, 'Archive Completed', 'success');
+    loadAdmin();
+  } else {
+    await showAlert(res && res.message ? res.message : 'Log archiving failed.', 'Error', 'error');
+  }
+}
+
+// ============================================================
 // Refresh Logic
 // ============================================================
 function refreshCurrentSection() {
@@ -2321,6 +2447,7 @@ function refreshCurrentSection() {
     case 'logs': loadLogsSection(); break;
     case 'rms': loadRMS(); break;
     case 'performance': loadPerformance(); break;
+    case 'admin': loadAdmin(); break;
   }
 }
 
@@ -2330,6 +2457,7 @@ setInterval(() => {
   if (currentSection === 'prices') { loadPrices(); loadFX(); }
   if (currentSection === 'positions') loadPositions();
   if (currentSection === 'logs') loadLogsSection();
+  if (currentSection === 'admin') loadAdmin();
 }, REFRESH_INTERVAL);
 
 // ============================================================
