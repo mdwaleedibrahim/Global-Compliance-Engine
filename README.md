@@ -8,7 +8,7 @@
 ![Throughput](https://img.shields.io/badge/Throughput-20%2C000%2B%20orders%2Fsec-orange?style=for-the-badge)
 ![UI](https://img.shields.io/badge/GUI-GCE%20Control%20Center-cyan?style=for-the-badge)
 
-**A high-performance, real-time pre-trade risk management & regulatory compliance engine for Hong Kong (HKEX) and global securities trading.**
+**A high-performance, real-time pre-trade risk management & regulatory compliance engine for global securities trading.**
 
 [Key Features](#-key-features) • [Application Visuals](#-application-showcase) • [Architecture](#-system-architecture) • [Control Center GUI](#-gce-control-center-gui) • [SQLite Schema](#-sqlite-database-schema-rms_control_limits) • [Quick Start](#-quick-start) • [Python SDK](#-python-sdk--usage-examples) • [Testing](#-running-tests)
 
