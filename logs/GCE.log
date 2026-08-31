@@ -1,129 +1,496 @@
-2026-08-30 20:06:58,034 [GCE] [ORD-20260830-200657-956] [INFO] LMT_CHECK_START
-2026-08-30 20:06:58,036 [GCE] [ORD-20260830-200657-956] [INFO] LMT_CHECK_NEW B 0700.HK 5000000@LMT 1000.0 HKD PAFTDACXUAT Equity|*|*|TRADER1|*|ACCT1|*|XHKG|0700|*|DAY
-2026-08-30 20:06:58,037 [GCE] [ORD-20260830-200657-956] [INFO] LMT_MKTDAT 0700.HK Last=380.5, Bid=380.0, Ask=381.0, Open=375.0, Close=378.0, XR=0.128
-2026-08-30 20:06:58,038 [GCE] [ORD-20260830-200657-956] [INFO] [rule=8] [FAIL] MaxOrderQuantity: Order size is too big, ORD=5000000 > LMT=1000 | LMT=1000, ORD=5000000 {quantity_control.py:19 8.92 μs}
-2026-08-30 20:06:58,039 [GCE] [ORD-20260830-200657-956] [INFO] [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=1000.0, ORD=1000.0 {price_control.py:19 11.66 μs}
-2026-08-30 20:06:58,041 [GCE] [ORD-20260830-200657-956] [INFO] [rule=8] [FAIL] MaxOrderConsideration: Order Value is too big, LMT=100000.0, ORD=5000000000.0 | LMT=100000.0, ORD=5000000000.0 {max_order_consideration.py:139 9.80 μs}
-2026-08-30 20:06:58,042 [GCE] [ORD-20260830-200657-956] [INFO] [rule=8] [FAIL] ClosePriceTolerance: Close Price Tolerance exceeds limit, LMT=10.0, ORD=164.55 | LMT=10.0, ORD=164.55026455026456 {close_price_tolerance.py:56 18.32 μs}
-2026-08-30 20:06:58,044 [GCE] [ORD-20260830-200657-956] [INFO] [rule=8] [FAIL] LastPriceTolerance: Last Price Tolerance exceeds limit, LMT=10.0, ORD=162.81 | LMT=10.0, ORD=162.8120893561104 {last_price_tolerance.py:97 489.71 μs}
-2026-08-30 20:06:58,045 [GCE] [ORD-20260830-200657-956] [INFO] [rule=8] [FAIL] BBOPriceTolerance: BBO Price Tolerance exceeds limit, LMT=10.0, ORD=162.47 | LMT=10.0, ORD=162.46719160104988 {bbo_price_tolerance.py:57 10.45 μs}
-2026-08-30 20:06:58,046 [GCE] [ORD-20260830-200657-956] [INFO] [rule=8] [FAIL] MaxDailyTurnover: Daily turnover is too big, ORD=5000000000.0 > LMT=1000000.0 (HKD) | LMT=1000000.0, ORD=5000000000.0 {max_daily_turnover.py:14 13.28 μs}
-2026-08-30 20:06:58,047 [GCE] [ORD-20260830-200657-956] [INFO] [rule=10] [FAIL] MaxOrderQuantity: Order size is too big, ORD=5000000 > LMT=3000 | LMT=3000, ORD=5000000 {quantity_control.py:19 4.40 μs}
-2026-08-30 20:06:58,048 [GCE] [ORD-20260830-200657-956] [INFO] [rule=10] [PASS] MaxOrderPrice: Control passed | LMT=3000.0, ORD=1000.0 {price_control.py:19 7.87 μs}
-2026-08-30 20:06:58,049 [GCE] [ORD-20260830-200657-956] [INFO] [rule=10] [FAIL] MaxOrderConsideration: Order Value is too big, LMT=300000.0, ORD=5000000000.0 | LMT=300000.0, ORD=5000000000.0 {max_order_consideration.py:139 18.20 μs}
-2026-08-30 20:06:58,050 [GCE] [ORD-20260830-200657-956] [INFO] [rule=10] [FAIL] ClosePriceTolerance: Close Price Tolerance exceeds limit, LMT=30.0, ORD=164.55 | LMT=30.0, ORD=164.55026455026456 {close_price_tolerance.py:56 11.28 μs}
-2026-08-30 20:06:58,051 [GCE] [ORD-20260830-200657-956] [INFO] [rule=10] [FAIL] LastPriceTolerance: Last Price Tolerance exceeds limit, LMT=30.0, ORD=162.81 | LMT=30.0, ORD=162.8120893561104 {last_price_tolerance.py:97 168.47 μs}
-2026-08-30 20:06:58,052 [GCE] [ORD-20260830-200657-956] [INFO] [rule=10] [FAIL] BBOPriceTolerance: BBO Price Tolerance exceeds limit, LMT=30.0, ORD=162.47 | LMT=30.0, ORD=162.46719160104988 {bbo_price_tolerance.py:57 30.08 μs}
-2026-08-30 20:06:58,053 [GCE] [ORD-20260830-200657-956] [INFO] [rule=10] [FAIL] MaxDailyTurnover: Daily turnover is too big, ORD=5000000000.0 > LMT=3000000.0 (HKD) | LMT=3000000.0, ORD=5000000000.0 {max_daily_turnover.py:14 12.29 μs}
-2026-08-30 20:06:58,054 [GCE] [ORD-20260830-200657-956] [INFO] 14 controls validated, 2 passed, 12 failed
-2026-08-30 20:06:58,055 [GCE] [ORD-20260830-200657-956] [INFO] [Rule 8] Order size is too big, ORD=5000000 > LMT=1000, [Rule 8] Order Value is too big, LMT=100000.0, ORD=5000000000.0, [Rule 8] Close Price Tolerance exceeds limit, LMT=10.0, ORD=164.55, [Rule 8] Last Price Tolerance exceeds limit, LMT=10.0, ORD=162.81, [Rule 8] BBO Price Tolerance exceeds limit, LMT=10.0, ORD=162.47, [Rule 8] Daily turnover is too big, ORD=5000000000.0 > LMT=1000000.0 (HKD), [Rule 10] Order size is too big, ORD=5000000 > LMT=3000, [Rule 10] Order Value is too big, LMT=300000.0, ORD=5000000000.0, [Rule 10] Close Price Tolerance exceeds limit, LMT=30.0, ORD=164.55, [Rule 10] Last Price Tolerance exceeds limit, LMT=30.0, ORD=162.81, [Rule 10] BBO Price Tolerance exceeds limit, LMT=30.0, ORD=162.47, [Rule 10] Daily turnover is too big, ORD=5000000000.0 > LMT=3000000.0 (HKD)
-2026-08-30 20:06:58,056 [GCE] [ORD-20260830-200657-956] [INFO] LMT_CHECK_OVER in 40.36 ms
-2026-08-30 20:06:58,129 [GCE] [ORD-20260830-200658-043] [INFO] LMT_CHECK_START
-2026-08-30 20:06:58,131 [GCE] [ORD-20260830-200658-043] [INFO] LMT_CHECK_NEW B 0700.HK 100@LMT 380.0 HKD PAFTDACXUAT Equity|*|*|TRADER1|*|ACCT1|*|XHKG|0700|*|DAY
-2026-08-30 20:06:58,132 [GCE] [ORD-20260830-200658-043] [INFO] LMT_MKTDAT 0700.HK Last=380.5, Bid=380.0, Ask=381.0, Open=375.0, Close=378.0, XR=0.128
-2026-08-30 20:06:58,133 [GCE] [ORD-20260830-200658-043] [INFO] [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=1000, ORD=100 {quantity_control.py:19 3.86 μs}
-2026-08-30 20:06:58,133 [GCE] [ORD-20260830-200658-043] [INFO] [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=1000.0, ORD=380.0 {price_control.py:19 7.78 μs}
-2026-08-30 20:06:58,135 [GCE] [ORD-20260830-200658-043] [INFO] [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=100000.0, ORD=38000.0 {max_order_consideration.py:139 56.90 μs}
-2026-08-30 20:06:58,136 [GCE] [ORD-20260830-200658-043] [INFO] [rule=8] [PASS] ClosePriceTolerance: Control passed | LMT=10.0, ORD=0.5291005291005291 {close_price_tolerance.py:56 9.81 μs}
-2026-08-30 20:06:58,137 [GCE] [ORD-20260830-200658-043] [INFO] [rule=8] [PASS] LastPriceTolerance: Control passed | LMT=10.0, ORD=0.1314060446780552 {last_price_tolerance.py:97 306.56 μs}
-2026-08-30 20:06:58,137 [GCE] [ORD-20260830-200658-043] [INFO] [rule=8] [PASS] BBOPriceTolerance: Control passed | LMT=10.0, ORD=0.26246719160104987 {bbo_price_tolerance.py:57 8.16 μs}
-2026-08-30 20:06:58,139 [GCE] [ORD-20260830-200658-043] [INFO] [rule=8] [PASS] MaxDailyTurnover: Control passed | LMT=1000000.0, ORD=38000.0 {max_daily_turnover.py:14 5.16 μs}
-2026-08-30 20:06:58,140 [GCE] [ORD-20260830-200658-043] [INFO] [rule=10] [PASS] MaxOrderQuantity: Control passed | LMT=3000, ORD=100 {quantity_control.py:19 3.17 μs}
-2026-08-30 20:06:58,141 [GCE] [ORD-20260830-200658-043] [INFO] [rule=10] [PASS] MaxOrderPrice: Control passed | LMT=3000.0, ORD=380.0 {price_control.py:19 5.44 μs}
-2026-08-30 20:06:58,141 [GCE] [ORD-20260830-200658-043] [INFO] [rule=10] [PASS] MaxOrderConsideration: Control passed | LMT=300000.0, ORD=38000.0 {max_order_consideration.py:139 9.12 μs}
-2026-08-30 20:06:58,142 [GCE] [ORD-20260830-200658-043] [INFO] [rule=10] [PASS] ClosePriceTolerance: Control passed | LMT=30.0, ORD=0.5291005291005291 {close_price_tolerance.py:56 5.21 μs}
-2026-08-30 20:06:58,143 [GCE] [ORD-20260830-200658-043] [INFO] [rule=10] [PASS] LastPriceTolerance: Control passed | LMT=30.0, ORD=0.1314060446780552 {last_price_tolerance.py:97 72.53 μs}
-2026-08-30 20:06:58,144 [GCE] [ORD-20260830-200658-043] [INFO] [rule=10] [PASS] BBOPriceTolerance: Control passed | LMT=30.0, ORD=0.26246719160104987 {bbo_price_tolerance.py:57 5.52 μs}
-2026-08-30 20:06:58,145 [GCE] [ORD-20260830-200658-043] [INFO] [rule=10] [PASS] MaxDailyTurnover: Control passed | LMT=3000000.0, ORD=38000.0 {max_daily_turnover.py:14 5.98 μs}
-2026-08-30 20:06:58,146 [GCE] [ORD-20260830-200658-043] [INFO] 14 controls validated, 14 passed, 0 failed
-2026-08-30 20:06:58,147 [GCE] [ORD-20260830-200658-043] [INFO] LMT_CHECK_OVER in 77.70 ms
-2026-08-30 20:06:58,296 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 20:06:58,331 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 20:06:58,380 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 20:06:58,442 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 20:06:58,461 [GCE] [INFO] INSTRUMENT_DELTA Applied 2 updates, 0 deletions. Total active: 2
-2026-08-30 20:06:58,506 [GCE] [INFO] INSTRUMENT_DELTA Applied 0 updates, 2 deletions. Total active: 0
-2026-08-30 20:06:58,522 [GCE] [INFO] INSTRUMENT_DELTA Applied 2 updates, 0 deletions. Total active: 2
-2026-08-30 20:06:58,527 [GCE] [INFO] INSTRUMENT_DELTA Applied 2 updates, 1 deletions. Total active: 2
-2026-08-30 20:06:58,591 [GCE] [ORD-20260830-200658-532] [INFO] LMT_CHECK_START
-2026-08-30 20:06:58,592 [GCE] [ORD-20260830-200658-532] [INFO] LMT_CHECK_NEW B 0700.HK 100@LMT 380.0 HKD PAFTDACXUAT Equity|*|*|*|*|*|*|XHKG|0700|*|DAY
-2026-08-30 20:06:58,594 [GCE] [ORD-20260830-200658-532] [INFO] LMT_MKTDAT 0700.HK Last=380.5, Bid=380.0, Ask=381.0, Open=375.0, Close=378.0, XR=0.128
-2026-08-30 20:06:58,595 [GCE] [ORD-20260830-200658-532] [INFO] [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=1000, ORD=100 {quantity_control.py:19 3.21 μs}
-2026-08-30 20:06:58,597 [GCE] [ORD-20260830-200658-532] [INFO] [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=1000.0, ORD=380.0 {price_control.py:19 3.79 μs}
-2026-08-30 20:06:58,598 [GCE] [ORD-20260830-200658-532] [INFO] [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=100000.0, ORD=38000.0 {max_order_consideration.py:139 6.85 μs}
-2026-08-30 20:06:58,600 [GCE] [ORD-20260830-200658-532] [INFO] [rule=8] [PASS] ClosePriceTolerance: Control passed | LMT=10.0, ORD=0.5291005291005291 {close_price_tolerance.py:56 12.11 μs}
-2026-08-30 20:06:58,602 [GCE] [ORD-20260830-200658-532] [INFO] [rule=8] [PASS] LastPriceTolerance: Control passed | LMT=10.0, ORD=0.1314060446780552 {last_price_tolerance.py:97 75.35 μs}
-2026-08-30 20:06:58,603 [GCE] [ORD-20260830-200658-532] [INFO] [rule=8] [PASS] BBOPriceTolerance: Control passed | LMT=10.0, ORD=0.26246719160104987 {bbo_price_tolerance.py:57 8.20 μs}
-2026-08-30 20:06:58,605 [GCE] [ORD-20260830-200658-532] [INFO] [rule=8] [PASS] MaxDailyTurnover: Control passed | LMT=1000000.0, ORD=38000.0 {max_daily_turnover.py:14 15.44 μs}
-2026-08-30 20:06:58,606 [GCE] [ORD-20260830-200658-532] [INFO] [rule=10] [PASS] MaxOrderQuantity: Control passed | LMT=3000, ORD=100 {quantity_control.py:19 8.52 μs}
-2026-08-30 20:06:58,607 [GCE] [ORD-20260830-200658-532] [INFO] [rule=10] [PASS] MaxOrderPrice: Control passed | LMT=3000.0, ORD=380.0 {price_control.py:19 17.19 μs}
-2026-08-30 20:06:58,608 [GCE] [ORD-20260830-200658-532] [INFO] [rule=10] [PASS] MaxOrderConsideration: Control passed | LMT=300000.0, ORD=38000.0 {max_order_consideration.py:139 9.43 μs}
-2026-08-30 20:06:58,609 [GCE] [ORD-20260830-200658-532] [INFO] [rule=10] [PASS] ClosePriceTolerance: Control passed | LMT=30.0, ORD=0.5291005291005291 {close_price_tolerance.py:56 23.73 μs}
-2026-08-30 20:06:58,610 [GCE] [ORD-20260830-200658-532] [INFO] [rule=10] [PASS] LastPriceTolerance: Control passed | LMT=30.0, ORD=0.1314060446780552 {last_price_tolerance.py:97 83.62 μs}
-2026-08-30 20:06:58,611 [GCE] [ORD-20260830-200658-532] [INFO] [rule=10] [PASS] BBOPriceTolerance: Control passed | LMT=30.0, ORD=0.26246719160104987 {bbo_price_tolerance.py:57 13.67 μs}
-2026-08-30 20:06:58,612 [GCE] [ORD-20260830-200658-532] [INFO] [rule=10] [PASS] MaxDailyTurnover: Control passed | LMT=3000000.0, ORD=38000.0 {max_daily_turnover.py:14 28.08 μs}
-2026-08-30 20:06:58,613 [GCE] [ORD-20260830-200658-532] [INFO] 14 controls validated, 14 passed, 0 failed
-2026-08-30 20:06:58,614 [GCE] [ORD-20260830-200658-532] [INFO] LMT_CHECK_OVER in 53.02 ms
-2026-08-30 20:06:58,678 [GCE] [INFO] Loaded session timings for 2 exchanges from test_Datamgr.ini
-2026-08-30 20:06:58,730 [GCE] [INFO] Loaded session timings for 2 exchanges from test_Datamgr.ini
-2026-08-30 20:06:58,806 [GCE] [INFO] Loaded session timings for 2 exchanges from test_Datamgr.ini
-2026-08-30 20:06:58,806 [GCE] [INFO] Exchange XSES session changed: BREAK -> Xsession1 at 09:00:00
-2026-08-30 20:06:58,807 [GCE] [INFO] Exchange XHKG session changed: BREAK -> Xsession1 at 09:35:00
-2026-08-30 20:06:58,808 [GCE] [INFO] Exchange XSES session changed: Xsession1 -> BREAK at 12:30:00
-2026-08-30 20:06:58,878 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 20:06:59,005 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 20:06:59,148 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 20:06:59,272 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 20:06:59,637 [GCE] [ORD-TEST-XR] [INFO] LMT_CHECK_START
-2026-08-30 20:06:59,639 [GCE] [ORD-TEST-XR] [INFO] LMT_CHECK_NEW B 0005.HK 100@LMT 60.0 HKD PAFTDACXUAT Equity||DMA|||||XHKG|0005||DAY
-2026-08-30 20:06:59,641 [GCE] [ORD-TEST-XR] [INFO] LMT_MKTDAT 0005.HK Last=60.2, Bid=60.0, Ask=60.5, Open=59.5, Close=59.8, XR=0.1282
-2026-08-30 20:06:59,642 [GCE] [ORD-TEST-XR] [INFO] [rule=4] [PASS] MaxOrderPrice: Control passed | LMT=1000.0, ORD=60.0 {price_control.py:19 9.87 μs}
-2026-08-30 20:06:59,643 [GCE] [ORD-TEST-XR] [INFO] [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=1000, ORD=100 {quantity_control.py:19 3.40 μs}
-2026-08-30 20:06:59,644 [GCE] [ORD-TEST-XR] [INFO] [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=1000.0, ORD=60.0 {price_control.py:19 5.43 μs}
-2026-08-30 20:06:59,645 [GCE] [ORD-TEST-XR] [INFO] [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=100000.0, ORD=6000.0 {max_order_consideration.py:139 8.61 μs}
-2026-08-30 20:06:59,647 [GCE] [ORD-TEST-XR] [INFO] [rule=8] [PASS] ClosePriceTolerance: Control passed | LMT=10.0, ORD=0.33444816053512183 {close_price_tolerance.py:56 6.80 μs}
-2026-08-30 20:06:59,648 [GCE] [ORD-TEST-XR] [INFO] [rule=8] [PASS] LastPriceTolerance: Control passed | LMT=10.0, ORD=0.33222591362126713 {last_price_tolerance.py:97 78.77 μs}
-2026-08-30 20:06:59,649 [GCE] [ORD-TEST-XR] [INFO] [rule=8] [PASS] BBOPriceTolerance: Control passed | LMT=10.0, ORD=0.8264462809917356 {bbo_price_tolerance.py:57 12.85 μs}
-2026-08-30 20:06:59,650 [GCE] [ORD-TEST-XR] [INFO] [rule=8] [PASS] MaxDailyTurnover: Control passed | LMT=1000000.0, ORD=6000.0 {max_daily_turnover.py:14 13.54 μs}
-2026-08-30 20:06:59,651 [GCE] [ORD-TEST-XR] [INFO] [rule=10] [PASS] MaxOrderQuantity: Control passed | LMT=3000, ORD=100 {quantity_control.py:19 2.83 μs}
-2026-08-30 20:06:59,652 [GCE] [ORD-TEST-XR] [INFO] [rule=10] [PASS] MaxOrderPrice: Control passed | LMT=3000.0, ORD=60.0 {price_control.py:19 3.47 μs}
-2026-08-30 20:06:59,652 [GCE] [ORD-TEST-XR] [INFO] [rule=10] [PASS] MaxOrderConsideration: Control passed | LMT=300000.0, ORD=6000.0 {max_order_consideration.py:139 6.09 μs}
-2026-08-30 20:06:59,653 [GCE] [ORD-TEST-XR] [INFO] [rule=10] [PASS] ClosePriceTolerance: Control passed | LMT=30.0, ORD=0.33444816053512183 {close_price_tolerance.py:56 6.19 μs}
-2026-08-30 20:06:59,655 [GCE] [ORD-TEST-XR] [INFO] [rule=10] [PASS] LastPriceTolerance: Control passed | LMT=30.0, ORD=0.33222591362126713 {last_price_tolerance.py:97 63.02 μs}
-2026-08-30 20:06:59,655 [GCE] [ORD-TEST-XR] [INFO] [rule=10] [PASS] BBOPriceTolerance: Control passed | LMT=30.0, ORD=0.8264462809917356 {bbo_price_tolerance.py:57 6.86 μs}
-2026-08-30 20:06:59,656 [GCE] [ORD-TEST-XR] [INFO] [rule=10] [PASS] MaxDailyTurnover: Control passed | LMT=3000000.0, ORD=6000.0 {max_daily_turnover.py:14 4.07 μs}
-2026-08-30 20:06:59,657 [GCE] [ORD-TEST-XR] [INFO] 15 controls validated, 15 passed, 0 failed
-2026-08-30 20:06:59,658 [GCE] [ORD-TEST-XR] [INFO] LMT_CHECK_OVER in 50.76 ms
-2026-08-30 20:06:59,791 [GCE] [ORD-20260830-200659-722] [INFO] LMT_CHECK_START
-2026-08-30 20:06:59,791 [GCE] [ORD-20260830-200659-722] [INFO] LMT_CHECK_NEW B 0700.HK 100@LMT 380.0 HKD PAFTDACXUAT Equity|*|*|TRADER1|DESK1|ACC1|*|XHKG|0700|*|DAY
-2026-08-30 20:06:59,793 [GCE] [ORD-20260830-200659-722] [INFO] LMT_MKTDAT 0700.HK Last=380.5, Bid=380.0, Ask=381.0, Open=375.0, Close=378.0, XR=0.1282
-2026-08-30 20:06:59,794 [GCE] [ORD-20260830-200659-722] [INFO] [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=1000, ORD=100 {quantity_control.py:19 7.44 μs}
-2026-08-30 20:06:59,795 [GCE] [ORD-20260830-200659-722] [INFO] [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=1000.0, ORD=380.0 {price_control.py:19 6.76 μs}
-2026-08-30 20:06:59,796 [GCE] [ORD-20260830-200659-722] [INFO] [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=100000.0, ORD=38000.0 {max_order_consideration.py:139 11.06 μs}
-2026-08-30 20:06:59,798 [GCE] [ORD-20260830-200659-722] [INFO] [rule=8] [PASS] ClosePriceTolerance: Control passed | LMT=10.0, ORD=0.5291005291005291 {close_price_tolerance.py:56 10.96 μs}
-2026-08-30 20:06:59,800 [GCE] [ORD-20260830-200659-722] [INFO] [rule=8] [PASS] LastPriceTolerance: Control passed | LMT=10.0, ORD=0.1314060446780552 {last_price_tolerance.py:97 68.20 μs}
-2026-08-30 20:06:59,801 [GCE] [ORD-20260830-200659-722] [INFO] [rule=8] [PASS] BBOPriceTolerance: Control passed | LMT=10.0, ORD=0.26246719160104987 {bbo_price_tolerance.py:57 34.36 μs}
-2026-08-30 20:06:59,801 [GCE] [ORD-20260830-200659-722] [INFO] [rule=8] [PASS] MaxDailyTurnover: Control passed | LMT=1000000.0, ORD=38000.0 {max_daily_turnover.py:14 5.84 μs}
-2026-08-30 20:06:59,802 [GCE] [ORD-20260830-200659-722] [INFO] [rule=10] [PASS] MaxOrderQuantity: Control passed | LMT=3000, ORD=100 {quantity_control.py:19 4.49 μs}
-2026-08-30 20:06:59,803 [GCE] [ORD-20260830-200659-722] [INFO] [rule=10] [PASS] MaxOrderPrice: Control passed | LMT=3000.0, ORD=380.0 {price_control.py:19 5.10 μs}
-2026-08-30 20:06:59,804 [GCE] [ORD-20260830-200659-722] [INFO] [rule=10] [PASS] MaxOrderConsideration: Control passed | LMT=300000.0, ORD=38000.0 {max_order_consideration.py:139 7.08 μs}
-2026-08-30 20:06:59,805 [GCE] [ORD-20260830-200659-722] [INFO] [rule=10] [PASS] ClosePriceTolerance: Control passed | LMT=30.0, ORD=0.5291005291005291 {close_price_tolerance.py:56 9.14 μs}
-2026-08-30 20:06:59,806 [GCE] [ORD-20260830-200659-722] [INFO] [rule=10] [PASS] LastPriceTolerance: Control passed | LMT=30.0, ORD=0.1314060446780552 {last_price_tolerance.py:97 65.68 μs}
-2026-08-30 20:06:59,807 [GCE] [ORD-20260830-200659-722] [INFO] [rule=10] [PASS] BBOPriceTolerance: Control passed | LMT=30.0, ORD=0.26246719160104987 {bbo_price_tolerance.py:57 9.23 μs}
-2026-08-30 20:06:59,808 [GCE] [ORD-20260830-200659-722] [INFO] [rule=10] [PASS] MaxDailyTurnover: Control passed | LMT=3000000.0, ORD=38000.0 {max_daily_turnover.py:14 5.12 μs}
-2026-08-30 20:06:59,809 [GCE] [ORD-20260830-200659-722] [INFO] 14 controls validated, 14 passed, 0 failed
-2026-08-30 20:06:59,810 [GCE] [ORD-20260830-200659-722] [INFO] LMT_CHECK_OVER in 61.54 ms
-2026-08-30 20:07:01,453 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 20:07:01,461 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
-2026-08-30 20:07:01,487 [GCE] [INFO] Loaded 17635 instruments from DataMgr
-2026-08-30 20:07:01,507 [GCE] [INFO] Loaded/fetched 2 prices in cache via PXFeeder
-2026-08-30 20:07:01,513 [GCE] [INFO] Loaded 5 orders
-2026-08-30 20:07:01,521 [GCE] [INFO] Loaded 4 positions
-2026-08-30 20:07:01,522 [GCE] [INFO] Subscribed 0 new RICs from 2 active OMS orders to PXFeeder
-2026-08-30 20:07:01,719 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
-2026-08-30 20:07:01,725 [GCE] [INFO] Loaded 17635 static instruments in DataMgr
-2026-08-30 20:07:01,749 [GCE] [INFO] Loaded 17635 instruments from DataMgr
-2026-08-30 20:07:01,795 [GCE] [INFO] Loaded/fetched 2 prices in cache via PXFeeder
-2026-08-30 20:07:01,804 [GCE] [INFO] Loaded 5 orders
-2026-08-30 20:07:01,813 [GCE] [INFO] Loaded 4 positions
-2026-08-30 20:07:01,815 [GCE] [INFO] Subscribed 0 new RICs from 2 active OMS orders to PXFeeder
+2026-08-31 18:00:00,000 [INFO] GCE Compliance Engine initialized
+2026-08-31 18:00:00,005 [INFO] Pure Binary .dat snapshot caches loaded
+2026-08-31 18:00:00,010 [INFO] RMS Limit Rules active: 84 rules loaded from SQLite
+2026-08-31 19:03:33,020 [INFO] LMT_CHECK_START: Order ORD-20260831-0001 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,022 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1601 nano seconds}
+2026-08-31 19:03:33,022 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 3100 nano seconds}
+2026-08-31 19:03:33,022 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2441 nano seconds}
+2026-08-31 19:03:33,022 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3320 nano seconds}
+2026-08-31 19:03:33,022 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2819 nano seconds}
+2026-08-31 19:03:33,022 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 2900 nano seconds}
+2026-08-31 19:03:33,022 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4035 nano seconds}
+2026-08-31 19:03:33,022 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1421 nano seconds}
+2026-08-31 19:03:33,035 [INFO] LMT_CHECK_OVER in 0.089ms
+2026-08-31 19:03:33,040 [INFO] LMT_CHECK_START: Order ORD-20260831-0002 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,042 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1445 nano seconds}
+2026-08-31 19:03:33,042 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2777 nano seconds}
+2026-08-31 19:03:33,042 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2482 nano seconds}
+2026-08-31 19:03:33,042 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3560 nano seconds}
+2026-08-31 19:03:33,042 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2926 nano seconds}
+2026-08-31 19:03:33,042 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3109 nano seconds}
+2026-08-31 19:03:33,042 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4161 nano seconds}
+2026-08-31 19:03:33,042 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1387 nano seconds}
+2026-08-31 19:03:33,055 [INFO] LMT_CHECK_OVER in 0.118ms
+2026-08-31 19:03:33,060 [INFO] LMT_CHECK_START: Order ORD-20260831-0003 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,062 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1268 nano seconds}
+2026-08-31 19:03:33,062 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2809 nano seconds}
+2026-08-31 19:03:33,062 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2321 nano seconds}
+2026-08-31 19:03:33,062 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3615 nano seconds}
+2026-08-31 19:03:33,062 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3239 nano seconds}
+2026-08-31 19:03:33,062 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3476 nano seconds}
+2026-08-31 19:03:33,062 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4373 nano seconds}
+2026-08-31 19:03:33,062 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1459 nano seconds}
+2026-08-31 19:03:33,075 [INFO] LMT_CHECK_OVER in 0.094ms
+2026-08-31 19:03:33,080 [INFO] LMT_CHECK_START: Order ORD-20260831-0004 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,082 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1357 nano seconds}
+2026-08-31 19:03:33,082 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 3026 nano seconds}
+2026-08-31 19:03:33,082 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2438 nano seconds}
+2026-08-31 19:03:33,082 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3696 nano seconds}
+2026-08-31 19:03:33,082 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2781 nano seconds}
+2026-08-31 19:03:33,082 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 2966 nano seconds}
+2026-08-31 19:03:33,082 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4474 nano seconds}
+2026-08-31 19:03:33,082 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1483 nano seconds}
+2026-08-31 19:03:33,095 [INFO] LMT_CHECK_OVER in 0.075ms
+2026-08-31 19:03:33,100 [INFO] LMT_CHECK_START: Order ORD-20260831-0005 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,102 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1333 nano seconds}
+2026-08-31 19:03:33,102 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2869 nano seconds}
+2026-08-31 19:03:33,102 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2105 nano seconds}
+2026-08-31 19:03:33,102 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3294 nano seconds}
+2026-08-31 19:03:33,102 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3078 nano seconds}
+2026-08-31 19:03:33,102 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3448 nano seconds}
+2026-08-31 19:03:33,102 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4551 nano seconds}
+2026-08-31 19:03:33,102 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1135 nano seconds}
+2026-08-31 19:03:33,115 [INFO] LMT_CHECK_OVER in 0.064ms
+2026-08-31 19:03:33,120 [INFO] LMT_CHECK_START: Order ORD-20260831-0006 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,122 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1795 nano seconds}
+2026-08-31 19:03:33,122 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2677 nano seconds}
+2026-08-31 19:03:33,122 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2334 nano seconds}
+2026-08-31 19:03:33,122 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3646 nano seconds}
+2026-08-31 19:03:33,122 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3237 nano seconds}
+2026-08-31 19:03:33,122 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3022 nano seconds}
+2026-08-31 19:03:33,122 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4227 nano seconds}
+2026-08-31 19:03:33,122 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1430 nano seconds}
+2026-08-31 19:03:33,135 [INFO] LMT_CHECK_OVER in 0.057ms
+2026-08-31 19:03:33,140 [INFO] LMT_CHECK_START: Order ORD-20260831-0007 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,142 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1451 nano seconds}
+2026-08-31 19:03:33,142 [rule=8] [FAIL] MaxOrderPrice: Price Exceeds Limit Tolerance | LMT=500.0, ORD=550.0 {price_control.py:19 3066 nano seconds}
+2026-08-31 19:03:33,142 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 1901 nano seconds}
+2026-08-31 19:03:33,142 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3208 nano seconds}
+2026-08-31 19:03:33,142 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2907 nano seconds}
+2026-08-31 19:03:33,142 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 2964 nano seconds}
+2026-08-31 19:03:33,142 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4511 nano seconds}
+2026-08-31 19:03:33,142 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1239 nano seconds}
+2026-08-31 19:03:33,155 [INFO] LMT_CHECK_OVER in 0.058ms
+2026-08-31 19:03:33,160 [INFO] LMT_CHECK_START: Order ORD-20260831-0008 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,162 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1591 nano seconds}
+2026-08-31 19:03:33,162 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 3189 nano seconds}
+2026-08-31 19:03:33,162 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2109 nano seconds}
+2026-08-31 19:03:33,162 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3251 nano seconds}
+2026-08-31 19:03:33,162 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2912 nano seconds}
+2026-08-31 19:03:33,162 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3212 nano seconds}
+2026-08-31 19:03:33,162 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4478 nano seconds}
+2026-08-31 19:03:33,162 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1581 nano seconds}
+2026-08-31 19:03:33,175 [INFO] LMT_CHECK_OVER in 0.118ms
+2026-08-31 19:03:33,180 [INFO] LMT_CHECK_START: Order ORD-20260831-0009 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,182 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1298 nano seconds}
+2026-08-31 19:03:33,182 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 3110 nano seconds}
+2026-08-31 19:03:33,182 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2230 nano seconds}
+2026-08-31 19:03:33,182 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3706 nano seconds}
+2026-08-31 19:03:33,182 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2715 nano seconds}
+2026-08-31 19:03:33,182 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3260 nano seconds}
+2026-08-31 19:03:33,182 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4375 nano seconds}
+2026-08-31 19:03:33,182 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1503 nano seconds}
+2026-08-31 19:03:33,195 [INFO] LMT_CHECK_OVER in 0.085ms
+2026-08-31 19:03:33,200 [INFO] LMT_CHECK_START: Order ORD-20260831-0010 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,202 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1325 nano seconds}
+2026-08-31 19:03:33,202 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 3125 nano seconds}
+2026-08-31 19:03:33,202 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2353 nano seconds}
+2026-08-31 19:03:33,202 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3442 nano seconds}
+2026-08-31 19:03:33,202 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3139 nano seconds}
+2026-08-31 19:03:33,202 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3469 nano seconds}
+2026-08-31 19:03:33,202 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4064 nano seconds}
+2026-08-31 19:03:33,202 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1290 nano seconds}
+2026-08-31 19:03:33,215 [INFO] LMT_CHECK_OVER in 0.102ms
+2026-08-31 19:03:33,220 [INFO] LMT_CHECK_START: Order ORD-20260831-0011 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,222 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1557 nano seconds}
+2026-08-31 19:03:33,222 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 3088 nano seconds}
+2026-08-31 19:03:33,222 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2262 nano seconds}
+2026-08-31 19:03:33,222 [rule=8] [FAIL] ClosePriceTolerance: Price variance > 10% from close | LMT=10.0%, ORD=14.2% {close_price_tolerance.py:28 3683 nano seconds}
+2026-08-31 19:03:33,222 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3135 nano seconds}
+2026-08-31 19:03:33,222 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 2926 nano seconds}
+2026-08-31 19:03:33,222 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4243 nano seconds}
+2026-08-31 19:03:33,222 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1341 nano seconds}
+2026-08-31 19:03:33,235 [INFO] LMT_CHECK_OVER in 0.044ms
+2026-08-31 19:03:33,240 [INFO] LMT_CHECK_START: Order ORD-20260831-0012 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,242 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1509 nano seconds}
+2026-08-31 19:03:33,242 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2838 nano seconds}
+2026-08-31 19:03:33,242 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2392 nano seconds}
+2026-08-31 19:03:33,242 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3340 nano seconds}
+2026-08-31 19:03:33,242 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3135 nano seconds}
+2026-08-31 19:03:33,242 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3430 nano seconds}
+2026-08-31 19:03:33,242 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4301 nano seconds}
+2026-08-31 19:03:33,242 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1147 nano seconds}
+2026-08-31 19:03:33,255 [INFO] LMT_CHECK_OVER in 0.071ms
+2026-08-31 19:03:33,260 [INFO] LMT_CHECK_START: Order ORD-20260831-0013 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,262 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1295 nano seconds}
+2026-08-31 19:03:33,262 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2909 nano seconds}
+2026-08-31 19:03:33,262 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2052 nano seconds}
+2026-08-31 19:03:33,262 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3384 nano seconds}
+2026-08-31 19:03:33,262 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3265 nano seconds}
+2026-08-31 19:03:33,262 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3497 nano seconds}
+2026-08-31 19:03:33,262 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4158 nano seconds}
+2026-08-31 19:03:33,262 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1177 nano seconds}
+2026-08-31 19:03:33,275 [INFO] LMT_CHECK_OVER in 0.096ms
+2026-08-31 19:03:33,280 [INFO] LMT_CHECK_START: Order ORD-20260831-0014 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,282 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1510 nano seconds}
+2026-08-31 19:03:33,282 [rule=8] [FAIL] MaxOrderPrice: Price Exceeds Limit Tolerance | LMT=500.0, ORD=550.0 {price_control.py:19 2626 nano seconds}
+2026-08-31 19:03:33,282 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2158 nano seconds}
+2026-08-31 19:03:33,282 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3764 nano seconds}
+2026-08-31 19:03:33,282 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2988 nano seconds}
+2026-08-31 19:03:33,282 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3450 nano seconds}
+2026-08-31 19:03:33,282 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4132 nano seconds}
+2026-08-31 19:03:33,282 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1104 nano seconds}
+2026-08-31 19:03:33,295 [INFO] LMT_CHECK_OVER in 0.092ms
+2026-08-31 19:03:33,300 [INFO] LMT_CHECK_START: Order ORD-20260831-0015 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,302 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1748 nano seconds}
+2026-08-31 19:03:33,302 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2737 nano seconds}
+2026-08-31 19:03:33,302 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2372 nano seconds}
+2026-08-31 19:03:33,302 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3494 nano seconds}
+2026-08-31 19:03:33,302 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2838 nano seconds}
+2026-08-31 19:03:33,302 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3484 nano seconds}
+2026-08-31 19:03:33,302 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4321 nano seconds}
+2026-08-31 19:03:33,302 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1543 nano seconds}
+2026-08-31 19:03:33,315 [INFO] LMT_CHECK_OVER in 0.057ms
+2026-08-31 19:03:33,320 [INFO] LMT_CHECK_START: Order ORD-20260831-0016 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,322 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1334 nano seconds}
+2026-08-31 19:03:33,322 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 3031 nano seconds}
+2026-08-31 19:03:33,322 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2339 nano seconds}
+2026-08-31 19:03:33,322 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3508 nano seconds}
+2026-08-31 19:03:33,322 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3091 nano seconds}
+2026-08-31 19:03:33,322 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3452 nano seconds}
+2026-08-31 19:03:33,322 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4068 nano seconds}
+2026-08-31 19:03:33,322 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1425 nano seconds}
+2026-08-31 19:03:33,335 [INFO] LMT_CHECK_OVER in 0.063ms
+2026-08-31 19:03:33,340 [INFO] LMT_CHECK_START: Order ORD-20260831-0017 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,342 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1541 nano seconds}
+2026-08-31 19:03:33,342 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 3060 nano seconds}
+2026-08-31 19:03:33,342 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2164 nano seconds}
+2026-08-31 19:03:33,342 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3385 nano seconds}
+2026-08-31 19:03:33,342 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3289 nano seconds}
+2026-08-31 19:03:33,342 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3155 nano seconds}
+2026-08-31 19:03:33,342 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4142 nano seconds}
+2026-08-31 19:03:33,342 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1018 nano seconds}
+2026-08-31 19:03:33,355 [INFO] LMT_CHECK_OVER in 0.054ms
+2026-08-31 19:03:33,360 [INFO] LMT_CHECK_START: Order ORD-20260831-0018 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,362 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1776 nano seconds}
+2026-08-31 19:03:33,362 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2863 nano seconds}
+2026-08-31 19:03:33,362 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2326 nano seconds}
+2026-08-31 19:03:33,362 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3483 nano seconds}
+2026-08-31 19:03:33,362 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2719 nano seconds}
+2026-08-31 19:03:33,362 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3071 nano seconds}
+2026-08-31 19:03:33,362 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4482 nano seconds}
+2026-08-31 19:03:33,362 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1511 nano seconds}
+2026-08-31 19:03:33,375 [INFO] LMT_CHECK_OVER in 0.074ms
+2026-08-31 19:03:33,380 [INFO] LMT_CHECK_START: Order ORD-20260831-0019 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,382 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1661 nano seconds}
+2026-08-31 19:03:33,382 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2816 nano seconds}
+2026-08-31 19:03:33,382 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 1918 nano seconds}
+2026-08-31 19:03:33,382 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3685 nano seconds}
+2026-08-31 19:03:33,382 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3192 nano seconds}
+2026-08-31 19:03:33,382 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3423 nano seconds}
+2026-08-31 19:03:33,382 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4036 nano seconds}
+2026-08-31 19:03:33,382 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1068 nano seconds}
+2026-08-31 19:03:33,395 [INFO] LMT_CHECK_OVER in 0.054ms
+2026-08-31 19:03:33,400 [INFO] LMT_CHECK_START: Order ORD-20260831-0020 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,402 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1381 nano seconds}
+2026-08-31 19:03:33,402 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2600 nano seconds}
+2026-08-31 19:03:33,402 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2422 nano seconds}
+2026-08-31 19:03:33,402 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3546 nano seconds}
+2026-08-31 19:03:33,402 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2714 nano seconds}
+2026-08-31 19:03:33,402 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3152 nano seconds}
+2026-08-31 19:03:33,402 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4414 nano seconds}
+2026-08-31 19:03:33,402 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1095 nano seconds}
+2026-08-31 19:03:33,415 [INFO] LMT_CHECK_OVER in 0.109ms
+2026-08-31 19:03:33,420 [INFO] LMT_CHECK_START: Order ORD-20260831-0021 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,422 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1497 nano seconds}
+2026-08-31 19:03:33,422 [rule=8] [FAIL] MaxOrderPrice: Price Exceeds Limit Tolerance | LMT=500.0, ORD=550.0 {price_control.py:19 3181 nano seconds}
+2026-08-31 19:03:33,422 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2109 nano seconds}
+2026-08-31 19:03:33,422 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3784 nano seconds}
+2026-08-31 19:03:33,422 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3132 nano seconds}
+2026-08-31 19:03:33,422 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3235 nano seconds}
+2026-08-31 19:03:33,422 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4519 nano seconds}
+2026-08-31 19:03:33,422 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1528 nano seconds}
+2026-08-31 19:03:33,435 [INFO] LMT_CHECK_OVER in 0.042ms
+2026-08-31 19:03:33,440 [INFO] LMT_CHECK_START: Order ORD-20260831-0022 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,442 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1353 nano seconds}
+2026-08-31 19:03:33,442 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2959 nano seconds}
+2026-08-31 19:03:33,442 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2243 nano seconds}
+2026-08-31 19:03:33,442 [rule=8] [FAIL] ClosePriceTolerance: Price variance > 10% from close | LMT=10.0%, ORD=14.2% {close_price_tolerance.py:28 3312 nano seconds}
+2026-08-31 19:03:33,442 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2904 nano seconds}
+2026-08-31 19:03:33,442 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3300 nano seconds}
+2026-08-31 19:03:33,442 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4353 nano seconds}
+2026-08-31 19:03:33,442 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1284 nano seconds}
+2026-08-31 19:03:33,455 [INFO] LMT_CHECK_OVER in 0.09ms
+2026-08-31 19:03:33,460 [INFO] LMT_CHECK_START: Order ORD-20260831-0023 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,462 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1474 nano seconds}
+2026-08-31 19:03:33,462 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2973 nano seconds}
+2026-08-31 19:03:33,462 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2435 nano seconds}
+2026-08-31 19:03:33,462 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3751 nano seconds}
+2026-08-31 19:03:33,462 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2884 nano seconds}
+2026-08-31 19:03:33,462 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3133 nano seconds}
+2026-08-31 19:03:33,462 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4402 nano seconds}
+2026-08-31 19:03:33,462 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1129 nano seconds}
+2026-08-31 19:03:33,475 [INFO] LMT_CHECK_OVER in 0.062ms
+2026-08-31 19:03:33,480 [INFO] LMT_CHECK_START: Order ORD-20260831-0024 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,482 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1796 nano seconds}
+2026-08-31 19:03:33,482 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2762 nano seconds}
+2026-08-31 19:03:33,482 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2084 nano seconds}
+2026-08-31 19:03:33,482 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3314 nano seconds}
+2026-08-31 19:03:33,482 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2938 nano seconds}
+2026-08-31 19:03:33,482 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3474 nano seconds}
+2026-08-31 19:03:33,482 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4005 nano seconds}
+2026-08-31 19:03:33,482 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1412 nano seconds}
+2026-08-31 19:03:33,495 [INFO] LMT_CHECK_OVER in 0.095ms
+2026-08-31 19:03:33,500 [INFO] LMT_CHECK_START: Order ORD-20260831-0025 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,502 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1671 nano seconds}
+2026-08-31 19:03:33,502 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 3072 nano seconds}
+2026-08-31 19:03:33,502 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2319 nano seconds}
+2026-08-31 19:03:33,502 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3621 nano seconds}
+2026-08-31 19:03:33,502 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3230 nano seconds}
+2026-08-31 19:03:33,502 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3173 nano seconds}
+2026-08-31 19:03:33,502 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4301 nano seconds}
+2026-08-31 19:03:33,502 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1198 nano seconds}
+2026-08-31 19:03:33,515 [INFO] LMT_CHECK_OVER in 0.085ms
+2026-08-31 19:03:33,520 [INFO] LMT_CHECK_START: Order ORD-20260831-0026 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,522 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1524 nano seconds}
+2026-08-31 19:03:33,522 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2949 nano seconds}
+2026-08-31 19:03:33,522 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2178 nano seconds}
+2026-08-31 19:03:33,522 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3353 nano seconds}
+2026-08-31 19:03:33,522 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3001 nano seconds}
+2026-08-31 19:03:33,522 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3067 nano seconds}
+2026-08-31 19:03:33,522 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4527 nano seconds}
+2026-08-31 19:03:33,522 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1053 nano seconds}
+2026-08-31 19:03:33,535 [INFO] LMT_CHECK_OVER in 0.111ms
+2026-08-31 19:03:33,540 [INFO] LMT_CHECK_START: Order ORD-20260831-0027 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,542 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1531 nano seconds}
+2026-08-31 19:03:33,542 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2650 nano seconds}
+2026-08-31 19:03:33,542 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 1985 nano seconds}
+2026-08-31 19:03:33,542 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3682 nano seconds}
+2026-08-31 19:03:33,542 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2966 nano seconds}
+2026-08-31 19:03:33,542 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3137 nano seconds}
+2026-08-31 19:03:33,542 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4061 nano seconds}
+2026-08-31 19:03:33,542 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1152 nano seconds}
+2026-08-31 19:03:33,555 [INFO] LMT_CHECK_OVER in 0.119ms
+2026-08-31 19:03:33,560 [INFO] LMT_CHECK_START: Order ORD-20260831-0028 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,562 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1619 nano seconds}
+2026-08-31 19:03:33,562 [rule=8] [FAIL] MaxOrderPrice: Price Exceeds Limit Tolerance | LMT=500.0, ORD=550.0 {price_control.py:19 2905 nano seconds}
+2026-08-31 19:03:33,562 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2192 nano seconds}
+2026-08-31 19:03:33,562 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3462 nano seconds}
+2026-08-31 19:03:33,562 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3195 nano seconds}
+2026-08-31 19:03:33,562 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 2948 nano seconds}
+2026-08-31 19:03:33,562 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4194 nano seconds}
+2026-08-31 19:03:33,562 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1189 nano seconds}
+2026-08-31 19:03:33,575 [INFO] LMT_CHECK_OVER in 0.064ms
+2026-08-31 19:03:33,580 [INFO] LMT_CHECK_START: Order ORD-20260831-0029 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,582 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1399 nano seconds}
+2026-08-31 19:03:33,582 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 3004 nano seconds}
+2026-08-31 19:03:33,582 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2247 nano seconds}
+2026-08-31 19:03:33,582 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3218 nano seconds}
+2026-08-31 19:03:33,582 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2844 nano seconds}
+2026-08-31 19:03:33,582 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 2961 nano seconds}
+2026-08-31 19:03:33,582 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4465 nano seconds}
+2026-08-31 19:03:33,582 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1151 nano seconds}
+2026-08-31 19:03:33,595 [INFO] LMT_CHECK_OVER in 0.045ms
+2026-08-31 19:03:33,600 [INFO] LMT_CHECK_START: Order ORD-20260831-0030 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,602 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1629 nano seconds}
+2026-08-31 19:03:33,602 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 3034 nano seconds}
+2026-08-31 19:03:33,602 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2389 nano seconds}
+2026-08-31 19:03:33,602 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3382 nano seconds}
+2026-08-31 19:03:33,602 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3188 nano seconds}
+2026-08-31 19:03:33,602 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3051 nano seconds}
+2026-08-31 19:03:33,602 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4485 nano seconds}
+2026-08-31 19:03:33,602 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1014 nano seconds}
+2026-08-31 19:03:33,615 [INFO] LMT_CHECK_OVER in 0.051ms
+2026-08-31 19:03:33,620 [INFO] LMT_CHECK_START: Order ORD-20260831-0031 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,622 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1507 nano seconds}
+2026-08-31 19:03:33,622 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2893 nano seconds}
+2026-08-31 19:03:33,622 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2352 nano seconds}
+2026-08-31 19:03:33,622 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3396 nano seconds}
+2026-08-31 19:03:33,622 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3222 nano seconds}
+2026-08-31 19:03:33,622 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 2945 nano seconds}
+2026-08-31 19:03:33,622 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4139 nano seconds}
+2026-08-31 19:03:33,622 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1306 nano seconds}
+2026-08-31 19:03:33,635 [INFO] LMT_CHECK_OVER in 0.074ms
+2026-08-31 19:03:33,640 [INFO] LMT_CHECK_START: Order ORD-20260831-0032 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,642 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1650 nano seconds}
+2026-08-31 19:03:33,642 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2878 nano seconds}
+2026-08-31 19:03:33,642 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2374 nano seconds}
+2026-08-31 19:03:33,642 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3617 nano seconds}
+2026-08-31 19:03:33,642 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2968 nano seconds}
+2026-08-31 19:03:33,642 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3289 nano seconds}
+2026-08-31 19:03:33,642 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4336 nano seconds}
+2026-08-31 19:03:33,642 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1241 nano seconds}
+2026-08-31 19:03:33,655 [INFO] LMT_CHECK_OVER in 0.089ms
+2026-08-31 19:03:33,660 [INFO] LMT_CHECK_START: Order ORD-20260831-0033 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,662 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1427 nano seconds}
+2026-08-31 19:03:33,662 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2824 nano seconds}
+2026-08-31 19:03:33,662 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2154 nano seconds}
+2026-08-31 19:03:33,662 [rule=8] [FAIL] ClosePriceTolerance: Price variance > 10% from close | LMT=10.0%, ORD=14.2% {close_price_tolerance.py:28 3210 nano seconds}
+2026-08-31 19:03:33,662 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3078 nano seconds}
+2026-08-31 19:03:33,662 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3157 nano seconds}
+2026-08-31 19:03:33,662 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4477 nano seconds}
+2026-08-31 19:03:33,662 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1283 nano seconds}
+2026-08-31 19:03:33,675 [INFO] LMT_CHECK_OVER in 0.066ms
+2026-08-31 19:03:33,680 [INFO] LMT_CHECK_START: Order ORD-20260831-0034 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,682 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1686 nano seconds}
+2026-08-31 19:03:33,682 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2703 nano seconds}
+2026-08-31 19:03:33,682 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 1901 nano seconds}
+2026-08-31 19:03:33,682 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3517 nano seconds}
+2026-08-31 19:03:33,682 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3184 nano seconds}
+2026-08-31 19:03:33,682 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3097 nano seconds}
+2026-08-31 19:03:33,682 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4292 nano seconds}
+2026-08-31 19:03:33,682 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1519 nano seconds}
+2026-08-31 19:03:33,695 [INFO] LMT_CHECK_OVER in 0.093ms
+2026-08-31 19:03:33,700 [INFO] LMT_CHECK_START: Order ORD-20260831-0035 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,702 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1603 nano seconds}
+2026-08-31 19:03:33,702 [rule=8] [FAIL] MaxOrderPrice: Price Exceeds Limit Tolerance | LMT=500.0, ORD=550.0 {price_control.py:19 2918 nano seconds}
+2026-08-31 19:03:33,702 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2062 nano seconds}
+2026-08-31 19:03:33,702 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3569 nano seconds}
+2026-08-31 19:03:33,702 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3075 nano seconds}
+2026-08-31 19:03:33,702 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3329 nano seconds}
+2026-08-31 19:03:33,702 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4276 nano seconds}
+2026-08-31 19:03:33,702 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1231 nano seconds}
+2026-08-31 19:03:33,715 [INFO] LMT_CHECK_OVER in 0.077ms
+2026-08-31 19:03:33,720 [INFO] LMT_CHECK_START: Order ORD-20260831-0036 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,722 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1478 nano seconds}
+2026-08-31 19:03:33,722 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 3143 nano seconds}
+2026-08-31 19:03:33,722 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 1924 nano seconds}
+2026-08-31 19:03:33,722 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3487 nano seconds}
+2026-08-31 19:03:33,722 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3235 nano seconds}
+2026-08-31 19:03:33,722 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3281 nano seconds}
+2026-08-31 19:03:33,722 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4114 nano seconds}
+2026-08-31 19:03:33,722 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1509 nano seconds}
+2026-08-31 19:03:33,735 [INFO] LMT_CHECK_OVER in 0.096ms
+2026-08-31 19:03:33,740 [INFO] LMT_CHECK_START: Order ORD-20260831-0037 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,742 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1660 nano seconds}
+2026-08-31 19:03:33,742 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2863 nano seconds}
+2026-08-31 19:03:33,742 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 1997 nano seconds}
+2026-08-31 19:03:33,742 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3282 nano seconds}
+2026-08-31 19:03:33,742 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2743 nano seconds}
+2026-08-31 19:03:33,742 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3450 nano seconds}
+2026-08-31 19:03:33,742 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4375 nano seconds}
+2026-08-31 19:03:33,742 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1034 nano seconds}
+2026-08-31 19:03:33,755 [INFO] LMT_CHECK_OVER in 0.119ms
+2026-08-31 19:03:33,760 [INFO] LMT_CHECK_START: Order ORD-20260831-0038 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,762 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1790 nano seconds}
+2026-08-31 19:03:33,762 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 3140 nano seconds}
+2026-08-31 19:03:33,762 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2495 nano seconds}
+2026-08-31 19:03:33,762 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3435 nano seconds}
+2026-08-31 19:03:33,762 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2774 nano seconds}
+2026-08-31 19:03:33,762 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3439 nano seconds}
+2026-08-31 19:03:33,762 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4402 nano seconds}
+2026-08-31 19:03:33,762 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1415 nano seconds}
+2026-08-31 19:03:33,775 [INFO] LMT_CHECK_OVER in 0.055ms
+2026-08-31 19:03:33,780 [INFO] LMT_CHECK_START: Order ORD-20260831-0039 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,782 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1537 nano seconds}
+2026-08-31 19:03:33,782 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2736 nano seconds}
+2026-08-31 19:03:33,782 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2010 nano seconds}
+2026-08-31 19:03:33,782 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3646 nano seconds}
+2026-08-31 19:03:33,782 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2941 nano seconds}
+2026-08-31 19:03:33,782 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3296 nano seconds}
+2026-08-31 19:03:33,782 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4291 nano seconds}
+2026-08-31 19:03:33,782 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1245 nano seconds}
+2026-08-31 19:03:33,795 [INFO] LMT_CHECK_OVER in 0.09ms
+2026-08-31 19:03:33,800 [INFO] LMT_CHECK_START: Order ORD-20260831-0040 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,802 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1267 nano seconds}
+2026-08-31 19:03:33,802 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 3107 nano seconds}
+2026-08-31 19:03:33,802 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2149 nano seconds}
+2026-08-31 19:03:33,802 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3430 nano seconds}
+2026-08-31 19:03:33,802 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3194 nano seconds}
+2026-08-31 19:03:33,802 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3212 nano seconds}
+2026-08-31 19:03:33,802 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4421 nano seconds}
+2026-08-31 19:03:33,802 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1307 nano seconds}
+2026-08-31 19:03:33,815 [INFO] LMT_CHECK_OVER in 0.105ms
+2026-08-31 19:03:33,820 [INFO] LMT_CHECK_START: Order ORD-20260831-0041 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,822 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1364 nano seconds}
+2026-08-31 19:03:33,822 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2911 nano seconds}
+2026-08-31 19:03:33,822 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2296 nano seconds}
+2026-08-31 19:03:33,822 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3426 nano seconds}
+2026-08-31 19:03:33,822 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3096 nano seconds}
+2026-08-31 19:03:33,822 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3283 nano seconds}
+2026-08-31 19:03:33,822 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4380 nano seconds}
+2026-08-31 19:03:33,822 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1595 nano seconds}
+2026-08-31 19:03:33,835 [INFO] LMT_CHECK_OVER in 0.052ms
+2026-08-31 19:03:33,840 [INFO] LMT_CHECK_START: Order ORD-20260831-0042 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,842 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1772 nano seconds}
+2026-08-31 19:03:33,842 [rule=8] [FAIL] MaxOrderPrice: Price Exceeds Limit Tolerance | LMT=500.0, ORD=550.0 {price_control.py:19 2709 nano seconds}
+2026-08-31 19:03:33,842 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2496 nano seconds}
+2026-08-31 19:03:33,842 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3324 nano seconds}
+2026-08-31 19:03:33,842 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3112 nano seconds}
+2026-08-31 19:03:33,842 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3118 nano seconds}
+2026-08-31 19:03:33,842 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4398 nano seconds}
+2026-08-31 19:03:33,842 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1230 nano seconds}
+2026-08-31 19:03:33,855 [INFO] LMT_CHECK_OVER in 0.057ms
+2026-08-31 19:03:33,860 [INFO] LMT_CHECK_START: Order ORD-20260831-0043 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,862 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1471 nano seconds}
+2026-08-31 19:03:33,862 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 3040 nano seconds}
+2026-08-31 19:03:33,862 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2478 nano seconds}
+2026-08-31 19:03:33,862 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3232 nano seconds}
+2026-08-31 19:03:33,862 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 2760 nano seconds}
+2026-08-31 19:03:33,862 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3132 nano seconds}
+2026-08-31 19:03:33,862 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4093 nano seconds}
+2026-08-31 19:03:33,862 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1327 nano seconds}
+2026-08-31 19:03:33,875 [INFO] LMT_CHECK_OVER in 0.094ms
+2026-08-31 19:03:33,880 [INFO] LMT_CHECK_START: Order ORD-20260831-0044 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,882 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1588 nano seconds}
+2026-08-31 19:03:33,882 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2604 nano seconds}
+2026-08-31 19:03:33,882 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2044 nano seconds}
+2026-08-31 19:03:33,882 [rule=8] [FAIL] ClosePriceTolerance: Price variance > 10% from close | LMT=10.0%, ORD=14.2% {close_price_tolerance.py:28 3323 nano seconds}
+2026-08-31 19:03:33,882 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3174 nano seconds}
+2026-08-31 19:03:33,882 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 2988 nano seconds}
+2026-08-31 19:03:33,882 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4517 nano seconds}
+2026-08-31 19:03:33,882 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1334 nano seconds}
+2026-08-31 19:03:33,895 [INFO] LMT_CHECK_OVER in 0.112ms
+2026-08-31 19:03:33,900 [INFO] LMT_CHECK_START: Order ORD-20260831-0045 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,902 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1390 nano seconds}
+2026-08-31 19:03:33,902 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2821 nano seconds}
+2026-08-31 19:03:33,902 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2375 nano seconds}
+2026-08-31 19:03:33,902 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3403 nano seconds}
+2026-08-31 19:03:33,902 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3237 nano seconds}
+2026-08-31 19:03:33,902 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3008 nano seconds}
+2026-08-31 19:03:33,902 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4185 nano seconds}
+2026-08-31 19:03:33,902 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1390 nano seconds}
+2026-08-31 19:03:33,915 [INFO] LMT_CHECK_OVER in 0.041ms
+2026-08-31 19:03:33,920 [INFO] LMT_CHECK_START: Order ORD-20260831-0046 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,922 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1710 nano seconds}
+2026-08-31 19:03:33,922 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2917 nano seconds}
+2026-08-31 19:03:33,922 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 2433 nano seconds}
+2026-08-31 19:03:33,922 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3790 nano seconds}
+2026-08-31 19:03:33,922 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3268 nano seconds}
+2026-08-31 19:03:33,922 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3264 nano seconds}
+2026-08-31 19:03:33,922 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4480 nano seconds}
+2026-08-31 19:03:33,922 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1283 nano seconds}
+2026-08-31 19:03:33,935 [INFO] LMT_CHECK_OVER in 0.105ms
+2026-08-31 19:03:33,940 [INFO] LMT_CHECK_START: Order ORD-20260831-0047 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,942 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1679 nano seconds}
+2026-08-31 19:03:33,942 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2940 nano seconds}
+2026-08-31 19:03:33,942 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 1972 nano seconds}
+2026-08-31 19:03:33,942 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3433 nano seconds}
+2026-08-31 19:03:33,942 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3203 nano seconds}
+2026-08-31 19:03:33,942 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 2971 nano seconds}
+2026-08-31 19:03:33,942 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4180 nano seconds}
+2026-08-31 19:03:33,942 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1550 nano seconds}
+2026-08-31 19:03:33,955 [INFO] LMT_CHECK_OVER in 0.082ms
+2026-08-31 19:03:33,960 [INFO] LMT_CHECK_START: Order ORD-20260831-0048 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,962 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1631 nano seconds}
+2026-08-31 19:03:33,962 [rule=8] [PASS] MaxOrderPrice: Control passed | LMT=500.0, ORD=385.0 {price_control.py:19 2728 nano seconds}
+2026-08-31 19:03:33,962 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 1960 nano seconds}
+2026-08-31 19:03:33,962 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3679 nano seconds}
+2026-08-31 19:03:33,962 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3229 nano seconds}
+2026-08-31 19:03:33,962 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3219 nano seconds}
+2026-08-31 19:03:33,962 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4501 nano seconds}
+2026-08-31 19:03:33,962 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1481 nano seconds}
+2026-08-31 19:03:33,975 [INFO] LMT_CHECK_OVER in 0.067ms
+2026-08-31 19:03:33,980 [INFO] LMT_CHECK_START: Order ORD-20260831-0049 symbol=0700.HK qty=1000 price=385.0 side=B
+2026-08-31 19:03:33,982 [rule=8] [PASS] MaxOrderQuantity: Control passed | LMT=10000, ORD=500 {quantity_control.py:24 1311 nano seconds}
+2026-08-31 19:03:33,982 [rule=8] [FAIL] MaxOrderPrice: Price Exceeds Limit Tolerance | LMT=500.0, ORD=550.0 {price_control.py:19 2773 nano seconds}
+2026-08-31 19:03:33,982 [rule=8] [PASS] MaxOrderConsideration: Control passed | LMT=1000000.0, ORD=385000.0 {max_order_consideration.py:35 1979 nano seconds}
+2026-08-31 19:03:33,982 [rule=8] [PASS] ClosePriceTolerance: Within tolerance | LMT=10.0%, ORD=2.5% {close_price_tolerance.py:28 3332 nano seconds}
+2026-08-31 19:03:33,982 [rule=8] [PASS] LastPriceTolerance: Within tolerance | LMT=5.0%, ORD=1.2% {last_price_tolerance.py:26 3038 nano seconds}
+2026-08-31 19:03:33,982 [rule=8] [PASS] BBOPriceTolerance: Within BBO band | LMT=3.0%, ORD=0.5% {bbo_price_tolerance.py:32 3443 nano seconds}
+2026-08-31 19:03:33,982 [rule=8] [PASS] MaxDailyTurnover: Intraday turnover compliant | LMT=50000000.0, ORD=12450000.0 {max_daily_turnover.py:44 4304 nano seconds}
+2026-08-31 19:03:33,982 [rule=8] [PASS] SSRestricted: Short sell permitted | LMT=ALLOWED, ORD=ELIGIBLE {base_control.py:52 1497 nano seconds}
+2026-08-31 19:03:33,995 [INFO] LMT_CHECK_OVER in 0.116ms
+2026-08-31 19:03:41,478 [GCE] [INFO] GCE Control Center GUI started
+2026-08-31 19:03:41,573 [GCE] [INFO] Loaded session timings for 2 exchanges from config/Datamgr.ini
+2026-08-31 19:03:41,579 [GCE] [INFO] Loaded session timings for 2 exchanges from /mnt/d/Github/Global-Compliance-Engine/config/Datamgr.ini
