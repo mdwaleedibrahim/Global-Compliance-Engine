@@ -237,6 +237,8 @@ async function loadServices() {
   const grid = document.getElementById('services-grid');
   const data = await api('/api/status');
   if (!data || !grid) return;
+  const summaryCount = document.getElementById('services-summary-count');
+  if (summaryCount) summaryCount.textContent = data.length;
   const icons = { engine: '⚙️', pxfeeder: '📡', logger: '📝', datamgr: '🗄️' };
   const labels = { engine: 'GCE Engine', pxfeeder: 'PX Feeder', logger: 'Log Worker', datamgr: 'Data Manager' };
 

@@ -13,3 +13,16 @@
 2026-08-31 19:03:41,616 [PXFeeder] [INFO] PXFeeder initialized (dat_path=/mnt/d/Github/Global-Compliance-Engine/cache/PriceCache.dat, refresh_interval=300s, max_symbols=500, tracked_symbols=7)
 2026-08-31 19:03:41,624 [PXFeeder] [INFO] SNAPSHOT_LOAD Loaded 3 prices and 180 FX rates from /mnt/d/Github/Global-Compliance-Engine/cache/PriceCache.dat
 2026-08-31 19:03:41,625 [PXFeeder] [INFO] BACKGROUND_THREAD_START Started background price refresh thread (interval=300s)
+2026-09-05 07:58:00,226 [PXFeeder] [INFO] PXFeeder initialized (dat_path=/mnt/d/Github/Global-Compliance-Engine/gce/main/cache/PriceCache.dat, refresh_interval=300s, max_symbols=500, tracked_symbols=7)
+2026-09-05 07:58:00,236 [PXFeeder] [INFO] SNAPSHOT_LOAD Loaded 2 prices and 0 FX rates from /mnt/d/Github/Global-Compliance-Engine/gce/main/cache/PriceCache.dat
+2026-09-05 07:58:00,237 [PXFeeder] [INFO] BACKGROUND_THREAD_START Started background price refresh thread (interval=300s)
+2026-09-05 08:03:00,237 [PXFeeder] [INFO] BACKGROUND_REFRESH Triggering periodic price & FX refresh cycle
+2026-09-05 08:03:06,394 [PXFeeder] [WARNING] Error during background PXFeeder refresh: 'PXFeeder' object has no attribute 'FX_TICKERS'
+2026-09-05 08:08:06,395 [PXFeeder] [INFO] BACKGROUND_REFRESH Triggering periodic price & FX refresh cycle
+2026-09-05 08:08:08,214 [PXFeeder] [WARNING] Error during background PXFeeder refresh: 'PXFeeder' object has no attribute 'FX_TICKERS'
+2026-09-05 08:13:26,803 [PXFeeder] [INFO] PXFeeder initialized (dat_path=/mnt/d/Github/Global-Compliance-Engine/gce/main/cache/PriceCache.dat, refresh_interval=300s, max_symbols=500, tracked_symbols=7)
+2026-09-05 08:13:26,814 [PXFeeder] [INFO] SNAPSHOT_LOAD Loaded 2 prices and 0 FX rates from /mnt/d/Github/Global-Compliance-Engine/gce/main/cache/PriceCache.dat
+2026-09-05 08:13:26,815 [PXFeeder] [INFO] BACKGROUND_THREAD_START Started background price refresh thread (interval=300s)
+2026-09-05 08:17:49,571 [PXFeeder] [INFO] PXFeeder initialized (dat_path=/mnt/d/Github/Global-Compliance-Engine/gce/main/cache/PriceCache.dat, refresh_interval=300s, max_symbols=500, tracked_symbols=7)
+2026-09-05 08:17:49,578 [PXFeeder] [INFO] SNAPSHOT_LOAD Loaded 2 prices and 0 FX rates from /mnt/d/Github/Global-Compliance-Engine/gce/main/cache/PriceCache.dat
+2026-09-05 08:17:49,579 [PXFeeder] [INFO] BACKGROUND_THREAD_START Started background price refresh thread (interval=300s)
