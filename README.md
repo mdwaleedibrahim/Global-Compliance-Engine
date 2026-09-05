@@ -169,56 +169,26 @@ Centralized administrative console to purge in-memory / `.dat` snapshot caches, 
 
 ```
 GCE (Global Compliance Engine)
-├── gce/
-│   ├── cache/
-│   │   ├── base_cache.py         # Abstract cache layer with binary .DAT snapshot persistence
-│   │   ├── order_cache.py        # OMS order state machine & CRUD
-│   │   ├── position_cache.py     # Intraday pattern-level position tracking
-│   │   ├── price_cache.py        # Market prices cache with bid/ask/last/close/mid
-│   │   └── instrument_cache.py   # 17k+ security master with RIC masterkey indexing
-│   ├── controls/
-│   │   ├── base_control.py       # Base control contract & nanosecond timing wrappers
-│   │   ├── config_helper.py      # limitchecker.ini parser
-│   │   ├── quantity_control.py   # MaxOrderQuantity -> MaxOrderSize check
-│   │   ├── price_control.py      # MaxOrderPrice ceiling check
-│   │   ├── max_order_consideration.py # Gross notional (Price × Qty) check
-│   │   ├── close_price_tolerance.py   # % tolerance vs. previous close
-│   │   ├── last_price_tolerance.py    # % tolerance vs. last traded price
-│   │   ├── bbo_price_tolerance.py     # % tolerance vs. best bid/ask
-│   │   └── max_daily_turnover.py      # Intraday turnover limit against PositionCache
-│   ├── datamgr.py                # Instrument universe, SQLite RMS limits, exchange sessions
-│   ├── pxfeeder.py               # Live market data & multi-currency FX feeder
-│   ├── engine.py                 # Core compliance orchestrator & control pipeline
-│   ├── logger.py                 # Nanosecond structured logging & worker threads
-│   ├── order_state_machine.py    # Order lifecycle state transitions
-│   ├── position_updater.py       # Fill ingestion & position updates
-│   ├── reconciler.py             # Intraday fill-to-position reconciliation
-│   └── rule_engine.py            # Hierarchical rule evaluation & wildcard matching
-├── gui/
-│   ├── server.py                 # Flask REST API backend (Port 5050)
-│   ├── log_parser.py             # GCE.log parser for RMS summary & performance metrics
-│   └── static/
-│       ├── index.html            # Glassmorphism single-page UI
-│       ├── styles.css            # Dark-mode styling system
-│       └── app.js                # Frontend REST client & Chart.js renderer
-├── Instrument Static/            # Directory containing instrument static CSVs
-│   └── HK-ListOfSecurities.csv
-├── config/
-│   ├── Datamgr.ini               # Exchange trading session schedules
-│   └── limitchecker.ini          # Price tolerance corridors
-├── cache/                        # Pure binary .DAT cache snapshot storage
-│   ├── InstrumentStatic.dat
-│   ├── OrderCache.dat
-│   ├── PositionsCache.dat
-│   └── PriceCache.dat
+├── gce/                          # Core engine Python package
+│   ├── cache/                    # Cache classes and persistence logic
+│   ├── controls/                 # RMS control implementations
+│   ├── datamgr.py                # Instrument universe and RMS limits
+│   ├── pxfeeder.py               # Live market data and FX feeder
+│   ├── engine.py                 # Core compliance orchestrator
+│   └── ...
+│   ├── main/
+│   │   ├── gui/                  # Flask API and dashboard assets
+│   │   ├── utils/                # Diagnostic and test helpers
+│   │   ├── cache/                # Runtime .DAT snapshots
+│   │   ├── config/               # Runtime INI configuration
+│   │   └── Instrument Static/    # Instrument reference data
+│   └── test/
+│       ├── tests/                # Unit, integration, and benchmark tests
+│       └── test_logs/            # Test-generated log files
+├── logs/                         # Current and archived application logs
 ├── docs/
 │   └── screenshots/              # Application UI screenshots
 ├── rms_limits.db                 # SQLite database storing 49-column RMS risk rules
-├── utils/
-│   ├── cache_reader.py           # Diagnostic cache inspection tools
-│   ├── order_generator.py        # High-throughput mock order generator
-│   └── price_updater.py          # Dynamic price cache updater
-├── tests/                        # Comprehensive test suite (unit + integration + benchmarks)
 ├── start_server.sh               # Linux/macOS launcher script
 ├── start_server.bat              # Windows Batch launcher script
 ├── start_server.ps1              # Windows PowerShell launcher script
@@ -271,7 +241,7 @@ start_server.bat
 
 **Direct Python Execution:**
 ```bash
-python gui/server.py
+python gce/main/gui/server.py
 ```
 
 Open your browser and navigate to:
@@ -284,14 +254,14 @@ Open your browser and navigate to:
 ### 1. Order Risk Validation with GCE Engine
 
 ```python
-from gce.engine import GCE
-from gce.controls.quantity_control import MaxOrderQuantity
-from gce.controls.price_control import MaxOrderPrice
-from gce.controls.max_order_consideration import MaxOrderConsideration
-from gce.controls.close_price_tolerance import ClosePriceTolerance
-from gce.controls.last_price_tolerance import LastPriceTolerance
-from gce.controls.bbo_price_tolerance import BBOPriceTolerance
-from gce.cache.order_cache import Order
+from gce.main.engine import GCE
+from gce.main.controls.quantity_control import MaxOrderQuantity
+from gce.main.controls.price_control import MaxOrderPrice
+from gce.main.controls.max_order_consideration import MaxOrderConsideration
+from gce.main.controls.close_price_tolerance import ClosePriceTolerance
+from gce.main.controls.last_price_tolerance import LastPriceTolerance
+from gce.main.controls.bbo_price_tolerance import BBOPriceTolerance
+from gce.main.cache.order_cache import Order
 
 # Initialize GCE compliance engine
 gce = GCE()
@@ -331,14 +301,14 @@ else:
 ### 2. Querying SQLite RMS Limits & Exchange Sessions with DataMgr
 
 ```python
-from gce.datamgr import DataMgr
+from gce.main.datamgr import DataMgr
 
 # Initialize DataMgr reading static instrument CSVs, SQLite DB, and session INI
 datamgr = DataMgr(
-    static_dir="Instrument Static",
-    dat_path="cache/InstrumentStatic.dat",
+    static_dir="gce/main/Instrument Static",
+    dat_path="gce/main/cache/InstrumentStatic.dat",
     db_path="rms_limits.db",
-    ini_path="config/Datamgr.ini"
+    ini_path="gce/main/config/Datamgr.ini"
 )
 
 # Look up instrument by RIC masterkey
@@ -356,11 +326,11 @@ is_open = datamgr.is_trading_time("XHKG", "10:30")    # Returns True
 ### 3. Real-Time Market Data & FX Feed via PXFeeder
 
 ```python
-from gce.pxfeeder import PXFeeder
+from gce.main.pxfeeder import PXFeeder
 
 # Initialize PXFeeder with binary .dat persistence
 feeder = PXFeeder(
-    dat_path="cache/PriceCache.dat",
+    dat_path="gce/main/cache/PriceCache.dat",
     symbols=["0700.HK", "9988.HK", "0005.HK", "1299.HK"],
     auto_start_bg=True
 )
@@ -378,19 +348,19 @@ Run the complete test suite:
 
 ```bash
 # Run all unit tests
-python -m unittest discover -s tests -p "test_*.py"
+python -m unittest discover -s gce/test/tests -p "test_*.py"
 
 # Run integration and benchmarking test suite
-python tests/integration_tests.py
+python gce/test/tests/integration_tests.py
 ```
 
 ### Key Test Modules
-- `tests/test_datamgr_sqlite.py`: SQLite RMS database CRUD and wildcard resolution.
-- `tests/test_price_tolerances.py`: Close, Last, and BBO price tolerance algorithms.
-- `tests/test_pxfeeder.py`: Market price ingestion and multi-currency conversions.
-- `tests/test_parallel_controls.py`: Concurrent multi-threaded risk control pipeline.
-- `tests/test_risk_analytics.py`: Intraday exposure and turnover validation.
-- `tests/integration_tests.py`: End-to-end order lifecycle validation benchmarks.
+- `gce/test/tests/test_datamgr_sqlite.py`: SQLite RMS database CRUD and wildcard resolution.
+- `gce/test/tests/test_price_tolerances.py`: Close, Last, and BBO price tolerance algorithms.
+- `gce/test/tests/test_pxfeeder.py`: Market price ingestion and multi-currency conversions.
+- `gce/test/tests/test_parallel_controls.py`: Concurrent multi-threaded risk control pipeline.
+- `gce/test/tests/test_risk_analytics.py`: Intraday exposure and turnover validation.
+- `gce/test/tests/integration_tests.py`: End-to-end order lifecycle validation benchmarks.
 
 ---
 

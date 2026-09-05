@@ -1,14 +1,14 @@
 """Example Usage - Complete demonstration of GCE system."""
 
 import sys
-from gce.engine import GCEEngine
-from gce.controls.quantity_control import MaxOrderQuantity
-from gce.controls.price_control import MaxOrderPrice
-from gce.logger import GCELogger
-from gce.cache.order_cache import Order
-from utils.order_generator import MockOrderGenerator
-from utils.price_updater import PriceUpdater
-from gce.cache.price_cache import PriceCache
+from gce.main.engine import GCEEngine
+from gce.main.controls.quantity_control import MaxOrderQuantity
+from gce.main.controls.price_control import MaxOrderPrice
+from gce.main.logger import GCELogger
+from gce.main.cache.order_cache import Order
+from gce.main.utils.order_generator import MockOrderGenerator
+from gce.main.utils.price_updater import PriceUpdater
+from gce.main.cache.price_cache import PriceCache
 
 
 def example_basic_validation():
@@ -165,7 +165,7 @@ def example_custom_controls():
     print("EXAMPLE 5: Custom Control - Maximum Notional Value")
     print("="*70)
     
-    from gce.controls.base_control import BaseControl
+    from gce.main.controls.base_control import BaseControl
     from typing import Dict, Any, Tuple
     
     class MaxNotionalValue(BaseControl):

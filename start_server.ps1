@@ -14,19 +14,19 @@ $PythonCmd = $null
 if (Test-Path "$LocalBin\uv.exe") {
     Write-Host "[INFO] Found uv package manager." -ForegroundColor Green
     & "$LocalBin\uv.exe" pip install -r requirements.txt | Out-Null
-    $PythonCmd = { & "$LocalBin\uv.exe" run python gui/server.py }
+    $PythonCmd = { & "$LocalBin\uv.exe" run python gce/main/gui/server.py }
 } elseif (Test-Path "$LocalBin\python3.14.exe") {
-    $PythonCmd = { & "$LocalBin\python3.14.exe" gui/server.py }
+    $PythonCmd = { & "$LocalBin\python3.14.exe" gce/main/gui/server.py }
 } elseif (Test-Path "$ProjectRoot\.venv\Scripts\python.exe") {
-    $PythonCmd = { & "$ProjectRoot\.venv\Scripts\python.exe" gui/server.py }
+    $PythonCmd = { & "$ProjectRoot\.venv\Scripts\python.exe" gce/main/gui/server.py }
 } else {
     $py = Get-Command py -ErrorAction SilentlyContinue
     if ($py) {
-        $PythonCmd = { py gui/server.py }
+        $PythonCmd = { py gce/main/gui/server.py }
     } else {
         $python = Get-Command python -ErrorAction SilentlyContinue
         if ($python) {
-            $PythonCmd = { python gui/server.py }
+            $PythonCmd = { python gce/main/gui/server.py }
         }
     }
 }

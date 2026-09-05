@@ -47,6 +47,6 @@ echo [INFO] Using Python command: %PYTHON_CMD%
 echo [INFO] Server starting at http://localhost:5050
 echo ============================================================
 
-%PYTHON_CMD% gui\server.py
+%PYTHON_CMD% gce\main\gui\server.py
 
 pause
