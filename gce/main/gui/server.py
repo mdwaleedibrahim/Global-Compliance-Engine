@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import threading
+import subprocess
 from pathlib import Path
 from datetime import datetime
 
@@ -31,6 +32,7 @@ from gce.main.reconciler import PositionReconciler
 from gce.main.engine import GCE
 
 from gce.main.gui.log_parser import LogParser
+from gce.main.gui.exchange_cache import read_exchange_orders
 
 # ---------------------------------------------------------------------------
 # Flask App
@@ -62,6 +64,9 @@ _state = {
 }
 _lock = threading.RLock()
 _initialized = False
+EXCHANGE_ROOT = Path(os.environ.get("OCGC_HOME", "/home/waleed/exchange_connectivity"))
+EXCHANGE_SCRIPTS = EXCHANGE_ROOT / "scripts"
+EXCHANGE_PID = EXCHANGE_ROOT / "data" / "ui.pid"
 
 
 def _init_components():
@@ -178,7 +183,13 @@ def _service_info(name):
     """Return status dict for a named service."""
     info = {"name": name, "status": "stopped", "detail": ""}
     try:
-        if name == "pxfeeder":
+        if name == "exchange":
+            running = EXCHANGE_PID.exists() and subprocess.run(
+                ["kill", "-0", EXCHANGE_PID.read_text().strip()], check=False
+            ).returncode == 0
+            info["status"] = "running" if running else "stopped"
+            info["detail"] = "Exchange gateway process" if running else "Gateway stopped"
+        elif name == "pxfeeder":
             px = _get("pxfeeder")
             if px:
                 is_running = hasattr(px, "_bg_thread") and px._bg_thread and px._bg_thread.is_alive()
@@ -219,7 +230,7 @@ def _service_info(name):
 
 @app.route("/api/status")
 def api_status():
-    services = ["engine", "pxfeeder", "logger", "datamgr"]
+    services = ["engine", "exchange", "pxfeeder", "logger", "datamgr"]
     return jsonify([_service_info(s) for s in services])
 
 
@@ -251,6 +262,11 @@ def _reinit_all_services():
 @app.route("/api/service/<name>/start", methods=["POST"])
 def api_service_start(name):
     try:
+        if name == "exchange":
+            result = subprocess.run([str(EXCHANGE_SCRIPTS / "ui-start-exchange.sh")], capture_output=True, text=True, check=False)
+            if result.returncode != 0:
+                return jsonify({"ok": False, "message": result.stderr.strip() or result.stdout.strip()}), 500
+            return jsonify({"ok": True, "message": result.stdout.strip() or "Exchange gateway started"})
         if name in ("engine", "gce", "all"):
             _reinit_all_services()
             return jsonify({"ok": True, "message": "GCE Engine service restarted successfully"})
@@ -279,6 +295,11 @@ def api_service_start(name):
 @app.route("/api/service/<name>/stop", methods=["POST"])
 def api_service_stop(name):
     try:
+        if name == "exchange":
+            result = subprocess.run([str(EXCHANGE_SCRIPTS / "ui-stop-exchange.sh")], capture_output=True, text=True, check=False)
+            if result.returncode != 0:
+                return jsonify({"ok": False, "message": result.stderr.strip() or result.stdout.strip()}), 500
+            return jsonify({"ok": True, "message": result.stdout.strip() or "Exchange gateway stopped"})
         if name in ("engine", "gce", "all"):
             px = _get("pxfeeder")
             if px and hasattr(px, "stop"):
@@ -632,6 +653,7 @@ def api_orders():
             "open_qty": o.open_qty,
             "rejection_reason": getattr(o, "rejection_reason", ""),
         })
+    orders_list.extend(read_exchange_orders(EXCHANGE_ROOT / "data" / "gateway-cache.dat"))
     return jsonify(orders_list)
 
 

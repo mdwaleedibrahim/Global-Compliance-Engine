@@ -4,10 +4,24 @@ Downloads prices and FX rates for major US, EU, and APAC currencies using yfinan
 Caches all market data in memory for zero-latency retrieval by controls, and persists
 data snapshot to a binary .dat file (PriceCache.dat) for recovery.
 Includes a configurable background thread to keep prices and FX rates fresh.
+
+Network resilience (yfinance >= 1.x / curl_cffi backend)
+---------------------------------------------------------
+yfinance 1.x replaced requests with curl_cffi as its HTTP transport. curl_cffi
+impersonates a real browser TLS fingerprint. When Yahoo Finance sees a non-browser
+TLS handshake it sends a TCP RST ("wsarecv: An existing connection was forcibly
+closed by the remote host"). The fix is to give yfinance a curl_cffi.requests.Session
+with impersonate='chrome124' so every outbound call looks like Chrome to Yahoo.
+
+Fallback chain:
+  1. curl_cffi Session  (impersonate='chrome124')   <- preferred
+  2. requests Session   (plain, with browser UA)    <- if curl_cffi missing
+  3. no session (raw yfinance default)              <- last resort
 """
 
 import configparser
 import pickle
+import random
 import threading
 import time
 from datetime import datetime
@@ -18,6 +32,21 @@ try:
     import yfinance as yf
 except Exception:
     yf = None
+
+try:
+    # curl_cffi is installed by yfinance >= 1.x as a dependency.
+    # Its Session accepts impersonate= to mimic a real browser TLS fingerprint,
+    # which is what prevents Yahoo Finance from sending TCP RST.
+    from curl_cffi import requests as curl_requests
+    _CURL_CFFI_AVAILABLE = True
+except Exception:
+    curl_requests = None          # type: ignore
+    _CURL_CFFI_AVAILABLE = False
+
+try:
+    import requests as std_requests
+except Exception:
+    std_requests = None           # type: ignore
 
 from gce.main.logger import PXFeederLogger
 
@@ -275,9 +304,121 @@ class PXFeeder:
                 self._fx_rates[f"{c1}/{c2}"] = rate
                 self._fx_rates[f"{c1}{c2}"] = rate
 
+    # ------------------------------------------------------------------
+    # Shared yfinance session — curl_cffi with browser TLS impersonation
+    # ------------------------------------------------------------------
+    #
+    # ROOT CAUSE of "wsarecv: An existing connection was forcibly closed":
+    #   yfinance >= 1.x uses curl_cffi as its HTTP backend (not requests).
+    #   curl_cffi performs a TLS handshake. Yahoo Finance detects non-browser
+    #   TLS fingerprints and sends a TCP RST mid-stream.
+    #
+    # FIX: pass a curl_cffi.requests.Session(impersonate='chrome124') to
+    #   yf.Ticker(). This makes every outbound call use Chrome's exact TLS
+    #   fingerprint, which Yahoo Finance accepts without resetting.
+    #
+    # FALLBACK: if curl_cffi is missing, use a plain requests.Session with
+    #   browser-like headers (partial mitigation only).
+    # ------------------------------------------------------------------
+
+    _yf_session      = None
+    _yf_session_lock = threading.Lock()
+
+    @classmethod
+    def _get_yf_session(cls):
+        """
+        Return a cached session for yfinance.
+
+        Priority:
+          1. curl_cffi.requests.Session(impersonate='chrome124')
+             — gives a real Chrome TLS fingerprint; prevents Yahoo RST.
+          2. std_requests.Session with browser User-Agent headers
+             — partial mitigation if curl_cffi is not installed.
+          3. None — yfinance uses its own default (may trigger RST).
+        """
+        with cls._yf_session_lock:
+            if cls._yf_session is None:
+                if _CURL_CFFI_AVAILABLE:
+                    try:
+                        # impersonate='chrome124' replicates Chrome 124's TLS
+                        # ClientHello, JA3, and HTTP/2 SETTINGS frames exactly.
+                        s = curl_requests.Session(impersonate='chrome124')
+                        cls._yf_session = s
+                    except Exception:
+                        pass
+
+                if cls._yf_session is None and std_requests is not None:
+                    # Fallback: plain requests session with browser UA
+                    s = std_requests.Session()
+                    s.headers.update({
+                        'User-Agent': (
+                            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                            'AppleWebKit/537.36 (KHTML, like Gecko) '
+                            'Chrome/124.0.0.0 Safari/537.36'
+                        ),
+                        'Accept':          'application/json, text/plain, */*',
+                        'Accept-Language': 'en-US,en;q=0.9',
+                        'Accept-Encoding': 'gzip, deflate, br',
+                        'Connection':      'keep-alive',
+                    })
+                    try:
+                        from requests.adapters import HTTPAdapter
+                        from urllib3.util.retry import Retry
+                        adapter = HTTPAdapter(max_retries=Retry(
+                            total=3, backoff_factor=1.0,
+                            status_forcelist=[429, 500, 502, 503, 504],
+                            allowed_methods=['GET'],
+                        ))
+                        s.mount('https://', adapter)
+                        s.mount('http://',  adapter)
+                    except Exception:
+                        pass
+                    cls._yf_session = s
+
+        return cls._yf_session  # may still be None — yfinance handles that gracefully
+
     @staticmethod
-    def _fetch_ticker_details(symbol: str) -> Optional[Dict[str, float]]:
-        """Safely fetch latest price components (bid, ask, last, open, close) for a symbol."""
+    def _fetch_with_backoff(fn, max_attempts: int = 3, base_delay: float = 2.0):
+        """
+        Call fn() up to max_attempts times with exponential backoff + jitter.
+
+        Catches the full family of errors that Yahoo Finance TCP RST generates:
+          - ConnectionResetError / OSError / TimeoutError  (Python socket layer)
+          - RuntimeError / Exception from curl_cffi wrapping the same OS error
+        Any string containing 'forcibly closed', 'reset', 'eof', 'broken pipe',
+        'connection aborted', or 'stream reading error' is treated as retriable.
+
+        Returns the result of fn() on success, or None after all retries.
+        """
+        RETRIABLE_PHRASES = (
+            'forcibly closed', 'reset by peer', 'connection reset',
+            'eof occurred', 'broken pipe', 'connection aborted',
+            'stream reading error', 'timed out', 'remotedisconnected',
+        )
+        for attempt in range(1, max_attempts + 1):
+            try:
+                return fn()
+            except Exception as exc:
+                err = str(exc).lower()
+                if any(p in err for p in RETRIABLE_PHRASES):
+                    delay = base_delay * (2 ** (attempt - 1)) + random.uniform(0.2, 1.0)
+                    if attempt < max_attempts:
+                        time.sleep(delay)
+                    continue
+                # Non-retriable exception
+                return None
+        return None
+
+    @classmethod
+    def _fetch_ticker_details(cls, symbol: str) -> Optional[Dict[str, float]]:
+        """
+        Safely fetch latest price components (bid, ask, last, open, close).
+
+        Uses a curl_cffi session with browser TLS impersonation to prevent
+        Yahoo Finance from sending TCP RST mid-stream (the wsarecv error).
+        All network-touching calls go through _fetch_with_backoff.
+        A small random sleep between calls limits rate-limit triggers.
+        """
         if not symbol:
             return None
 
@@ -289,71 +430,77 @@ class PXFeeder:
         if clean_sym not in candidates:
             candidates.append(clean_sym)
 
-        # Pre-warmed yfinance Ticker lookup
+        session = cls._get_yf_session()
+
         for sym in candidates:
+            # Small jitter between ticker fetches to avoid triggering
+            # Yahoo Finance's per-IP rate limiter (which causes RST storms)
+            time.sleep(random.uniform(0.05, 0.25))
             try:
-                import yfinance as yf
-                ticker = yf.Ticker(sym)
+                import yfinance as _yf
 
-                # 1. Try fast_info attributes (fastest, single network call)
-                fast = getattr(ticker, 'fast_info', None)
-                last = None
-                open_px = None
+                # Pass the curl_cffi (or requests) session so yfinance uses
+                # our hardened transport for every internal HTTP call.
+                ticker = _yf.Ticker(sym, session=session) if session is not None \
+                         else _yf.Ticker(sym)
+
+                last     = None
+                open_px  = None
                 close_px = None
-                if fast:
-                    try:
-                        last = getattr(fast, 'last_price', None) or getattr(fast, 'regular_market_previous_close', None)
-                        close_px = getattr(fast, 'previous_close', None) or getattr(fast, 'regular_market_previous_close', None)
-                        open_px = getattr(fast, 'open', None)
-                    except Exception:
-                        pass
+                fast     = getattr(ticker, 'fast_info', None)
 
-                # If fast_info succeeded, return immediately without querying heavy info dict!
+                # --- Path 1: fast_info (single round-trip, fastest) ---
+                if fast is not None:
+                    def _read_fast():
+                        return (
+                            getattr(fast, 'last_price',                      None)
+                            or getattr(fast, 'regular_market_previous_close', None)
+                        )
+                    raw = cls._fetch_with_backoff(_read_fast)
+                    if raw is not None:
+                        last     = raw
+                        close_px = getattr(fast, 'previous_close', None) \
+                                   or getattr(fast, 'regular_market_previous_close', None)
+                        open_px  = getattr(fast, 'open', None)
+
                 if last is not None and float(last) > 0:
-                    last_f = round(float(last), 4)
-                    close_f = round(float(close_px if close_px is not None else last_f), 4)
-                    open_f = round(float(open_px if open_px is not None else last_f), 4)
-                    bid_f = round(float(getattr(fast, 'day_low', None) or last_f), 4)
-                    ask_f = round(float(getattr(fast, 'day_high', None) or last_f), 4)
-
+                    lf = round(float(last), 4)
                     return {
-                        'bid': bid_f,
-                        'ask': ask_f,
-                        'last': last_f,
-                        'open': open_f,
-                        'close': close_f
+                        'last':  lf,
+                        'close': round(float(close_px or lf), 4),
+                        'open':  round(float(open_px  or lf), 4),
+                        'bid':   round(float(getattr(fast, 'day_low',  None) or lf), 4),
+                        'ask':   round(float(getattr(fast, 'day_high', None) or lf), 4),
                     }
 
-                # 2. Fallback to info dict only if fast_info had no price
-                info = {}
-                try:
-                    info = ticker.info or {}
-                    last = (
-                        info.get('regularMarketPrice')
-                        or info.get('currentPrice')
-                        or info.get('previousClose')
-                        or info.get('ask')
-                        or info.get('bid')
+                # --- Path 2: ticker.info (heavier, fallback) ---
+                info_container = [{}]
+
+                def _read_info():
+                    info_container[0] = ticker.info or {}
+                    return (
+                        info_container[0].get('regularMarketPrice')
+                        or info_container[0].get('currentPrice')
+                        or info_container[0].get('previousClose')
+                        or info_container[0].get('ask')
+                        or info_container[0].get('bid')
                     )
-                    close_px = info.get('regularMarketPreviousClose') or info.get('previousClose')
-                    open_px = info.get('regularMarketOpen') or info.get('open')
-                except Exception:
-                    pass
+
+                last = cls._fetch_with_backoff(_read_info)
+                info = info_container[0]
 
                 if last is not None and float(last) > 0:
-                    last_f = round(float(last), 4)
-                    close_f = round(float(close_px if close_px is not None else last_f), 4)
-                    open_f = round(float(open_px if open_px is not None else last_f), 4)
-                    bid_f = round(float(info.get('bid') or getattr(fast, 'day_low', None) or last_f), 4)
-                    ask_f = round(float(info.get('ask') or getattr(fast, 'day_high', None) or last_f), 4)
-
+                    lf       = round(float(last), 4)
+                    close_px = info.get('regularMarketPreviousClose') or info.get('previousClose')
+                    open_px  = info.get('regularMarketOpen')          or info.get('open')
                     return {
-                        'bid': bid_f,
-                        'ask': ask_f,
-                        'last': last_f,
-                        'open': open_f,
-                        'close': close_f
+                        'last':  lf,
+                        'close': round(float(close_px or lf), 4),
+                        'open':  round(float(open_px  or lf), 4),
+                        'bid':   round(float(info.get('bid')  or lf), 4),
+                        'ask':   round(float(info.get('ask')  or lf), 4),
                     }
+
             except Exception:
                 continue
 
@@ -747,16 +894,43 @@ class PXFeeder:
         self.logger.info("BACKGROUND_THREAD_STOP Stopped background price refresh thread")
 
     def _background_loop(self):
-        """Background worker loop refreshing every refresh_interval seconds."""
+        """
+        Background worker loop: refreshes prices every refresh_interval seconds.
+        After consecutive network failures (e.g. Yahoo Finance TCP RST), backs off
+        exponentially up to 10 minutes before retrying to avoid hammering a closed
+        connection.
+        """
+        consecutive_failures = 0
+        MAX_BACKOFF_SEC = 600  # 10 minutes cap
+
         while not self._stop_event.is_set():
-            # Wait for interval or until stopped
-            if self._stop_event.wait(timeout=self.refresh_interval):
+            # Compute wait: normal interval or backoff after failures
+            if consecutive_failures > 0:
+                backoff = min(self.refresh_interval * (2 ** consecutive_failures), MAX_BACKOFF_SEC)
+                backoff += random.uniform(0, 15)  # jitter
+                self.logger.warning(
+                    f"BACKGROUND_REFRESH_BACKOFF consecutive_failures={consecutive_failures} "
+                    f"waiting {backoff:.0f}s before next attempt"
+                )
+            else:
+                backoff = self.refresh_interval
+
+            if self._stop_event.wait(timeout=backoff):
                 break
+
             try:
                 self.logger.info("BACKGROUND_REFRESH Triggering periodic price & FX refresh cycle")
-                self.refresh_now()
+                p_count, fx_count = self.refresh_now()
+                if p_count > 0 or fx_count > 0:
+                    consecutive_failures = 0  # successful fetch resets counter
+                else:
+                    # refresh_now completed but got 0 prices — treat as soft failure
+                    consecutive_failures = min(consecutive_failures + 1, 5)
             except Exception as e:
-                self.logger.warning(f"Error during background PXFeeder refresh: {e}")
+                consecutive_failures = min(consecutive_failures + 1, 5)
+                self.logger.warning(
+                    f"BACKGROUND_REFRESH_ERROR (attempt {consecutive_failures}): {e}"
+                )
 
     def __del__(self):
         try:

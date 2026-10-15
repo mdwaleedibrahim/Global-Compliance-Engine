@@ -239,8 +239,8 @@ async function loadServices() {
   if (!data || !grid) return;
   const summaryCount = document.getElementById('services-summary-count');
   if (summaryCount) summaryCount.textContent = data.length;
-  const icons = { engine: '⚙️', pxfeeder: '📡', logger: '📝', datamgr: '🗄️' };
-  const labels = { engine: 'GCE Engine', pxfeeder: 'PX Feeder', logger: 'Log Worker', datamgr: 'Data Manager' };
+  const icons = { engine: '⚙️', exchange: '🔌', pxfeeder: '📡', logger: '📝', datamgr: '🗄️' };
+  const labels = { engine: 'GCE Engine', exchange: 'Exchange Connectivity', pxfeeder: 'PX Feeder', logger: 'Log Worker', datamgr: 'Data Manager' };
 
   grid.innerHTML = data.map(s => {
     const icon = icons[s.name] || '🔧';
@@ -277,7 +277,7 @@ async function loadServices() {
 }
 
 async function svcAction(name, action) {
-  const labelMap = { engine: 'GCE Engine', pxfeeder: 'PX Feeder', logger: 'Log Worker', datamgr: 'Data Manager' };
+  const labelMap = { engine: 'GCE Engine', exchange: 'Exchange Connectivity', pxfeeder: 'PX Feeder', logger: 'Log Worker', datamgr: 'Data Manager' };
   const label = labelMap[name] || name;
 
   if (action === 'restart') {
